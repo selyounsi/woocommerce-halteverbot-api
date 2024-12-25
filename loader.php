@@ -3,7 +3,7 @@
     Plugin Name: Halteverbot App API
     Description: Plugin zur Verarbeitung von Halteverbot-Daten mit WooCommerce-Integration.
     Version: 1.0.0
-    Author: Dein Name
+    Author: Halteverbotsservice Berlin
     License: GPL-2.0+
     */
 

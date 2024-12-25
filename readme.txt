@@ -1,5 +1,5 @@
 === Halteverbot App Data ===
-Contributors: dein-name
+Contributors: Halteverbotsservice Berlin
 Requires at least: 5.6
 Tested up to: 6.3
 Requires PHP: 7.3
