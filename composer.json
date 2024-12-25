@@ -1,0 +1,11 @@
+{
+    "name": "halteverbot/app_data",
+    "require": {
+        "dompdf/dompdf": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Utils\\": "utils/"
+        }
+    }
+}
