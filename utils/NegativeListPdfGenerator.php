@@ -247,19 +247,25 @@ class NegativeListPdfGenerator
     }
 
     /**
-     * Konvertiert ein Datum von 'Y-m-d' oder 'Y-m-d H:i:s' in 'd.m.Y' oder 'd.m.Y H:i'.
+     * Konvertiert ein Datum von 'Y-m-d', 'Y-m-d H:i' oder 'Y-m-d H:i:s' in 'd.m.Y' oder 'd.m.Y H:i'.
      *
-     * @param string $date Das ursprüngliche Datum im Format 'Y-m-d' oder 'Y-m-d H:i:s'.
+     * @param string $date Das ursprüngliche Datum im Format 'Y-m-d', 'Y-m-d H:i' oder 'Y-m-d H:i:s'.
      * @return string|null Das formatierte Datum im deutschen Format oder null, wenn die Konvertierung fehlschlägt.
      */
     function formatToGermanDate(string $date): ?string
     {
-        // Prüfen, ob die Eingabe eine Uhrzeit enthält
-        $format = str_contains($date, ':') ? 'Y-m-d H:i:s' : 'Y-m-d';
-        
-        $dateTime = DateTime::createFromFormat($format, $date);
-        
-        // Format entsprechend der Eingabe ausgeben
-        return $dateTime ? $dateTime->format(str_contains($date, ':') ? 'd.m.Y H:i' : 'd.m.Y') : null;
+        // Mögliche Formate für die Eingabe
+        $formats = ['Y-m-d H:i:s', 'Y-m-d H:i', 'Y-m-d'];
+
+        foreach ($formats as $format) {
+            $dateTime = DateTime::createFromFormat($format, $date);
+
+            if ($dateTime) {
+                // Format entsprechend der Eingabe ausgeben
+                return $dateTime->format(str_contains($date, ':') ? 'd.m.Y H:i' : 'd.m.Y');
+            }
+        }
+
+        return null;
     }
 }
