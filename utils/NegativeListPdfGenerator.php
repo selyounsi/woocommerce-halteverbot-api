@@ -266,6 +266,6 @@ class NegativeListPdfGenerator
             }
         }
 
-        return null;
+        return $date;
     }
 }
