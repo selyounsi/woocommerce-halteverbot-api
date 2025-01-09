@@ -2,7 +2,7 @@
 
 namespace Utils;
 
-use DateTime;
+use Utils\DateUtils;
 use Dompdf\Dompdf;
 use Utils\WPCAFields;
 
@@ -169,8 +169,8 @@ class NegativeListPdfGenerator
             $endTime = $fields['endtime'] ?? '';
             $html .= '<tr><td style="font-weight:bold; border: none;">' . esc_html__('Aufstellungsdatum') . ':</td>';
             $html .= '<td style="border: none;">' . ($startDate === $endDate 
-                ? esc_html($this->formatToGermanDate($startDate) . ' ' . $startTime . ' - ' . $endTime) 
-                : esc_html($this->formatToGermanDate($startDate) . ' ' . $startTime . ' - ' . $this->formatToGermanDate($endDate) . ' ' . $endTime)) . '</td></tr>';
+                ? esc_html(DateUtils::formatToGermanDate($startDate) . ' ' . $startTime . ' - ' . $endTime) 
+                : esc_html(DateUtils::formatToGermanDate($startDate) . ' ' . $startTime . ' - ' . DateUtils::formatToGermanDate($endDate) . ' ' . $endTime)) . '</td></tr>';
     
             if($this->installer) {
                 $html .= '<tr><td style="font-weight:bold; border: none;">' . esc_html__('Aufsteller') . ':</td>';
@@ -179,7 +179,7 @@ class NegativeListPdfGenerator
     
             if($this->date) {
                 $html .= '<tr><td style="font-weight:bold; border: none;">' . esc_html__('Aufgestellt am') . ':</td>';
-                $html .= '<td style="border: none;">' . esc_html($this->formatToGermanDate($this->date) ?? '') . '</td></tr>';
+                $html .= '<td style="border: none;">' . esc_html(DateUtils::formatToGermanDate($this->date) ?? '') . '</td></tr>';
             }
     
             $html .= '</tbody></table>';
@@ -244,28 +244,5 @@ class NegativeListPdfGenerator
         $html .= '</tbody></table>';
 
         return $html;
-    }
-
-    /**
-     * Konvertiert ein Datum von 'Y-m-d', 'Y-m-d H:i' oder 'Y-m-d H:i:s' in 'd.m.Y' oder 'd.m.Y H:i'.
-     *
-     * @param string $date Das ursprüngliche Datum im Format 'Y-m-d', 'Y-m-d H:i' oder 'Y-m-d H:i:s'.
-     * @return string|null Das formatierte Datum im deutschen Format oder null, wenn die Konvertierung fehlschlägt.
-     */
-    function formatToGermanDate(string $date): ?string
-    {
-        // Mögliche Formate für die Eingabe
-        $formats = ['Y-m-d H:i:s', 'Y-m-d H:i', 'Y-m-d'];
-
-        foreach ($formats as $format) {
-            $dateTime = DateTime::createFromFormat($format, $date);
-
-            if ($dateTime) {
-                // Format entsprechend der Eingabe ausgeben
-                return $dateTime->format(str_contains($date, ':') ? 'd.m.Y H:i' : 'd.m.Y');
-            }
-        }
-
-        return $date;
     }
 }
