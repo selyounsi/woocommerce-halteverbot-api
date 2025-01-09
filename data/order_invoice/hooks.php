@@ -20,6 +20,18 @@ function wpo_wcpdf_positions($document_type, $order) {
                 if ($meta->key == 'Enddatum') {
                     $meta->value = DateUtils::formatToGermanDate($meta->value); 
                 }
+
+                if ($meta->key == 'Inklusive behördlicher Genehmigung') {
+                    if($meta->value) {
+                        $meta->value = "Ja"; 
+                    }
+                }
+
+                if ($meta->key == 'Gegenüberliegende Straßenseite sperren') {
+                    if($meta->value) {
+                        $meta->value = "Ja"; 
+                    }
+                }
             }
         }
 
