@@ -1,8 +1,28 @@
 <?php
 
+
+use Utils\DateUtils;
+
 add_action('wpo_wcpdf_before_order_details', 'wpo_wcpdf_positions', 10, 2);
 function wpo_wcpdf_positions($document_type, $order) {
     if ($document_type == 'invoice') {
+
+        foreach ($order->get_items() as $item_id => $item) {
+
+            $meta_data = $item->get_meta_data();
+
+            foreach ($meta_data as $meta) 
+            {
+                if ($meta->key == 'Startdatum') {
+                    $meta->value = DateUtils::formatToGermanDate($meta->value); 
+                }
+
+                if ($meta->key == 'Enddatum') {
+                    $meta->value = DateUtils::formatToGermanDate($meta->value); 
+                }
+            }
+        }
+
         if ($order->meta_exists('wpo_wcpdf_invoice_positions')) {
             $invoice_positions = $order->get_meta('wpo_wcpdf_invoice_positions');
             if (!empty($invoice_positions)) {
