@@ -12,6 +12,7 @@ class WC_Email_Invoice extends WC_Email
     public $heading;
     public $subject;
     public $recipient;
+    public $bcc;
     public $additional_content;
     public $number;
 
@@ -38,6 +39,7 @@ class WC_Email_Invoice extends WC_Email
         $this->recipient = ''; // Hier könnte auch eine Option gesetzt werden, falls gewünscht
         $this->template_html = 'invoice-template-html.php';  
         $this->template_base = HALTEVERBOT_APP_API_PATH . '/data/order_emails/templates/';
+        $this->bcc = $offer_email_settings['bcc'] ?? '';
     
         parent::__construct();
     }
@@ -88,12 +90,18 @@ class WC_Email_Invoice extends WC_Email
 
         // Erstelle die E-Mail über den WooCommerce-Mailer
         $mailer = WC()->mailer();
-
+    
+        // BCC hinzufügen, wenn vorhanden
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        if (!empty($this->bcc)) {
+            $headers[] = 'BCC: ' . $this->bcc;
+        }
+    
         // Anhänge hinzufügen, falls vorhanden
         if ( ! empty($attachments) ) {
-            return $mailer->send($to, $subject, $message, '', $attachments);
+            return $mailer->send($to, $subject, $message, $headers, $attachments);
         } else {
-            return $mailer->send($to, $subject, $message);
+            return $mailer->send($to, $subject, $message, $headers);
         }
     }
 }
