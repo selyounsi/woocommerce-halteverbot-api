@@ -1,24 +1,65 @@
 <?php
     /*
-    Plugin Name: Halteverbot App API
-    Description: Plugin zur Verarbeitung von Halteverbot-Daten mit WooCommerce-Integration.
-    Version: 1.0.0
-    Author: Halteverbotsservice Berlin
-    License: GPL-2.0+
+        Plugin Name: Halteverbot App API
+        Description: Plugin zur Verarbeitung von Halteverbot-Daten mit WooCommerce-Integration.
+        Version: 1.0.0
+        Author: Halteverbotsservice Berlin
+        Requires Plugins: woocommerce, bp-custom-order-status-for-woocommerce
+        License: GPL-2.0+
     */
 
-    // Verhindert direkten Zugriff
+    /**
+     * Verhindert direkten Zugriff
+     */
     if (!defined('ABSPATH')) {
         exit;
     }
 
-
-    // Definiere eine Konstante für den Plugin-Root-Pfad
+    /**
+     * Definiere eine Konstante für den Plugin-Root-Pfad
+     */
     if (!defined('HALTEVERBOT_APP_API_PATH')) {
-        define('HALTEVERBOT_APP_API_PATH', plugin_dir_path(__FILE__)); // Root-Pfad des Plugins
+        define('HALTEVERBOT_APP_API_PATH', plugin_dir_path(__FILE__));
     }
 
-    // Funktion zum Laden der App-Daten
+    /**
+     * Funktion zur Überprüfung der Abhängigkeiten
+     */
+    function halteverbot_check_dependencies() 
+    {
+        $required_plugins = [
+            'woocommerce/woocommerce.php' => 'WooCommerce',
+            'bp-custom-order-status-for-woocommerce/main.php' => 'Custom Order Status Manager for WooCommerce'
+        ];
+
+        $missing_plugins = [];
+        foreach ($required_plugins as $plugin_file => $plugin_name) {
+            if (!is_plugin_active($plugin_file)) {
+                $missing_plugins[] = $plugin_name;
+            }
+        }
+
+        // Wenn ein benötigtes Plugin fehlt, Fehlermeldung anzeigen und Plugin deaktivieren
+        if (!empty($missing_plugins)) {
+            add_action('admin_notices', function() use ($missing_plugins) {
+                $plugin_names = implode(', ', $missing_plugins);
+                echo '<div class="notice notice-error"><p>';
+                echo sprintf(
+                    __('Das Halteverbot App API Plugin benötigt die folgenden aktiven Plugins: %s.', 'halteverbot-app-api'),
+                    esc_html($plugin_names)
+                );
+                echo '</p></div>';
+            });
+
+            // Plugin deaktivieren
+            deactivate_plugins(plugin_basename(__FILE__));
+        }
+    }
+    add_action('admin_init', 'halteverbot_check_dependencies');
+
+    /**
+     * Funktion zum Laden der App-Daten
+     */
     function load_app_data() {
         // Pfad zum data-Verzeichnis
         $data_directory = plugin_dir_path(__FILE__) . 'data/';
@@ -46,6 +87,9 @@
             }
         }
     }
+
+    // Include die Dateien für das Admin-Menü
+    require_once plugin_dir_path(__FILE__) . 'includes/admin/admin-menu.php';
 
     // Dateien laden, wenn WordPress initialisiert wird
     add_action('init', 'load_app_data');
