@@ -7,6 +7,10 @@ namespace Composer\Autoload;
 class ComposerStaticInit589ea93b2d3e332bddf6555b2b30090e
 {
     public static $prefixLengthsPsr4 = array (
+        's' => 
+        array (
+            'setasign\\Fpdi\\' => 14,
+        ),
         'U' => 
         array (
             'Utils\\' => 6,
@@ -31,6 +35,10 @@ class ComposerStaticInit589ea93b2d3e332bddf6555b2b30090e
     );
 
     public static $prefixDirsPsr4 = array (
+        'setasign\\Fpdi\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/setasign/fpdi/src',
+        ),
         'Utils\\' => 
         array (
             0 => __DIR__ . '/../..' . '/utils',

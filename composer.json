@@ -1,7 +1,8 @@
 {
     "name": "halteverbot/app_data",
     "require": {
-        "dompdf/dompdf": "^3.0"
+        "dompdf/dompdf": "^3.0",
+        "setasign/fpdi": "^2.6"
     },
     "autoload": {
         "psr-4": {
