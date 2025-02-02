@@ -91,6 +91,9 @@
     // Include die Dateien für das Admin-Menü
     require_once plugin_dir_path(__FILE__) . 'includes/admin/admin-menu.php';
 
+    // Include die Dateien für das Admin-Menü
+    require_once plugin_dir_path(__FILE__) . 'includes/frontend/register-pages.php';
+
     // Dateien laden, wenn WordPress initialisiert wird
     add_action('init', 'load_app_data');
 ?>
