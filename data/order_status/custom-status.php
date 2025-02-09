@@ -132,6 +132,7 @@ function attach_negativelist_file_to_email($attachments, $email_id, $order)
         ];
 
         $pdf_files = [];
+        $has_encrypted_pdf = false;
 
         foreach ($file_meta_keys as $meta_key) {
             $file_url = get_post_meta($order->get_id(), $meta_key, true);
@@ -142,6 +143,9 @@ function attach_negativelist_file_to_email($attachments, $email_id, $order)
                 $file_path = ABSPATH . $relative_file_path;
 
                 if (file_exists($file_path)) {
+                    if (is_pdf_encrypted($file_path)) {
+                        $has_encrypted_pdf = true;
+                    }
                     $pdf_files[] = $file_path;
                 } else {
                     error_log('File could not be found: ' . $file_path);
@@ -149,23 +153,39 @@ function attach_negativelist_file_to_email($attachments, $email_id, $order)
             }
         }
 
-        if (count($pdf_files) > 1) 
+        if (count($pdf_files) > 1 && !$has_encrypted_pdf) 
         {
             foreach($wpcaFields as $fields) 
             {
                 $fileName = FilenameSanitizer::sanitize($fields["startdate"], $fields["enddate"], $fields["address"]);
-
                 $merged_pdf_path = ABSPATH . $fileName . '.pdf';
                 merge_pdfs($pdf_files, $merged_pdf_path);
                 $attachments[] = $merged_pdf_path;
             }
-
         } else {
             $attachments = array_merge($attachments, $pdf_files);
         }
     }
 
     return $attachments;
+}
+
+/**
+ * Check if a PDF file is encrypted.
+ *
+ * @param string $file_path Path to the PDF file.
+ * @return bool True if the PDF is encrypted, false otherwise.
+ */
+function is_pdf_encrypted($file_path) 
+{
+    try {
+        $pdf = new setasign\Fpdi\Fpdi();
+        $pdf->setSourceFile($file_path);
+        return false; // PDF ist nicht verschlüsselt
+    } catch (Exception $e) {
+        error_log('Encrypted PDF detected: ' . $file_path);
+        return true; // PDF ist verschlüsselt
+    }
 }
 
 /**
