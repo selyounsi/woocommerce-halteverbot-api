@@ -26,53 +26,53 @@ function add_custom_file_upload_fields($order)
 
     ?>
     <div class="form-field form-field-wide">
-        <h3><?php esc_html_e('Zusätzliche Dokumente', 'your-text-domain'); ?></h3>
+        <h3><?php esc_html_e('Zusätzliche Dokumente', WHA_TRANSLATION_KEY); ?></h3>
 
         <!-- Antrag -->
         <div class="field-container">
             <div class="field">
-                <label for="application_file"><?php esc_html_e('Antrag', 'your-text-domain'); ?></label>
+                <label for="application_file"><?php esc_html_e('Antrag', WHA_TRANSLATION_KEY); ?></label>
                 <input type="text" id="application_file" name="application_file" value="<?php echo esc_url($application_file); ?>" placeholder="File URL">
             </div>
             <button class="set_custom_images button">PDF setzen</button>
             <?php if ($application_file): ?>
-                <br><a href="<?php echo esc_url($application_file); ?>" target="_blank"><?php esc_html_e('Antrag ansehen', 'your-text-domain'); ?></a>
+                <br><a href="<?php echo esc_url($application_file); ?>" target="_blank"><?php esc_html_e('Antrag ansehen', WHA_TRANSLATION_KEY); ?></a>
             <?php endif; ?>
         </div>
 
         <!-- Genehmigung -->
         <div class="field-container">
             <div class="field">
-                <label for="approval_file"><?php esc_html_e('Genehmigung', 'your-text-domain'); ?></label>
+                <label for="approval_file"><?php esc_html_e('Genehmigung', WHA_TRANSLATION_KEY); ?></label>
                 <input type="text" id="approval_file" name="approval_file" value="<?php echo esc_url($approval_file); ?>" placeholder="File URL">
             </div>
             <button class="set_custom_images button">PDF setzen</button>
             <?php if ($approval_file): ?>
-                <br><a href="<?php echo esc_url($approval_file); ?>" target="_blank"><?php esc_html_e('Genehmigung ansehen', 'your-text-domain'); ?></a>
+                <br><a href="<?php echo esc_url($approval_file); ?>" target="_blank"><?php esc_html_e('Genehmigung ansehen', WHA_TRANSLATION_KEY); ?></a>
             <?php endif; ?>
         </div>
 
         <!-- Ablehnung -->
         <div class="field-container">
             <div class="field">
-                <label for="rejection_file"><?php esc_html_e('Ablehnung', 'your-text-domain'); ?></label>
+                <label for="rejection_file"><?php esc_html_e('Ablehnung', WHA_TRANSLATION_KEY); ?></label>
                 <input type="text" id="rejection_file" name="rejection_file" value="<?php echo esc_url($rejection_file); ?>" placeholder="File URL">
             </div>
             <button class="set_custom_images button">PDF setzen</button>
             <?php if ($rejection_file): ?>
-                <br><a href="<?php echo esc_url($rejection_file); ?>" target="_blank"><?php esc_html_e('Ablehnung ansehen', 'your-text-domain'); ?></a>
+                <br><a href="<?php echo esc_url($rejection_file); ?>" target="_blank"><?php esc_html_e('Ablehnung ansehen', WHA_TRANSLATION_KEY); ?></a>
             <?php endif; ?>
         </div>
 
         <!-- Negativliste -->
         <div class="field-container">
             <div class="field">
-                <label for="negativliste_file"><?php esc_html_e('Negativliste', 'your-text-domain'); ?></label>
+                <label for="negativliste_file"><?php esc_html_e('Negativliste', WHA_TRANSLATION_KEY); ?></label>
                 <input type="text" id="negativliste_file" readonly name="negativliste_file" value="<?php echo esc_url($negativliste_file); ?>" placeholder="File URL">
             </div>
             <button id="generate_negative_list_pdf" class="button">PDF setzen</button>
             <?php if ($negativliste_file): ?>
-                <br><a href="<?php echo esc_url($negativliste_file); ?>" target="_blank"><?php esc_html_e('Negativliste ansehen', 'your-text-domain'); ?></a>
+                <br><a href="<?php echo esc_url($negativliste_file); ?>" target="_blank"><?php esc_html_e('Negativliste ansehen', WHA_TRANSLATION_KEY); ?></a>
             <?php endif; ?>
         </div>
     </div>
@@ -103,7 +103,7 @@ function add_custom_file_upload_fields($order)
                 var button = $(this);
                 var message = $('#negative_list_message');
 
-                button.prop('disabled', true).text('<?php esc_html_e('Generieren...', 'your-text-domain'); ?>');
+                button.prop('disabled', true).text('<?php esc_html_e('Generieren...', WHA_TRANSLATION_KEY); ?>');
 
                 $.ajax({
                     url: ajaxurl,
@@ -113,17 +113,17 @@ function add_custom_file_upload_fields($order)
                         order_id: orderId,
                     },
                     success: function(response) {
-                        button.prop('disabled', false).text('<?php esc_html_e('PDF generieren', 'your-text-domain'); ?>');
+                        button.prop('disabled', false).text('<?php esc_html_e('PDF generieren', WHA_TRANSLATION_KEY); ?>');
                         if (response.success) {
-                            message.text('<?php esc_html_e('PDF erfolgreich erstellt:', 'your-text-domain'); ?> ' + response.data.url);
+                            message.text('<?php esc_html_e('PDF erfolgreich erstellt:', WHA_TRANSLATION_KEY); ?> ' + response.data.url);
                             location.reload(); // Seite aktualisieren, um den Link anzuzeigen
                         } else {
-                            message.text('<?php esc_html_e('Fehler:', 'your-text-domain'); ?> ' + response.data.message);
+                            message.text('<?php esc_html_e('Fehler:', WHA_TRANSLATION_KEY); ?> ' + response.data.message);
                         }
                     },
                     error: function() {
-                        button.prop('disabled', false).text('<?php esc_html_e('PDF generieren', 'your-text-domain'); ?>');
-                        message.text('<?php esc_html_e('Ein Fehler ist aufgetreten.', 'your-text-domain'); ?>');
+                        button.prop('disabled', false).text('<?php esc_html_e('PDF generieren', WHA_TRANSLATION_KEY); ?>');
+                        message.text('<?php esc_html_e('Ein Fehler ist aufgetreten.', WHA_TRANSLATION_KEY); ?>');
                     }
                 });
             });

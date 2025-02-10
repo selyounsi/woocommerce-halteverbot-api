@@ -11,7 +11,7 @@ function admin_order_traffic_measures_metabox() {
 
     add_meta_box(
         'traffic_measures_box',
-        __('Verkehrssicherungsmaßnahmen', 'your-text-domain'),
+        __('Verkehrssicherungsmaßnahmen', WHA_TRANSLATION_KEY),
         'add_custom_order_fields',
         $screen,
         'advanced',

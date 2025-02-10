@@ -11,7 +11,7 @@ function admin_order_protocol_metabox() {
 
     add_meta_box(
         'order_protocol_box',
-        __('Aufstellprotokoll', 'your-text-domain'),
+        __('Aufstellprotokoll', WHA_TRANSLATION_KEY),
         'add_custom_protocol_fields',
         $screen,
         'advanced',

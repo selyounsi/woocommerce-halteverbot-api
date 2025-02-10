@@ -28,7 +28,7 @@ class OrderProtocolsManager
     public function updateLicenses($licenses)
     {
         if (!is_array($licenses)) {
-            return new \WP_Error('invalid_data', __('Invalid data format.', 'your-text-domain'), ['status' => 400]);
+            return new \WP_Error('invalid_data', __('Invalid data format.', WHA_TRANSLATION_KEY), ['status' => 400]);
         }
 
         $sanitized_licenses = array_map(function ($license) {
@@ -89,7 +89,7 @@ class OrderProtocolsManager
     public function deleteFileX($file_url) 
     {
         if (empty($file_url)) {
-            return new \WP_Error('invalid_file', __('File URL is required.', 'your-text-domain'), ['status' => 400]);
+            return new \WP_Error('invalid_file', __('File URL is required.', WHA_TRANSLATION_KEY), ['status' => 400]);
         }
 
         $files = get_post_meta($this->order_id, '_order_file_protocols', true);
@@ -105,14 +105,14 @@ class OrderProtocolsManager
     public function deleteFile($file_url) 
     {
         if (empty($file_url)) {
-            return new \WP_Error('invalid_file', __('File URL is required.', 'your-text-domain'), ['status' => 400]);
+            return new \WP_Error('invalid_file', __('File URL is required.', WHA_TRANSLATION_KEY), ['status' => 400]);
         }
 
         $files = get_post_meta($this->order_id, '_order_file_protocols', true);
 
         // Überprüfe, ob keine Dateien vorhanden sind
         if (empty($files)) {
-            return new WP_Error('no_files', __('No files found for this order.', 'your-text-domain'), ['status' => 404]);
+            return new WP_Error('no_files', __('No files found for this order.', WHA_TRANSLATION_KEY), ['status' => 404]);
         }
 
         // Bereinige und extrahiere den Dateinamen aus der URL, die gelöscht werden soll
@@ -137,7 +137,7 @@ class OrderProtocolsManager
 
         // Falls die Datei nicht gefunden wurde, gib einen Fehler zurück
         if (!$found) {
-            return new WP_Error('file_not_found', __('File not found.', 'your-text-domain'), ['status' => 404]);
+            return new WP_Error('file_not_found', __('File not found.', WHA_TRANSLATION_KEY), ['status' => 404]);
         }
 
         // Update die Post-Metadaten, nachdem das Array aktualisiert wurde

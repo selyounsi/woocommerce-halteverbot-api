@@ -78,7 +78,7 @@ function save_traffic_measures($request)
     $measures = $request->get_json_params();
 
     if (!isset($measures) || !is_array($measures)) {
-        return new WP_Error('invalid_data', __('Ungültige Daten.', 'your-text-domain'), array('status' => 400));
+        return new WP_Error('invalid_data', __('Ungültige Daten.', WHA_TRANSLATION_KEY), array('status' => 400));
     }
 
     $sanitized_measures = [];
@@ -102,7 +102,7 @@ function save_traffic_measures($request)
 
     update_post_meta($order_id, '_traffic_measures', $sanitized_measures);
 
-    return rest_ensure_response(__('Verkehrssicherungsmaßnahmen wurden erfolgreich gespeichert.', 'your-text-domain'));
+    return rest_ensure_response(__('Verkehrssicherungsmaßnahmen wurden erfolgreich gespeichert.', WHA_TRANSLATION_KEY));
 }
 
 // UPLOAD OR UPDATE A FILE
@@ -111,7 +111,7 @@ function upload_or_update_order_measures_file($request)
     $order_id = $request['order_id'];
 
     if (empty($_FILES['file'])) {
-        return new WP_Error('no_file', __('No file uploaded.', 'your-text-domain'), ['status' => 400]);
+        return new WP_Error('no_file', __('No file uploaded.', WHA_TRANSLATION_KEY), ['status' => 400]);
     }
 
     // Load the required file for wp_handle_upload function
@@ -139,7 +139,7 @@ function upload_or_update_order_measures_file($request)
     update_post_meta($order_id, '_traffic_measures_files', $files);
 
     return rest_ensure_response([
-        'message' => __('File uploaded successfully.', 'your-text-domain'),
+        'message' => __('File uploaded successfully.', WHA_TRANSLATION_KEY),
         'file_url' => $file_url
     ]);
 } 
@@ -150,14 +150,14 @@ function delete_order_measures_file($request) {
     $file_url_to_delete = $request->get_param('file_url');
 
     if (empty($file_url_to_delete)) {
-        return new WP_Error('invalid_file', __('File URL is required.', 'your-text-domain'), ['status' => 400]);
+        return new WP_Error('invalid_file', __('File URL is required.', WHA_TRANSLATION_KEY), ['status' => 400]);
     }
 
     $files = get_post_meta($order_id, '_traffic_measures_files', true);
 
     // Überprüfe, ob keine Dateien vorhanden sind
     if (empty($files)) {
-        return new WP_Error('no_files', __('No files found for this order.', 'your-text-domain'), ['status' => 404]);
+        return new WP_Error('no_files', __('No files found for this order.', WHA_TRANSLATION_KEY), ['status' => 404]);
     }
 
     // Bereinige und extrahiere den Dateinamen aus der URL, die gelöscht werden soll
@@ -182,13 +182,13 @@ function delete_order_measures_file($request) {
 
     // Falls die Datei nicht gefunden wurde, gib einen Fehler zurück
     if (!$found) {
-        return new WP_Error('file_not_found', __('File not found.', 'your-text-domain'), ['status' => 404]);
+        return new WP_Error('file_not_found', __('File not found.', WHA_TRANSLATION_KEY), ['status' => 404]);
     }
 
     // Update die Post-Metadaten, nachdem das Array aktualisiert wurde
     update_post_meta($order_id, '_traffic_measures_files', array_values($files));
 
     // Erfolgreiche Antwort zurückgeben
-    return rest_ensure_response(__('File deleted successfully.', 'your-text-domain'));
+    return rest_ensure_response(__('File deleted successfully.', WHA_TRANSLATION_KEY));
 }
 

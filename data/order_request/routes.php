@@ -81,7 +81,7 @@ function update_order_files($request)
 
             // Check if the PDF is encrypted
             // if (PDFHelper::isPdfEncrypted($file_path)) {
-            //     return new WP_Error('encrypted_pdf', __('The uploaded PDF is encrypted and cannot be processed.', 'woocommerce-halteverbot-api'), ['status' => 400]);
+            //     return new WP_Error('encrypted_pdf', __('The uploaded PDF is encrypted and cannot be processed.', WHA_TRANSLATION_KEY), ['status' => 400]);
             // }
 
             // Upload the file and get the URL
