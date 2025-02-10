@@ -1,6 +1,7 @@
 <?php
 
 use Utils\FilenameSanitizer;
+use Utils\PDF\PDFHelper;
 use Utils\WPCAFields;
 
 /**
@@ -143,7 +144,7 @@ function attach_negativelist_file_to_email($attachments, $email_id, $order)
                 $file_path = ABSPATH . $relative_file_path;
 
                 if (file_exists($file_path)) {
-                    if (is_pdf_encrypted($file_path)) {
+                    if (PDFHelper::isPdfEncrypted($file_path)) {
                         $has_encrypted_pdf = true;
                     }
                     $pdf_files[] = $file_path;
@@ -159,7 +160,7 @@ function attach_negativelist_file_to_email($attachments, $email_id, $order)
             {
                 $fileName = FilenameSanitizer::sanitize($fields["startdate"], $fields["enddate"], $fields["address"]);
                 $merged_pdf_path = ABSPATH . $fileName . '.pdf';
-                merge_pdfs($pdf_files, $merged_pdf_path);
+                PdfHelper::mergePdfs($pdf_files, $merged_pdf_path);
                 $attachments[] = $merged_pdf_path;
             }
         } else {
@@ -168,44 +169,4 @@ function attach_negativelist_file_to_email($attachments, $email_id, $order)
     }
 
     return $attachments;
-}
-
-/**
- * Check if a PDF file is encrypted.
- *
- * @param string $file_path Path to the PDF file.
- * @return bool True if the PDF is encrypted, false otherwise.
- */
-function is_pdf_encrypted($file_path) 
-{
-    try {
-        $pdf = new setasign\Fpdi\Fpdi();
-        $pdf->setSourceFile($file_path);
-        return false; // PDF ist nicht verschlüsselt
-    } catch (Exception $e) {
-        error_log('Encrypted PDF detected: ' . $file_path);
-        return true; // PDF ist verschlüsselt
-    }
-}
-
-/**
- * Merge multiple PDF files into one.
- *
- * @param array $pdf_files Array of PDF file paths.
- * @param string $output_path Path to save the merged PDF.
- */
-function merge_pdfs($pdf_files, $output_path) 
-{
-    $pdf = new setasign\Fpdi\Fpdi();
-
-    foreach ($pdf_files as $file) {
-        $pageCount = $pdf->setSourceFile($file);
-        for ($i = 1; $i <= $pageCount; $i++) {
-            $pdf->AddPage();
-            $tplIdx = $pdf->importPage($i);
-            $pdf->useTemplate($tplIdx);
-        }
-    }
-
-    $pdf->Output($output_path, 'F');
 }
