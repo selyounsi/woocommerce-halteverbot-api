@@ -1,6 +1,7 @@
 <?php
 
 use Utils\NegativeListPdfGenerator;
+use Utils\PDF\PDFHelper;
 
 // Register the custom REST API endpoint for reading and updating file uploads
 add_action('rest_api_init', function () 
@@ -75,6 +76,14 @@ function update_order_files($request)
     foreach ($supported_files as $file_key) {
         // Check if the file is being uploaded
         if (isset($_FILES[$file_key]) && $_FILES[$file_key]['error'] === UPLOAD_ERR_OK) {
+            // Get the file path
+            $file_path = $_FILES[$file_key]['tmp_name'];
+
+            // Check if the PDF is encrypted
+            if (PDFHelper::isPdfEncrypted($file_path)) {
+                return new WP_Error('encrypted_pdf', __('The uploaded PDF is encrypted and cannot be processed.', 'woocommerce-halteverbot-api'), ['status' => 400]);
+            }
+
             // Upload the file and get the URL
             $upload = wp_handle_upload($_FILES[$file_key], ['test_form' => false]);
 
