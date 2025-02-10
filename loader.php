@@ -16,10 +16,17 @@
     }
 
     /**
-     * Definiere eine Konstante für den Plugin-Root-Pfad
+     * Define a constant for the plugin root path
      */
     if (!defined('HALTEVERBOT_APP_API_PATH')) {
         define('HALTEVERBOT_APP_API_PATH', plugin_dir_path(__FILE__));
+    }
+
+    /**
+     * Define the translation key for the plugin
+     */
+    if (!defined('WHA_TRANSLATION_KEY')) {
+        define('WHA_TRANSLATION_KEY', 'woocommerce-halteverbot-api');
     }
 
     /**
