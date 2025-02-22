@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function add_custom_offer_email( $email_classes ) 
 {
-    $class_file = HALTEVERBOT_APP_API_PATH . '/data/order_emails/classes/offer-email-class.php';
+    $class_file = WHA_PLUGIN_PATH . '/data/order_emails/classes/offer-email-class.php';
 
     // include our custom email class
     require( $class_file );
@@ -19,7 +19,7 @@ add_filter( 'woocommerce_email_classes', 'add_custom_offer_email' );
 
 function add_custom_invoice_email( $email_classes ) 
 {
-    $class_file = HALTEVERBOT_APP_API_PATH . '/data/order_emails/classes/invoice-email-class.php';
+    $class_file = WHA_PLUGIN_PATH . '/data/order_emails/classes/invoice-email-class.php';
 
     // include our custom email class
     require( $class_file );

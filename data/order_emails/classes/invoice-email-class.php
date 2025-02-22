@@ -38,7 +38,7 @@ class WC_Email_Invoice extends WC_Email
         $this->number = '0';
         $this->recipient = ''; // Hier könnte auch eine Option gesetzt werden, falls gewünscht
         $this->template_html = 'invoice-template-html.php';  
-        $this->template_base = HALTEVERBOT_APP_API_PATH . '/data/order_emails/templates/';
+        $this->template_base = WHA_PLUGIN_PATH . '/data/order_emails/templates/';
         $this->bcc = $invoice_email_settings['bcc'] ?? ''; 
     
         parent::__construct();

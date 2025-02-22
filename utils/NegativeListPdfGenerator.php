@@ -135,7 +135,7 @@ class NegativeListPdfGenerator
         $wpcaFields = $wpca->getMetaFieldsets();
 
         // Prepare image in Base64
-        $image_path = HALTEVERBOT_APP_API_PATH . '/data/assets/images/halteverbot_branding.png';
+        $image_path = WHA_PLUGIN_PATH . '/data/assets/images/halteverbot_branding.png';
         if (file_exists($image_path)) {
             $image_data = file_get_contents($image_path);
             $base64_image = 'data:image/png;base64,' . base64_encode($image_data);
