@@ -18,8 +18,8 @@
     /**
      * Define a constant for the plugin root path
      */
-    if (!defined('HALTEVERBOT_APP_API_PATH')) {
-        define('HALTEVERBOT_APP_API_PATH', plugin_dir_path(__FILE__));
+    if (!defined('WHA_PLUGIN_PATH')) {
+        define('WHA_PLUGIN_PATH', plugin_dir_path(__FILE__));
     }
 
     /**
@@ -27,6 +27,13 @@
      */
     if (!defined('WHA_TRANSLATION_KEY')) {
         define('WHA_TRANSLATION_KEY', 'woocommerce-halteverbot-api');
+    }
+
+    /**
+     * Define the translation key for the plugin
+     */
+    if (!defined('WHA_ROUTE_PATH')) {
+        define('WHA_ROUTE_PATH', 'wc/v3');
     }
 
     /**
