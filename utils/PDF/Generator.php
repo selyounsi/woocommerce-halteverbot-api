@@ -65,6 +65,16 @@ class Generator
         return null;
     }
 
+    public function getHeaderLogo()
+    {
+        $logo_id = $this->wpo->get_header_logo_id();
+        $logo_path = get_attached_file($logo_id);
+
+        $logo_mime = mime_content_type($logo_path); 
+        $logo_data = base64_encode(file_get_contents($logo_path));
+        return 'data:' . $logo_mime . ';base64,' . $logo_data;
+    }
+
     public function getBlob(): string
     {
         return $this->pdf->output();
