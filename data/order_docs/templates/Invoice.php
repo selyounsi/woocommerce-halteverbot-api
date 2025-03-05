@@ -127,7 +127,7 @@
 				<td class="no-borders">
 					<?php if(isset($data["document_note"]) && $data["document_note"] !== ''): ?>
 						<div class="document-notes">
-							<h3><?php _e( 'Notes', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
+							<h3><?php _e( 'Anmerkungen', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
 							<?= $data["document_note"]; ?>
 						</div>
 					<?php endif; ?>
