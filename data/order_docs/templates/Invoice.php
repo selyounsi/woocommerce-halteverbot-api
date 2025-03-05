@@ -23,7 +23,7 @@
 			<td class="header">
 			<?php
 				if ( $this->wpo->has_header_logo() ) {
-					echo '<img style="height: '.$this->wpo->get_header_logo_height().'" src="' .  wp_get_attachment_image_url( $this->wpo->get_header_logo_id(), 'full' ) . '" alt="Shop Logo">';
+					echo '<img style="height: ' . esc_attr($this->wpo->get_header_logo_height()) . ';" src="' . esc_attr($this->getHeaderLogo()) . '" alt="Shop Logo">';
 				} else {
 					$this->wpo->title();
 				}
