@@ -86,7 +86,7 @@ function attach_approval_file_to_email($attachments, $email_id, $order)
 add_filter('woocommerce_email_attachments', 'attach_rejection_file_to_email', 10, 3);
 function attach_rejection_file_to_email($attachments, $email_id, $order) 
 {
-    if ($email_id === 'bvos_custom_rejected' && $order instanceof WC_Order) 
+    if (str_contains($email_id, "rejected") && $order instanceof WC_Order) 
     {
         // Get the absolute URL of the file from the 'rejection_file' meta field
         $rejection_file_url = get_post_meta($order->get_id(), '_file_upload_rejection', true);
