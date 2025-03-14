@@ -11,7 +11,7 @@
 	<head>
 		<style type="text/css">
 			<?php // $this->wpo->template_styles(); ?>
-			<?php require(WHA_PLUGIN_PATH . "/data/order_docs/templates/style.css"); ?>
+			<?php require(WHA_PLUGIN_PATH . "/data/order_docs/templates/assets/style.css"); ?>
 		</style>
 	</head>
 	<body>
@@ -134,7 +134,7 @@
 
 					<?php if(isset($data["customer_note"]) && $data["customer_note"] !== ''): ?>
 						<div class="customer-notes">
-							<h3><?php _e( 'Kundenhinweise', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
+							<h3><?php _e( 'Anmerkung zur Bestellung', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
 							<?= $data["customer_note"]; ?>
 						</div>	
 					<?php endif; ?>			

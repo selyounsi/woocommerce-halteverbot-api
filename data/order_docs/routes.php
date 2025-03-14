@@ -35,7 +35,7 @@ function getOfferBase64(WP_REST_Request $request)
     try {
 
         $doc = new Generator();
-        $doc->generatePDF($data, WHA_PLUGIN_PATH . "/data/order_docs/templates/Offer.php");
+        $doc->generatePDF($data, WHA_PLUGIN_PATH . "/data/order_docs/templates/app/offer.php");
         $base64 = $doc->getBase64();
         $number = $doc->getMetaValue($data["meta_data"], 'document_number');
 
@@ -75,7 +75,7 @@ function getInvoiceBase64(WP_REST_Request $request)
     try {
 
         $doc = new Generator();
-        $doc->generatePDF($data, WHA_PLUGIN_PATH . "/data/order_docs/templates/Invoice.php");
+        $doc->generatePDF($data, WHA_PLUGIN_PATH . "/data/order_docs/templates/app/invoice.php");
         $base64 = $doc->getBase64();
         $number = $doc->getMetaValue($data["meta_data"], 'document_number');
 

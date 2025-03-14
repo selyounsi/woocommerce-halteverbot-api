@@ -65,9 +65,9 @@ class Generator
         return null;
     }
 
-    public function getHeaderLogo()
+    public function getHeaderLogo($logo_id = null)
     {
-        $logo_id = $this->wpo->get_header_logo_id();
+        $logo_id = $logo_id ? $logo_id : $this->wpo->get_header_logo_id();
         $logo_path = get_attached_file($logo_id);
 
         $logo_mime = mime_content_type($logo_path); 
