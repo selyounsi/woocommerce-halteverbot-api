@@ -4,7 +4,7 @@
         Description: Plugin zur Verarbeitung von Halteverbot-Daten mit WooCommerce-Integration.
         Version: 1.0.0
         Author: Halteverbotsservice Berlin
-        Requires Plugins: woocommerce, bp-custom-order-status-for-woocommerce
+        Requires Plugins: woocommerce, bp-custom-order-status-for-woocommerce, woocommerce-pdf-invoices-packing-slips
         License: GPL-2.0+
     */
 
