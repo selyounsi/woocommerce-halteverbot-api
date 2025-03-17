@@ -2,17 +2,17 @@
     use Utils\CurrencyFormatter;
     use Utils\DateUtils;
 
-    $positions	= $template->getMetaValue($data["meta_data"], "wpo_wcpdf_invoice_positions");
+    $positions	= $template->getMetaValue("wpo_wcpdf_invoice_positions", $data["meta_data"]);
 ?>
 
 <ul>
-    <?php if($template->getMetaValue($data["meta_data"], "order_time_type") === "range"): ?>
+    <?php if($template->getMetaValue("order_time_type", $data["meta_data"]) === "range" || !$template->getMetaValue("order_time_type", $data["meta_data"])): ?>
         <li>
             - Ausführungszeitraum: <?= DateUtils::formatToGermanDate($this->getLineItemMeta($data['line_items'], 'Startdatum')); ?> bis <?= DateUtils::formatToGermanDate($this->getLineItemMeta($data['line_items'], 'Enddatum')); ?> (<?= $this->getLineItemMeta($data['line_items'], 'Anzahl der Tage') ?> Tag/e)
         </li>
     <?php else: ?>
         <li>
-        - Ausführungszeitraum: <?= $template->getMetaValue($data["meta_data"], "order_time_duration"); ?> <?= DateUtils::checkTimeUnit($template->getMetaValue($data["meta_data"], "order_time_type")); ?> 
+        - Ausführungszeitraum: <?= $template->getMetaValue("order_time_duration", $data["meta_data"]); ?> <?= DateUtils::checkTimeUnit($template->getMetaValue("order_time_type", $data["meta_data"])); ?> 
         </li>
     <?php endif; ?>
     <li>- Ausführungsort: <?= $this->getLineItemMeta($data['line_items'], 'Straße + Hausnummer') ?>, <?= $this->getLineItemMeta($data['line_items'], 'Postleitzahl') ?> <?= $this->getLineItemMeta($data['line_items'], 'Ort') ?></li>
@@ -65,8 +65,31 @@
                     <tfoot>
                         <tr class="invoice">
                             <th class="description">Gesamtnetto</th>
-                            <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($data['line_items'][0]['total']); ?></span></td>
+                            <td class="price align-right">
+                                <span class="totals-price">
+                                    <?php if($template->getMetaValue("net_total")): ?>
+                                        <?= CurrencyFormatter::formatEuro($template->getMetaValue("net_total")); ?>
+                                    <?php else: ?>
+                                        <?= CurrencyFormatter::formatEuro($data['line_items'][0]['total']); ?>
+                                    <?php endif; ?>
+                                </span>
+                            </td>
                         </tr>
+
+                        <?php if($template->getMetaValue("discount_amount")): ?>
+                        <tr class="invoice">
+                            <th class="description">Rabatt (<?= $template->getMetaValue("discount_percentage"); ?>%)</th>
+                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($template->getMetaValue("discount_amount")); ?></span></td>
+                        </tr>
+                        <?php endif; ?>
+
+                        <?php if($template->getMetaValue("discount_amount")): ?>
+                        <tr class="invoice">
+                            <th class="description">Netto nach Rabatt</th>
+                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($template->getMetaValue("net_after_discount")); ?></span></td>
+                        </tr>
+                        <?php endif; ?>
+
                         <tr class="invoice">
                             <th class="description">MwSt (19%)</th>
                             <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($data['line_items'][0]['total_tax']); ?></span></td>

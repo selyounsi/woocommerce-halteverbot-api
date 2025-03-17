@@ -172,9 +172,9 @@
 		Sollten Sie die Zahlungsoption "Banküberweisung" gewählt haben, möchten wir Sie bitten, den Gesamtbetrag auf unser Konto zu überweisen. Erst nach Zahlungseingang wird Ihre Halteverbotsbestellung bearbeitet.
 		Diese Rechnung wurde maschinell erstellt und ist ohne Unterschrift gültig.
 
-	<!-- FOOTER
-	--------------------------------->
-	<div class="bottom-spacer"></div>
+		<!-- FOOTER
+		--------------------------------->
+		<div class="bottom-spacer"></div>
 		<htmlpagefooter name="docFooter">
 			<div id="footer">
 				<table style="padding: 0;">

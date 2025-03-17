@@ -74,7 +74,7 @@ class WC_Email_Offer extends WC_Email
     }
 
     // E-Mail senden
-    public function send_offer_email($to, $attachments = []) {
+    public function send_email($to, $attachments = []) {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }

@@ -1,4 +1,6 @@
-<?php 
+<?php
+
+use Utils\PDF\Generator;
 
 add_action('rest_api_init', function () {
     register_rest_route('wc/v3', '/email/offer', [
@@ -11,6 +13,14 @@ add_action('rest_api_init', function () {
     register_rest_route('wc/v3', '/email/invoice', [
         'methods' => 'POST',
         'callback' => 'send_invoice_email',
+        'permission_callback' => function () {
+            return current_user_can('manage_woocommerce');
+        }
+    ]);
+
+    register_rest_route('wc/v3', '/notifications/(?P<type>offer|invoice)', [
+        'methods' => 'POST',
+        'callback' => 'send_document',
         'permission_callback' => function () {
             return current_user_can('manage_woocommerce');
         }
@@ -31,30 +41,7 @@ add_action('rest_api_init', function () {
             ],
         ],
     ]);
-
-    register_rest_route('wc/v3', '/email/custom', [
-        'methods' => 'POST',
-        'callback' => 'send_custom_email',
-        'permission_callback' => '__return_true', // Sicherheit anpassen
-    ]);
 });
-
-function send_custom_email(WP_REST_Request $request) {
-    // Hole die Daten aus dem Request
-    $to = sanitize_email($request->get_param('to'));
-    $subject = sanitize_text_field($request->get_param('subject'));
-    $message = sanitize_textarea_field($request->get_param('message'));
-
-    // Sende die E-Mail über WooCommerce
-    $mailer = WC()->mailer();
-    $email = $mailer->emails['WC_Email_Customer_Completed_Order']; // Beispiel-E-Mail-Objekt
-    $headers = ['Content-Type: text/html; charset=UTF-8'];
-
-    // E-Mail senden
-    $email->send($to, $subject, $message, $headers);
-
-    return rest_ensure_response(['success' => true, 'message' => 'Email sent!']);
-}
 
 /**
  * SEND OFFER TO CLIENT
@@ -111,7 +98,7 @@ function send_offer_email(WP_REST_Request $request)
         $attachments[] = $attachment_tmp_path;
     }
 
-    $send_offer = $offer_email->send_offer_email($to, $attachments);
+    $send_offer = $offer_email->send_email($to, $attachments);
 
     // Überprüfen, ob die E-Mail erfolgreich gesendet wurde
     if ($send_offer) {
@@ -177,7 +164,7 @@ function send_invoice_email(WP_REST_Request $request)
         $attachments[] = $attachment_tmp_path;
     }
 
-    $send_invoice = $invoice_email->send_invoice_email($to, $attachments);
+    $send_invoice = $invoice_email->send_email($to, $attachments);
 
     // Überprüfen, ob die E-Mail erfolgreich gesendet wurde
     if ($send_invoice) {
@@ -235,4 +222,56 @@ function update_email_notification_status($data)
         'email_notification' => $email_notification,
         'recipient_email' => $recipient_email,
     ], 200);
+}
+
+/**
+ * Send document per E-mail
+ *
+ * @param WP_REST_Request $request
+ * @return void
+ */
+function send_document(WP_REST_Request $request) 
+{
+    $data = $request->get_json_params();
+    $type = $request->get_param('type');
+
+    $doc = new Generator($data);
+
+    if ($type === 'offer') {
+        $wc_email = new WC_Email_Offer();
+        $doc->generatePDF("offer");
+    } elseif ($type === 'invoice') {
+
+        $wc_email = new WC_Email_Invoice();
+        $doc->generatePDF("invoice");
+    }
+
+    // Empfänger und Betreff für die E-Mail
+    $recipient = $data["billing"]['email'];
+
+    // Dateinamen erstellen (z.B. 'offer_001.pdf')
+    $file_name = strtolower($type) . '_' . $doc->getMetaValue('document_number') . '.pdf';
+    // Temporäre Datei für das PDF erstellen
+    $pdfFilePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $file_name;
+    // PDF-Inhalt in die Datei schreiben
+    file_put_contents($pdfFilePath, $doc->getBlob());
+
+    // Setze die Nummer und den Empfänger
+    $wc_email->number = $doc->getMetaValue('document_number');
+    $wc_email->recipient = $recipient;
+
+    // Anhänge (PDF) zur E-Mail hinzufügen
+    $attachments = [$pdfFilePath];
+
+    // E-Mail senden
+    $send_email = $wc_email->send_email($recipient, $attachments);
+
+    // Überprüfen, ob die E-Mail erfolgreich gesendet wurde
+    if ($send_email) {
+        // E-Mail erfolgreich gesendet
+        return rest_ensure_response(['success' => true, 'message' => $doc->templates]);
+    } else {
+        // Fehler beim Senden der E-Mail
+        return new WP_Error('send_failed', 'Failed to send email.', ['status' => 500]);
+    }
 }

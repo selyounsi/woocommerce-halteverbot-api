@@ -25,7 +25,6 @@ get_header(); ?>
 
     <?php
 
-        $invoice = new Generator();
         $data = [
             "payment_method" => "bacs",
             "payment_method_title" => "Direkte Banküberweisung",
@@ -113,7 +112,8 @@ get_header(); ?>
             "discount_total" => "0"
         ];
         
-        $invoice->generatePDF($data, WHA_PLUGIN_PATH . "/data/order_docs/templates/Offer.php");
+        $invoice = new Generator($data);
+        $invoice->generatePDF("offer");
         $blob = $invoice->getBase64();
 
         // var_dump($blob);

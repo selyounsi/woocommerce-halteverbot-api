@@ -307,7 +307,7 @@ table.totals tr.payment_method {
 #footer {
 	position: absolute;
 	bottom: -2cm;
-	left: 0;
+	left: 0; 
 	right: 0;
 	height: 2cm; /* if you change the footer height, don't forget to change the bottom (=negative height) and the @page margin-bottom as well! */
 	text-align: center;

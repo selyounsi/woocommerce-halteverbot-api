@@ -34,10 +34,10 @@ function getOfferBase64(WP_REST_Request $request)
     
     try {
 
-        $doc = new Generator();
-        $doc->generatePDF($data, WHA_PLUGIN_PATH . "/data/order_docs/templates/app/offer.php");
+        $doc = new Generator($data);
+        $doc->generatePDF("offer");
         $base64 = $doc->getBase64();
-        $number = $doc->getMetaValue($data["meta_data"], 'document_number');
+        $number = $doc->getMetaValue('document_number', $data["meta_data"]);
 
         if (!$base64) {
             throw new Exception("PDF konnte nicht generiert werden.");
@@ -74,10 +74,10 @@ function getInvoiceBase64(WP_REST_Request $request)
     
     try {
 
-        $doc = new Generator();
-        $doc->generatePDF($data, WHA_PLUGIN_PATH . "/data/order_docs/templates/app/invoice.php");
+        $doc = new Generator($data);
+        $doc->generatePDF("invoice");
         $base64 = $doc->getBase64();
-        $number = $doc->getMetaValue($data["meta_data"], 'document_number');
+        $number = $doc->getMetaValue('document_number', $data["meta_data"]);
 
         if (!$base64) {
             throw new Exception("PDF konnte nicht generiert werden.");

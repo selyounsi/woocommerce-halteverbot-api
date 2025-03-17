@@ -75,7 +75,7 @@ class WC_Email_Invoice extends WC_Email
     }
 
     // E-Mail senden
-    public function send_invoice_email($to, $attachments = []) {
+    public function send_email($to, $attachments = []) {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }

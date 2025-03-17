@@ -11,20 +11,31 @@ class Generator
     private Dompdf $pdf;
     private Invoice $wpo;
 
-    public function __construct()
+    public $data;
+    public $templates = [
+        "offer" => WHA_PLUGIN_PATH . "/data/order_docs/templates/app/offer.php",
+        "invoice" => WHA_PLUGIN_PATH . "/data/order_docs/templates/app/invoice.php"
+    ];
+
+    public function __construct($data = [])
     {
         $options = new Options();
         $options->set('defaultFont', 'Helvetica');
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isRemoteEnabled', true);
 
+        $this->data = $data;
         $this->pdf = new Dompdf($options);
         $this->wpo = new Invoice();
     }
 
-    public function generatePDF(array $data, $template_path = ""): void
+    public function generatePDF($template_name = ""): void
     {
-        $html = $this->buildInvoiceHtml($data, $template_path);
+        if (!$this->templates[$template_name]) {
+            throw new \Exception("No template was found.");
+        }
+
+        $html = $this->buildInvoiceHtml($this->data, $this->templates[$template_name]);
         $this->pdf->loadHtml($html);
         $this->pdf->setPaper('A4', 'portrait');
         $this->pdf->render();
@@ -41,13 +52,20 @@ class Generator
         return ob_get_clean();
     }
 
-    function getMetaValue(array $metaData, string $searchKey) 
+    function getMetaValue(string $searchKey, array $metaData = []) 
     {
-        foreach ($metaData as $meta) {
-            if (isset($meta["key"]) && $meta["key"] === $searchKey) {
-                return $meta["value"];
+        if (empty($metaData)) {
+            $metaData = $this->data["meta_data"];
+        }
+
+        if($metaData) {
+            foreach ($metaData as $meta) {
+                if (isset($meta["key"]) && $meta["key"] === $searchKey) {
+                    return $meta["value"];
+                }
             }
         }
+
         return null;
     }
 
