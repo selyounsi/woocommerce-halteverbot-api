@@ -13,7 +13,7 @@ function custom_wcpdf_template_path($template_path, $template_type) {
     // Überprüfe, ob es sich um eine Rechnung handelt
     if ($template_type === 'invoiceX') {
         // Definiere den Pfad zu deiner benutzerdefinierten Template-Datei
-        $custom_template_path = WHA_PLUGIN_PATH . '/data/order_docs/templates/web/invoice.php';  
+        $custom_template_path = WHA_PLUGIN_PATH . '/data/order_docs/templates/woo-invoice.php';  
         if (file_exists($custom_template_path)) {
             return $custom_template_path;
         }

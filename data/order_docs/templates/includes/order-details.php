@@ -2,21 +2,21 @@
     use Utils\CurrencyFormatter;
     use Utils\DateUtils;
 
-    $positions	= $template->getMetaValue("wpo_wcpdf_invoice_positions", $data["meta_data"]);
+    $positions	= $this->order->getMetaValue("wpo_wcpdf_invoice_positions");
 ?>
 
 <ul>
-    <?php if($template->getMetaValue("order_time_type", $data["meta_data"]) === "range" || !$template->getMetaValue("order_time_type", $data["meta_data"])): ?>
+    <?php if($this->order->getMetaValue("order_time_type") === "range" || !$this->order->getMetaValue("order_time_type")): ?>
         <li>
-            - Ausführungszeitraum: <?= DateUtils::formatToGermanDate($this->getLineItemMeta($data['line_items'], 'Startdatum')); ?> bis <?= DateUtils::formatToGermanDate($this->getLineItemMeta($data['line_items'], 'Enddatum')); ?> (<?= $this->getLineItemMeta($data['line_items'], 'Anzahl der Tage') ?> Tag/e)
+            - Ausführungszeitraum: <?= DateUtils::formatToGermanDate($this->order->getLineItemMeta('Startdatum')); ?> bis <?= DateUtils::formatToGermanDate($this->order->getLineItemMeta('Enddatum')); ?> (<?= $this->order->getLineItemMeta('Anzahl der Tage') ?> Tag/e)
         </li>
     <?php else: ?>
         <li>
-        - Ausführungszeitraum: <?= $template->getMetaValue("order_time_duration", $data["meta_data"]); ?> <?= DateUtils::checkTimeUnit($template->getMetaValue("order_time_type", $data["meta_data"])); ?> 
+        - Ausführungszeitraum: <?= $this->order->getMetaValue("order_time_duration") ?> <?= DateUtils::checkTimeUnit($this->order->getMetaValue("order_time_type")); ?> 
         </li>
     <?php endif; ?>
-    <li>- Ausführungsort: <?= $this->getLineItemMeta($data['line_items'], 'Straße + Hausnummer') ?>, <?= $this->getLineItemMeta($data['line_items'], 'Postleitzahl') ?> <?= $this->getLineItemMeta($data['line_items'], 'Ort') ?></li>
-    <li>- Grund: Beantragung und Aufstellung von Halteverbotsschildern für <?= $this->getLineItemMeta($data['line_items'], 'Grund'); ?> (<?= $this->getLineItemMeta($data['line_items'], 'Strecke'); ?>)</li>
+    <li>- Ausführungsort: <?= $this->order->getLineItemMeta("Straße + Hausnummer") ?>, <?= $this->order->getLineItemMeta("Postleitzahl") ?> <?= $this->order->getLineItemMeta("Ort") ?></li>
+    <li>- Grund: Beantragung und Aufstellung von Halteverbotsschildern für <?= $this->order->getLineItemMeta("Grund"); ?> (<?= $this->order->getLineItemMeta("Strecke"); ?>)</li>
 </ul>
 
 <br>
@@ -46,17 +46,17 @@
     <tfoot>
         <tr class="no-borders">
             <td class="no-borders">
-                <?php if(isset($data["document_note"]) && $data["document_note"] !== ''): ?>
+                <?php if($this->order->getDocumentNote()): ?>
                     <div class="document-notes">
                         <h3><?php _e( 'Anmerkungen', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
-                        <?= $data["document_note"]; ?>
+                        <?= $this->order->getDocumentNote(); ?>
                     </div>
                 <?php endif; ?>
 
-                <?php if(isset($data["customer_note"]) && $data["customer_note"] !== ''): ?>
+                <?php if($this->order->getCustomerNote()): ?>
                     <div class="customer-notes">
                         <h3><?php _e( 'Anmerkung zur Bestellung', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
-                        <?= $data["customer_note"]; ?>
+                        <?= $this->order->getCustomerNote(); ?>
                     </div>	
                 <?php endif; ?>			
             </td>
@@ -67,8 +67,8 @@
                             <th class="description">Gesamtnetto</th>
                             <td class="price align-right">
                                 <span class="totals-price">
-                                    <?php if($template->getMetaValue("net_total")): ?>
-                                        <?= CurrencyFormatter::formatEuro($template->getMetaValue("net_total")); ?>
+                                    <?php if($this->order->getMetaValue("net_total")): ?>
+                                        <?= CurrencyFormatter::formatEuro($this->order->getMetaValue("net_total")); ?>
                                     <?php else: ?>
                                         <?= CurrencyFormatter::formatEuro($data['line_items'][0]['total']); ?>
                                     <?php endif; ?>
@@ -76,17 +76,17 @@
                             </td>
                         </tr>
 
-                        <?php if($template->getMetaValue("discount_amount")): ?>
+                        <?php if($this->order->getMetaValue("discount_amount")): ?>
                         <tr class="invoice">
-                            <th class="description">Rabatt (<?= $template->getMetaValue("discount_percentage"); ?>%)</th>
-                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($template->getMetaValue("discount_amount")); ?></span></td>
+                            <th class="description">Rabatt (<?= $this->order->getMetaValue("discount_percentage"); ?>%)</th>
+                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($this->order->getMetaValue("discount_amount")); ?></span></td>
                         </tr>
                         <?php endif; ?>
 
-                        <?php if($template->getMetaValue("discount_amount")): ?>
+                        <?php if($this->order->getMetaValue("discount_amount")): ?>
                         <tr class="invoice">
                             <th class="description">Netto nach Rabatt</th>
-                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($template->getMetaValue("net_after_discount")); ?></span></td>
+                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($this->order->getMetaValue("net_after_discount")); ?></span></td>
                         </tr>
                         <?php endif; ?>
 

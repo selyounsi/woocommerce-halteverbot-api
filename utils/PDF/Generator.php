@@ -4,17 +4,20 @@ namespace Utils\PDF;
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Utils\Order\OrderBuilder;
 use \WPO\IPS\Documents\Invoice;
 
 class Generator
 {
     private Dompdf $pdf;
     private Invoice $wpo;
+    public OrderBuilder $order;
 
     public $data;
     public $templates = [
-        "offer" => WHA_PLUGIN_PATH . "/data/order_docs/templates/app/offer.php",
-        "invoice" => WHA_PLUGIN_PATH . "/data/order_docs/templates/app/invoice.php"
+        "offer"         => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-offer.php",
+        "invoice"       => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-invoice.php",
+        "negativlist"   => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-negativlist.php"
     ];
 
     public function __construct($data = [])
@@ -25,6 +28,7 @@ class Generator
         $options->set('isRemoteEnabled', true);
 
         $this->data = $data;
+        $this->order = new OrderBuilder($data);
         $this->pdf = new Dompdf($options);
         $this->wpo = new Invoice();
     }
@@ -35,13 +39,13 @@ class Generator
             throw new \Exception("No template was found.");
         }
 
-        $html = $this->buildInvoiceHtml($this->data, $this->templates[$template_name]);
+        $html = $this->buildInvoiceHtml($this->templates[$template_name]);
         $this->pdf->loadHtml($html);
         $this->pdf->setPaper('A4', 'portrait');
         $this->pdf->render();
     }
 
-    private function buildInvoiceHtml(array $data, $template_path): string
+    private function buildInvoiceHtml($template_path): string
     {
         // Hier übergeben wir die Klasse an das Template
         $template = $this;
@@ -50,37 +54,6 @@ class Generator
         ob_start();
         include $template_path;
         return ob_get_clean();
-    }
-
-    function getMetaValue(string $searchKey, array $metaData = []) 
-    {
-        if (empty($metaData)) {
-            $metaData = $this->data["meta_data"];
-        }
-
-        if($metaData) {
-            foreach ($metaData as $meta) {
-                if (isset($meta["key"]) && $meta["key"] === $searchKey) {
-                    return $meta["value"];
-                }
-            }
-        }
-
-        return null;
-    }
-
-    public function getLineItemMeta(array $lineItems, string $metaKey): ?string
-    {
-        foreach ($lineItems as $item) {
-            if (isset($item['meta_data'])) {
-                foreach ($item['meta_data'] as $meta) {
-                    if (isset($meta['key']) && $meta['key'] === $metaKey) {
-                        return $meta['value'];
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     public function getHeaderLogo($logo_id = null)

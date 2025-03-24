@@ -3,22 +3,12 @@
 use Utils\PDF\Generator;
 
 add_action('rest_api_init', function () {
-    register_rest_route(WHA_ROUTE_PATH, '/docs/offer/base24', [
+    register_rest_route(WHA_ROUTE_PATH, '/docs/(?P<type>offer|invoice|negativlist)/base24', [
         'methods'  => 'POST',
-        'callback' => 'getOfferBase64',
+        'callback' => 'generateDocument',
         'permission_callback' => function () {
             return current_user_can('manage_woocommerce');
-        }
-    ]);
-});
-
-add_action('rest_api_init', function () {
-    register_rest_route(WHA_ROUTE_PATH, '/docs/invoice/base24', [
-        'methods'  => 'POST',
-        'callback' => 'getInvoiceBase64',
-        'permission_callback' => function () {
-            return current_user_can('manage_woocommerce');
-        }
+        } 
     ]);
 });
 
@@ -28,16 +18,17 @@ add_action('rest_api_init', function () {
  * @param WP_REST_Request $request
  * @return void
  */
-function getOfferBase64(WP_REST_Request $request) 
+function generateDocument(WP_REST_Request $request) 
 {
     $data = $request->get_json_params();
-    
+    $type = $request->get_param('type');
+
     try {
 
         $doc = new Generator($data);
-        $doc->generatePDF("offer");
+        $doc->generatePDF($type);
         $base64 = $doc->getBase64();
-        $number = $doc->getMetaValue('document_number', $data["meta_data"]);
+        $number = $doc->order->getMetaValue('document_number');
 
         if (!$base64) {
             throw new Exception("PDF konnte nicht generiert werden.");

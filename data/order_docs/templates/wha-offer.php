@@ -9,17 +9,17 @@
 			<?php require_once __DIR__ . "/includes/billing-address.php"; ?>
 			<td class="order-data">
 				<table>
-					<?php if($template->getMetaValue("document_number", $data["meta_data"])): ?>
+					<?php if($this->order->getMetaValue("document_number")): ?>
 						<tr class="invoice-number">
 							<th>Angebotssnummer:</th>
-							<td><?= $template->getMetaValue("document_number", $data["meta_data"]); ?></td>
+							<td><?= $this->order->getMetaValue("document_number"); ?></td>
 						</tr>
 					<?php endif; ?>
 
-					<?php if($template->getMetaValue("document_created", $data["meta_data"])): ?>
+					<?php if($this->order->getMetaValue("document_created")): ?>
 						<tr class="invoice-date">
 							<th>Erstellungsdatum:</th>
-							<td><?= Utils\DateUtils::formatToGermanDate($template->getMetaValue("document_created", $data["meta_data"])); ?></td>
+							<td><?= Utils\DateUtils::formatToGermanDate($this->order->getMetaValue("document_created")); ?></td>
 						</tr>
 					<?php endif; ?>
 				</table>

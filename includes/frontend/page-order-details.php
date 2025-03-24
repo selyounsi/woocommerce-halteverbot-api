@@ -1,6 +1,7 @@
 <?php
 /* Template Name: Order Details Page */
 
+use Utils\Order\OrderBuilder;
 use Utils\PDF\Generator;
 use Utils\PDF\Invoice\Preview;
 use Utils\PDF\InvoicePreview;
@@ -17,11 +18,6 @@ get_header(); ?>
         </div>
     </div>
 
-    <?php
-
-
-        var_dump(str_contains("bvos_custom_rejected_overrun", "rejected"));
-    ?>
 
     <?php
 
@@ -40,6 +36,7 @@ get_header(); ?>
                 "email" => "s.elyounsi@wwwe.de",
                 "phone" => ""
             ],
+            "document_note" => "Hallo",
             "customer_note" => "Test",
             "line_items" => [
                 [
@@ -95,6 +92,10 @@ get_header(); ?>
                     ]
                 ],
                 [
+                    "key" => "installer_name",
+                    "value" => "Sami"
+                ],
+                [
                     "key" => "_disable_new_order_notification",
                     "value" => true
                 ],
@@ -105,18 +106,57 @@ get_header(); ?>
                 [
                     "key" => "document_created",
                     "value" => "2025-01-18"
+                ],
+                [
+                    "key" => "order_time_type",
+                    "value" => "range"
+                ],
+                [
+                    "key" => "_traffic_measures",
+                    "value" => [
+                        [
+                            "main" => "209-10",
+                            "count" => 1,
+                            "sub_measures" => [
+                                [
+                                    "measure" => "1053-30",
+                                    "count" => 2,
+                                ]
+                            ]
+                        ]
+                    ]
                 ]
             ],
             "total" => "120",
             "discount_tax" => "0",
             "discount_total" => "0"
         ];
-        
-        $invoice = new Generator($data);
-        $invoice->generatePDF("offer");
-        $blob = $invoice->getBase64();
 
-        // var_dump($blob);
+
+        $dataX = [
+            "id" => 6077,
+            "meta_data" => [
+                [
+                    "key" => "installer_name",
+                    "value" => "Sami"
+                ],
+                [
+                    "key" => "installer_date",
+                    "value" => "2025-01-11 12:00"
+                ]
+            ]
+        ];
+
+
+        $order = wc_get_order(6077);
+
+        $invoice = new Generator($data);
+        // $invoice = new Generator($order);
+
+        
+
+        $invoice->generatePDF("negativlist");
+        $blob = $invoice->getBase64();
     ?>
 
     <?php if (isset($blob)): ?>
