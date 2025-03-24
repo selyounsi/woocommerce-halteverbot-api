@@ -39,7 +39,7 @@ function generateDocument(WP_REST_Request $request)
             'data' => [
                 'base64' => $base64,
                 'mime_type' => 'application/pdf',
-                'file_name' => $number ? "{$number}-offer.pdf" : 'offer.pdf'
+                'file_name' => $number ? "{$number}-{$type}.pdf" : "{$type}.pdf"
             ]
         ], 200);
 
