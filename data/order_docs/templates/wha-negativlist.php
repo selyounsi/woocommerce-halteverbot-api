@@ -38,7 +38,6 @@
         <br>
 
         <h1 class="document-type-label">Negativliste für den Auftrag <?php echo $this->order->getOrder()->get_order_number(); ?></h1>
-        <?= $this->order->getMetaValue("_file_upload_negativliste_date") ?>
         <?php foreach($wpcaFields as $fields): ?>
 
             <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse; margin-bottom: 30px; border: none;">
