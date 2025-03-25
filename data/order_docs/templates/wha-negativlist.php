@@ -38,6 +38,7 @@
         <br>
 
         <h1 class="document-type-label">Negativliste für den Auftrag <?php echo $this->order->getOrder()->get_order_number(); ?></h1>
+        <?= $this->order->getMetaValue("_file_upload_negativliste_date") ?>
         <?php foreach($wpcaFields as $fields): ?>
 
             <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse; margin-bottom: 30px; border: none;">
@@ -77,16 +78,19 @@
                             update_post_meta($this->order->getOrder()->get_id(), 'installer_name', $this->order->getMetaValue("installer_name"));
                             update_post_meta($this->order->getOrder()->get_id(), 'installer_date', $this->order->getMetaValue("installer_date"));
                         }
+
+                        $installer_name = $this->order->getMetaValue("installer_name") ?: $this->order->getMetaValue("_file_upload_negativliste_installer");
+                        $installer_date = $this->order->getMetaValue("installer_date") ?: $this->order->getMetaValue("_file_upload_negativliste_date");
                     ?>
                                 
-                    <?php if($this->order->getMetaValue("installer_name")): ?>
+                    <?php if($installer_name): ?>
                         <tr><td style="font-weight:bold; border: none;"><?= esc_html__('Aufsteller') ?>:</td>
-                        <td style="border: none;"><?= esc_html($this->order->getMetaValue("installer_name")) ?></td></tr>
+                        <td style="border: none;"><?= esc_html($installer_name) ?></td></tr>
                     <?php endif; ?>
             
-                    <?php if($this->order->getMetaValue("installer_date")): ?>
+                    <?php if($installer_date): ?>
                         <tr><td style="font-weight:bold; border: none;"><?= esc_html__('Aufgestellt am') ?>:</td>
-                        <td style="border: none;"><?= esc_html(DateUtils::formatToGermanDate($this->order->getMetaValue("installer_date")) ?? '') ?></td></tr>
+                        <td style="border: none;"><?= esc_html(DateUtils::formatToGermanDate($installer_date) ?? '') ?></td></tr>
                     <?php endif; ?>
         
                 </tbody>

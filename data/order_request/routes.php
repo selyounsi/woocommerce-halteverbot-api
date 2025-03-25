@@ -1,7 +1,7 @@
 <?php
 
 use Utils\NegativeListPdfGenerator;
-use Utils\PDF\PDFHelper;
+use Utils\PDF\PDFHelper; 
 
 // Register the custom REST API endpoint for reading and updating file uploads
 add_action('rest_api_init', function () 

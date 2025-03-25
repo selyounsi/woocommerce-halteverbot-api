@@ -3,6 +3,7 @@
 use Utils\FilenameSanitizer;
 use Utils\PDF\PDFHelper;
 use Utils\WPCAFields;
+use Utils\PDF\Generator;
 
 /**
  * Attach the requested file to the email for the "bvos_custom_requested" status.
@@ -153,6 +154,17 @@ function attach_negativelist_file_to_email($attachments, $email_id, $order)
                 }
             }
         }
+
+        // Generate and add the negativelist PDF as a Base64 string
+        // $doc = new Generator($order);
+        // $doc->generatePDF("negativlist");
+        // $base64 = $doc->getBase64();
+
+        // // Save the Base64 content as a temporary PDF file
+        // $negativlist_temp_file = tempnam(sys_get_temp_dir(), 'negativlist_') . '.pdf';
+        // file_put_contents($negativlist_temp_file, base64_decode($base64));
+        // $pdf_files[] = $negativlist_temp_file;
+
 
         if (count($pdf_files) > 1 && !$has_encrypted_pdf) 
         {
