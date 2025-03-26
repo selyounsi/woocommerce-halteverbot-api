@@ -92,6 +92,34 @@ get_header(); ?>
                     ]
                 ],
                 [
+                    "key" => "discount_percentage",
+                    "value" => 0
+                ],
+                [
+                    "key" => "discount_amount",
+                    "value" => 0
+                ],
+                [
+                    "key" => "net_total",
+                    "value" => 200
+                ],
+                [
+                    "key" => "net_after_discount",
+                    "value" => 200
+                ],
+                [
+                    "key" => "vat_percentage",
+                    "value" => 19
+                ],
+                [
+                    "key" => "vat_amount",
+                    "value" => 38
+                ],
+                [
+                    "key" => "total_amount",
+                    "value" => 238
+                ],
+                [
                     "key" => "installer_name",
                     "value" => "Sami"
                 ],
@@ -150,17 +178,22 @@ get_header(); ?>
 
         $order = wc_get_order(6077);
 
-        $invoice = new Generator($data);
-        // $invoice = new Generator($order);
 
-        
+        // $invoice = new Generator($data);
+        $invoice = new Generator($dataX);
+        $invoice->generatePDF("invoice");
+        $base64_pdf = $invoice->getBase64();
 
-        $invoice->generatePDF("negativlist");
-        $blob = $invoice->getBase64();
+
+
+
+        // $invoice = wcpdf_get_document('invoice', $order, true);
+        // $base64_pdf = base64_encode($invoice->get_pdf());
+
     ?>
 
-    <?php if (isset($blob)): ?>
-        <iframe src="data:application/pdf;base64,<?php echo $blob; ?>" width="100%" height="900px"></iframe>
+    <?php if (isset($base64_pdf)): ?>
+        <iframe src="data:application/pdf;base64,<?php echo $base64_pdf; ?>" width="100%" height="900px"></iframe>
     <?php endif; ?>
 
 </div>

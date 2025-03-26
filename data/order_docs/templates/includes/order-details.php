@@ -2,21 +2,21 @@
     use Utils\CurrencyFormatter;
     use Utils\DateUtils;
 
-    $positions	= $this->order->getMetaValue("wpo_wcpdf_invoice_positions");
+    $positions	= $order->getMetaValue("wpo_wcpdf_invoice_positions");
 ?>
 
 <ul>
-    <?php if($this->order->getMetaValue("order_time_type") === "range" || !$this->order->getMetaValue("order_time_type")): ?>
+    <?php if($order->getMetaValue("order_time_type") === "range" || !$order->getMetaValue("order_time_type")): ?>
         <li>
-            - Ausführungszeitraum: <?= DateUtils::formatToGermanDate($this->order->getLineItemMeta('Startdatum')); ?> bis <?= DateUtils::formatToGermanDate($this->order->getLineItemMeta('Enddatum')); ?> (<?= $this->order->getLineItemMeta('Anzahl der Tage') ?> Tag/e)
+            - Ausführungszeitraum: <?= DateUtils::formatToGermanDate($order->getLineItemMeta('Startdatum')); ?> bis <?= DateUtils::formatToGermanDate($order->getLineItemMeta('Enddatum')); ?> (<?= $order->getLineItemMeta('Anzahl der Tage') ?> Tag/e)
         </li>
     <?php else: ?>
         <li>
-        - Ausführungszeitraum: <?= $this->order->getMetaValue("order_time_duration") ?> <?= DateUtils::checkTimeUnit($this->order->getMetaValue("order_time_type")); ?> 
+        - Ausführungszeitraum: <?= $order->getMetaValue("order_time_duration") ?> <?= DateUtils::checkTimeUnit($order->getMetaValue("order_time_type")); ?> 
         </li>
     <?php endif; ?>
-    <li>- Ausführungsort: <?= $this->order->getLineItemMeta("Straße + Hausnummer") ?>, <?= $this->order->getLineItemMeta("Postleitzahl") ?> <?= $this->order->getLineItemMeta("Ort") ?></li>
-    <li>- Grund: Beantragung und Aufstellung von Halteverbotsschildern für <?= $this->order->getLineItemMeta("Grund"); ?> (<?= $this->order->getLineItemMeta("Strecke"); ?>)</li>
+    <li>- Ausführungsort: <?= $order->getLineItemMeta("Straße + Hausnummer") ?>, <?= $order->getLineItemMeta("Postleitzahl") ?> <?= $order->getLineItemMeta("Ort") ?></li>
+    <li>- Grund: Beantragung und Aufstellung von Halteverbotsschildern für <?= $order->getLineItemMeta("Grund"); ?> (<?= $order->getLineItemMeta("Strecke"); ?>)</li>
 </ul>
 
 <br>
@@ -30,15 +30,17 @@
         </tr>
     </thead>
     <tbody>
-        <?php foreach($positions as $position): ?>
-            <tr>
-                <td class="product">
-                    <?= $position["description"]; ?>
-                </td>
-                <td class="quantity"><?= $position["quantity"]; ?></td>
-                <td class="price align-right"><?= CurrencyFormatter::formatEuro($position["netto"]); ?></td>
-            </tr>
-        <?php endforeach; ?>
+        <?php if(is_array($positions)): ?>
+            <?php foreach($positions as $position): ?>
+                <tr>
+                    <td class="product">
+                        <?= $position["description"]; ?>
+                    </td>
+                    <td class="quantity"><?= $position["quantity"]; ?></td>
+                    <td class="price align-right"><?= CurrencyFormatter::formatEuro($position["netto"] ?? $position["total"]); ?></td>
+                </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
         <tr class="spacer-row">
             <td colspan="3" style="height: 20px; border: none;"></td>
         </tr>
@@ -46,17 +48,17 @@
     <tfoot>
         <tr class="no-borders">
             <td class="no-borders">
-                <?php if($this->order->getDocumentNote()): ?>
+                <?php if($order->getDocumentNote()): ?>
                     <div class="document-notes">
                         <h3><?php _e( 'Anmerkungen', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
-                        <?= $this->order->getDocumentNote(); ?>
+                        <?= $order->getDocumentNote(); ?>
                     </div>
                 <?php endif; ?>
 
-                <?php if($this->order->getCustomerNote()): ?>
+                <?php if($order->getCustomerNote()): ?>
                     <div class="customer-notes">
                         <h3><?php _e( 'Anmerkung zur Bestellung', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
-                        <?= $this->order->getCustomerNote(); ?>
+                        <?= $order->getCustomerNote(); ?>
                     </div>	
                 <?php endif; ?>			
             </td>
@@ -67,36 +69,32 @@
                             <th class="description">Gesamtnetto</th>
                             <td class="price align-right">
                                 <span class="totals-price">
-                                    <?php if($this->order->getMetaValue("net_total")): ?>
-                                        <?= CurrencyFormatter::formatEuro($this->order->getMetaValue("net_total")); ?>
-                                    <?php else: ?>
-                                        <?= CurrencyFormatter::formatEuro($data['line_items'][0]['total']); ?>
-                                    <?php endif; ?>
+                                    <?= CurrencyFormatter::formatEuro($order->getInvoiceData("net_total")); ?>
                                 </span>
                             </td>
                         </tr>
 
-                        <?php if($this->order->getMetaValue("discount_amount")): ?>
+                        <?php if($order->getInvoiceData("discount_amount")): ?>
                         <tr class="invoice">
-                            <th class="description">Rabatt (<?= $this->order->getMetaValue("discount_percentage"); ?>%)</th>
-                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($this->order->getMetaValue("discount_amount")); ?></span></td>
+                            <th class="description">Rabatt (<?= $order->getInvoiceData("discount_percentage"); ?>%)</th>
+                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($order->getInvoiceData("discount_amount")); ?></span></td>
                         </tr>
                         <?php endif; ?>
 
-                        <?php if($this->order->getMetaValue("discount_amount")): ?>
+                        <?php if($order->getInvoiceData("discount_amount")): ?>
                         <tr class="invoice">
                             <th class="description">Netto nach Rabatt</th>
-                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($this->order->getMetaValue("net_after_discount")); ?></span></td>
+                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($order->getInvoiceData("net_after_discount")); ?></span></td>
                         </tr>
                         <?php endif; ?>
 
                         <tr class="invoice">
-                            <th class="description">MwSt (19%)</th>
-                            <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($data['line_items'][0]['total_tax']); ?></span></td>
+                            <th class="description">MwSt (<?= $order->getInvoiceData("vat_percentage"); ?>%)</th>
+                            <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($order->getInvoiceData("vat_amount")); ?></span></td>
                         </tr>
                         <tr class="invoice">
                             <th class="description">Gesamtbrutto</th>
-                            <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($data['total']); ?></span></td>
+                            <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($order->getInvoiceData("total_amount")); ?></span></td>
                         </tr>
                     </tfoot>
                 </table>

@@ -217,6 +217,20 @@ class OrderBuilder
         return $values;
     }
 
+    public function getInvoiceData(string $metaKey): mixed
+    {        
+        $data = $this->getMetaValue("invoice_data");
+        if(is_array($data)) {
+            foreach ($data as $key => $value) {
+                if ($metaKey === $key) {
+                    return $value;
+                }
+            }
+        }
+
+        return null;
+    } 
+
     /**
      * Retrieves a specific billing data value based on the provided key.
      *
@@ -243,7 +257,7 @@ class OrderBuilder
 
     public function getDocumentNote() 
     {
-        if (isset($this->order_data['document_note'])) 
+        if (is_array($this->order_data) && isset($this->order_data['document_note'])) 
         {
             return $this->order_data['document_note'];
         }
@@ -253,7 +267,7 @@ class OrderBuilder
 
     public function getCustomerNote()
     {
-        if (isset($this->order_data['customer_note'])) {
+        if (is_array($this->order_data) && isset($this->order_data['customer_note'])) {
             return $this->order_data['customer_note'];
         }  
 

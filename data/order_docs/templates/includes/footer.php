@@ -1,4 +1,4 @@
-        <!-- FOOTER
+		<!-- FOOTER
         --------------------------------->
         <div class="bottom-spacer"></div>
         <htmlpagefooter name="docFooter">
@@ -7,17 +7,17 @@
                     <tr>
                         <td style="padding: 4px 10px;">
                             <?php
-                                echo $this->wpo->get_extra_1();
+                                echo $wpo->getTemplatePart("extra_1");
                             ?>
                         </td>
                         <td style="padding: 4px 10px;">
                             <?php
-                                echo $this->wpo->get_extra_2();
+                                echo $wpo->getTemplatePart("extra_2");
                             ?>
                         </td>
                         <td style="padding: 4px 10px;">
                             <?php
-                                echo $this->wpo->get_extra_3();
+                                echo $wpo->getTemplatePart("extra_3");
                             ?>
                         </td>
                     </tr>

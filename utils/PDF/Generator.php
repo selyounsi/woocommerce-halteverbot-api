@@ -4,14 +4,9 @@ namespace Utils\PDF;
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use Utils\Order\OrderBuilder;
-use \WPO\IPS\Documents\Invoice;
-
 class Generator
 {
     private Dompdf $pdf;
-    private Invoice $wpo;
-    public OrderBuilder $order;
 
     public $data;
     public $templates = [
@@ -28,9 +23,7 @@ class Generator
         $options->set('isRemoteEnabled', true);
 
         $this->data = $data;
-        $this->order = new OrderBuilder($data);
         $this->pdf = new Dompdf($options);
-        $this->wpo = new Invoice();
     }
 
     public function generatePDF($template_name = ""): void
@@ -55,17 +48,7 @@ class Generator
         include $template_path;
         return ob_get_clean();
     }
-
-    public function getHeaderLogo($logo_id = null)
-    {
-        $logo_id = $logo_id ? $logo_id : $this->wpo->get_header_logo_id();
-        $logo_path = get_attached_file($logo_id);
-
-        $logo_mime = mime_content_type($logo_path); 
-        $logo_data = base64_encode(file_get_contents($logo_path));
-        return 'data:' . $logo_mime . ';base64,' . $logo_data;
-    }
-
+    
     public function getBlob(): string
     {
         return $this->pdf->output();

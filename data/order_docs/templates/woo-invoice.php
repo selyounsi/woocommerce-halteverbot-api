@@ -1,6 +1,9 @@
 <?php
 	use Utils\PDF\Generator;
-	$wpo = new Generator();
+	use Utils\PDF\Invoice\CustomInvoice;
+
+	$wpo = new CustomInvoice();
+	$wpo_pdf_settings = get_option('wpo_wcpdf_settings_general');
 ?>
 <!DOCTYPE html>
 <html>
@@ -15,6 +18,7 @@
 			<tr>
 				<td class="header">
 				<?php
+				var_dump($wpo_pdf_settings);
 				if ( $this->has_header_logo() ) {
 
 					echo '<img style="height: ' . esc_attr($this->get_header_logo_height()) . ';" src="' . esc_attr($wpo->getHeaderLogo($this->get_header_logo_id())) . '" alt="Shop Logo">';
