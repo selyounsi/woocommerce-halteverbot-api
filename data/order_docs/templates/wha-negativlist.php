@@ -1,11 +1,21 @@
 <?php
 
     use Utils\DateUtils;
+    use Utils\Order\OrderBuilder;
     use Utils\PDF\Invoice\CustomInvoice;
     use Utils\WPCAFields;
 
-    $wpo = new CustomInvoice();
-    $wpca = new WPCAFields($this->order->getOrder());
+	$wpo = new CustomInvoice();
+
+	if($this instanceof \Utils\PDF\Generator) {
+		$order = new OrderBuilder($this->data);
+	} else {
+		$order = new OrderBuilder([
+			"id" => $order->get_id()
+		]);
+	}
+
+    $wpca = new WPCAFields($order->getOrder());
     $wpcaFields = $wpca->getMetaFieldsets();
 ?>
 <!DOCTYPE html>
@@ -32,7 +42,7 @@
 		</table>
         <br>
 
-        <h1 class="document-type-label">Negativliste für den Auftrag <?php echo $this->order->getOrder()->get_order_number(); ?></h1>
+        <h1 class="document-type-label">Negativliste für den Auftrag <?php echo $order->getOrder()->get_order_number(); ?></h1>
         <?php foreach($wpcaFields as $fields): ?>
 
             <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse; margin-bottom: 30px; border: none;">
@@ -68,13 +78,13 @@
                     </tr>
 
                     <?php 
-                        if($this->order->getOrder()->get_id()) {
-                            update_post_meta($this->order->getOrder()->get_id(), 'installer_name', $this->order->getMetaValue("installer_name"));
-                            update_post_meta($this->order->getOrder()->get_id(), 'installer_date', $this->order->getMetaValue("installer_date"));
+                        if($order->getOrder()->get_id()) {
+                            update_post_meta($order->getOrder()->get_id(), 'installer_name', $order->getMetaValue("installer_name"));
+                            update_post_meta($order->getOrder()->get_id(), 'installer_date', $order->getMetaValue("installer_date"));
                         }
 
-                        $installer_name = $this->order->getMetaValue("installer_name") ?: $this->order->getMetaValue("_file_upload_negativliste_installer");
-                        $installer_date = $this->order->getMetaValue("installer_date") ?: $this->order->getMetaValue("_file_upload_negativliste_date");
+                        $installer_name = $order->getMetaValue("installer_name") ?: $order->getMetaValue("_file_upload_negativliste_installer");
+                        $installer_date = $order->getMetaValue("installer_date") ?: $order->getMetaValue("_file_upload_negativliste_date");
                     ?>
                                 
                     <?php if($installer_name): ?>
@@ -97,7 +107,7 @@
             $Z286_Z283 = "";
             $Z283_Z283 = "";
 
-            $measures = $this->order->getMetaValue("_traffic_measures");
+            $measures = $order->getMetaValue("_traffic_measures");
             foreach($measures as $measure) 
             {
                 if($measure["main"] == "286-50" || $measure["main"] == "286") {
@@ -126,7 +136,7 @@
         </table>
 
         <?php 
-            $license_protocols = $this->order->getMetaValue("_order_license_protocols");
+            $license_protocols = $order->getMetaValue("_order_license_protocols");
             if (!is_array($license_protocols)) {
                 $license_protocols = []; // Default to an empty array if it's not an array
             }
