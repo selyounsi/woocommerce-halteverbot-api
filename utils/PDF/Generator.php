@@ -4,11 +4,15 @@ namespace Utils\PDF;
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Utils\Order\OrderBuilder;
+
 class Generator
 {
     private Dompdf $pdf;
 
+    public $type;
     public $data;
+    public $order;
     public $templates = [
         "offer"         => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-offer.php",
         "invoice"       => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-invoice.php",
@@ -22,20 +26,34 @@ class Generator
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isRemoteEnabled', true);
 
-        $this->data = $data;
-        $this->pdf = new Dompdf($options);
+        $this->data     = $data;
+        $this->order    = new OrderBuilder($data);
+        $this->pdf      = new Dompdf($options);
     }
 
-    public function generatePDF($template_name = ""): void
+    public function generatePDF($template_type = ""): void
     {
-        if (!$this->templates[$template_name]) {
+        $this->type = $template_type;
+
+        if (!$this->templates[$this->type]) {
             throw new \Exception("No template was found.");
         }
 
-        $html = $this->buildInvoiceHtml($this->templates[$template_name]);
+        $html = $this->buildInvoiceHtml($this->templates[$this->type]);
         $this->pdf->loadHtml($html);
         $this->pdf->setPaper('A4', 'portrait');
         $this->pdf->render();
+    }
+
+    public function getFileName()
+    {
+        if($this->order->getOrder()->get_order_number()) {
+            return "{$this->order->getOrder()->get_order_number()}-{$this->type}.pdf";
+        } else if($this->order->getMetaValue("document_number")) {
+            return "{$this->order->getMetaValue("document_number")}-{$this->type}.pdf";
+        } else {
+            return "{$this->type}.pdf";
+        }
     }
 
     private function buildInvoiceHtml($template_path): string

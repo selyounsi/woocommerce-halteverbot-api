@@ -28,7 +28,6 @@ function generateDocument(WP_REST_Request $request)
         $doc = new Generator($data);
         $doc->generatePDF($type);
         $base64 = $doc->getBase64();
-        $number = "0001"; // $doc->order->getMetaValue('document_number');
 
         if (!$base64) {
             throw new Exception("PDF konnte nicht generiert werden.");
@@ -39,7 +38,7 @@ function generateDocument(WP_REST_Request $request)
             'data' => [
                 'base64' => $base64,
                 'mime_type' => 'application/pdf',
-                'file_name' => $number ? "{$number}-{$type}.pdf" : "{$type}.pdf"
+                'file_name' => $doc->getFileName()
             ]
         ], 200);
 

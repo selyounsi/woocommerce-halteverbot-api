@@ -21,9 +21,8 @@ get_header(); ?>
 
     <?php
 
-        phpinfo();
 
-        $data = [
+        $dataX = [
             "payment_method" => "bacs",
             "payment_method_title" => "Direkte Banküberweisung",
             "status" => "on-hold",
@@ -94,32 +93,16 @@ get_header(); ?>
                     ]
                 ],
                 [
-                    "key" => "discount_percentage",
-                    "value" => 0
-                ],
-                [
-                    "key" => "discount_amount",
-                    "value" => 0
-                ],
-                [
-                    "key" => "net_total",
-                    "value" => 200
-                ],
-                [
-                    "key" => "net_after_discount",
-                    "value" => 200
-                ],
-                [
-                    "key" => "vat_percentage",
-                    "value" => 19
-                ],
-                [
-                    "key" => "vat_amount",
-                    "value" => 38
-                ],
-                [
-                    "key" => "total_amount",
-                    "value" => 238
+                    "key" => "invoice_data",  // Hier sind die restlichen Daten gebündelt
+                    "value" => [
+                        "discount_percentage" =>  0,
+                        "discount_amount" => 0,
+                        "net_total" => 200,
+                        "net_after_discount" => 200,
+                        "vat_percentage" => 19,
+                        "vat_amount" => 38,
+                        "total_amount" => 288,
+                    ]
                 ],
                 [
                     "key" => "installer_name",
@@ -163,8 +146,8 @@ get_header(); ?>
         ];
 
 
-        $dataX = [
-            "id" => 6077,
+        $dataXs = [
+            "id" => 8210,
             "meta_data" => [
                 [
                     "key" => "installer_name",
@@ -178,13 +161,15 @@ get_header(); ?>
         ];
 
 
-        $order = wc_get_order(6077);
+        $order = wc_get_order(8210);
 
 
         // $invoice = new Generator($data);
         $invoice = new Generator($dataX);
         $invoice->generatePDF("invoice");
         $base64_pdf = $invoice->getBase64();
+
+        var_dump($invoice->getFileName());
 
 
 
