@@ -33,9 +33,9 @@ add_filter('woocommerce_rest_prepare_shop_order_object', 'add_invoice_to_order_r
 function add_invoice_to_order_response($response, $object, $request) 
 {
     $invoice = new Generator($object);
-    $invoice->generatePDF("invoice");
     
-    if($object->get_meta('invoice_data')) {     
+    if($object->get_meta('invoice_data')) {  
+        $invoice->generatePDF("invoice");   
         $base64_pdf = $invoice->getBase64();
     } else  {
         $invoice_wc = wcpdf_get_document('invoice', $object, true);
@@ -45,7 +45,7 @@ function add_invoice_to_order_response($response, $object, $request)
     $response->data['invoice'] = [
         'base64' => $base64_pdf,
         'mime_type' => 'application/pdf',
-        'file_name' => $invoice->getFileName()
+        'file_name' => $invoice->getFileName("invoice")
     ];
 
     return $response;

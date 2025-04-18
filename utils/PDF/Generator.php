@@ -45,14 +45,16 @@ class Generator
         $this->pdf->render();
     }
 
-    public function getFileName()
+    public function getFileName($template_type = "")
     {
+        $fileType = $template_type ? $template_type : $this->type;
+
         if($this->order->getOrder()->get_order_number()) {
-            return "{$this->order->getOrder()->get_order_number()}-{$this->type}.pdf";
+            return "{$this->order->getOrder()->get_order_number()}-{$fileType}.pdf";
         } else if($this->order->getMetaValue("document_number")) {
-            return "{$this->order->getMetaValue("document_number")}-{$this->type}.pdf";
+            return "{$this->order->getMetaValue("document_number")}-{$fileType}.pdf";
         } else {
-            return "{$this->type}.pdf";
+            return "{$fileType}.pdf";
         }
     }
 
