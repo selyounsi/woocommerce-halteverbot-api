@@ -7,9 +7,11 @@
 
 <ul>
     <?php if($order->getMetaValue("order_time_type") === "range" || !$order->getMetaValue("order_time_type")): ?>
+        <?php if(is_string($order->getLineItemMeta('Startdatum')) && is_string($order->getLineItemMeta('Enddatum'))): ?>
         <li>
             - Ausführungszeitraum: <?= DateUtils::formatToGermanDate($order->getLineItemMeta('Startdatum')); ?> bis <?= DateUtils::formatToGermanDate($order->getLineItemMeta('Enddatum')); ?> (<?= $order->getLineItemMeta('Anzahl der Tage') ?> Tag/e)
         </li>
+        <?php endif; ?>
     <?php else: ?>
         <li>
         - Ausführungszeitraum: <?= $order->getMetaValue("order_time_duration") ?> <?= DateUtils::checkTimeUnit($order->getMetaValue("order_time_type")); ?> 
