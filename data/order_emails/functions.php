@@ -9,7 +9,7 @@ function add_custom_offer_email( $email_classes )
     $class_file = WHA_PLUGIN_PATH . '/data/order_emails/classes/offer-email-class.php';
 
     // include our custom email class
-    require( $class_file );
+    require_once( $class_file );
 
     // add the email class to the list of email classes that WooCommerce loads
     $email_classes['WC_Email_Offer'] = new WC_Email_Offer();
@@ -22,7 +22,7 @@ function add_custom_invoice_email( $email_classes )
     $class_file = WHA_PLUGIN_PATH . '/data/order_emails/classes/invoice-email-class.php';
 
     // include our custom email class
-    require( $class_file );
+    require_once( $class_file );
 
     // add the email class to the list of email classes that WooCommerce loads
     $email_classes['WC_Email_Invoice'] = new WC_Email_Invoice();

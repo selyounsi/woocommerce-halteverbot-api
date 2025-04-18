@@ -17,16 +17,7 @@
 		<table class="head container">
 			<tr>
 				<td class="header">
-				<?php
-				var_dump($wpo_pdf_settings);
-				if ( $this->has_header_logo() ) {
-
-					echo '<img style="height: ' . esc_attr($this->get_header_logo_height()) . ';" src="' . esc_attr($wpo->getHeaderLogo($this->get_header_logo_id())) . '" alt="Shop Logo">';
-
-				} else {
-					$this->title();
-				}
-				?>
+					<?php echo $wpo->displayHeaderLogo(); ?>
 				</td>
 				<td class="shop-info">
 					<?php do_action( 'wpo_wcpdf_before_shop_name', $this->get_type(), $this->order ); ?>

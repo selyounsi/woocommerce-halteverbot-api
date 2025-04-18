@@ -5,17 +5,17 @@
             <div id="footer">
                 <table>
                     <tr>
-                        <td style="padding: 4px 10px;">
+                        <td style="padding: 4px 8px;">
                             <?php
                                 echo $wpo->getTemplatePart("extra_1");
                             ?>
                         </td>
-                        <td style="padding: 4px 10px;">
+                        <td style="padding: 4px 8px;">
                             <?php
                                 echo $wpo->getTemplatePart("extra_2");
                             ?>
                         </td>
-                        <td style="padding: 4px 10px;">
+                        <td style="padding: 4px 8px;">
                             <?php
                                 echo $wpo->getTemplatePart("extra_3");
                             ?>

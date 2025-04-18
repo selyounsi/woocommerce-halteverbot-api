@@ -45,4 +45,38 @@ class PDFHelper
 
         $pdf->Output($output_path, 'F');
     }
+
+    /**
+     * Statische Methode zum Löschen der Datei und des Post-Metas.
+     *
+     * @return bool True, wenn die Datei gelöscht und das Meta entfernt wurde, sonst false.
+     */
+    public static function deleteFileAndMeta($order, $meta_key) {
+        // Auf die Instanz zugreifen
+        $instance = new self(null); // Wir erstellen eine neue Instanz, aber ohne eine Order zu übergeben
+
+        // Hole die Order-ID aus der Instanz (diese ist im Konstruktor übergeben worden)
+        $post_id = $order->get_id();
+
+        // Hole die URL der Datei aus den Post-Metadaten
+        $pdf_url = get_post_meta($post_id, $meta_key, true);
+
+        if ($pdf_url) {
+            $upload_dir = wp_upload_dir();
+            $pdf_path = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $pdf_url);
+
+            // Überprüfen, ob die Datei existiert und sie löschen
+            if (file_exists($pdf_path)) {
+                $file_deleted = unlink($pdf_path);
+
+                // Wenn die Datei gelöscht wurde, entfernen wir das Post-Meta
+                if ($file_deleted) {
+                    delete_post_meta($post_id, $meta_key);
+                    return true;
+                }
+            }
+        }
+
+        return false; // Rückgabe von false, falls keine Datei gefunden oder gelöscht wurde
+    }
 }

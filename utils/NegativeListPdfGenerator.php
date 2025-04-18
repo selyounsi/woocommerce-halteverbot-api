@@ -124,6 +124,36 @@ class NegativeListPdfGenerator
     }
 
     /**
+     * Delete the generated PDF file and remove the post meta.
+     * @return bool True if the file was deleted and meta was removed, false otherwise.
+     */
+    public function deleteFileAndMeta() 
+    {
+        // Get the PDF URL from post meta
+        $pdf_url = get_post_meta($this->order->get_id(), '_file_upload_negativliste', true);
+
+        if ($pdf_url) {
+            $upload_dir = wp_upload_dir();
+            $pdf_path = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $pdf_url);
+
+            // Check if the file exists and delete it
+            if (file_exists($pdf_path)) {
+                // Delete the file
+                $file_deleted = unlink($pdf_path);
+
+                // If the file was deleted, also remove the meta
+                if ($file_deleted) {
+                    // Remove the post meta
+                    delete_post_meta($this->order->get_id(), '_file_upload_negativliste');
+                    return true;
+                }
+            }
+        }
+
+        return false; // Return false if no file found or could not delete
+    }
+
+    /**
      * Generate the HTML template for the negative list PDF.
      *
      * @return string The generated HTML string.

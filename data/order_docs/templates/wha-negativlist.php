@@ -3,7 +3,8 @@
     use Utils\DateUtils;
     use Utils\Order\OrderBuilder;
     use Utils\PDF\Invoice\CustomInvoice;
-    use Utils\WPCAFields;
+use Utils\PDF\PDFHelper;
+use Utils\WPCAFields;
 
 	$wpo = new CustomInvoice();
 
@@ -85,6 +86,8 @@
 
                         $installer_name = $order->getMetaValue("installer_name") ?: $order->getMetaValue("_file_upload_negativliste_installer");
                         $installer_date = $order->getMetaValue("installer_date") ?: $order->getMetaValue("_file_upload_negativliste_date");
+
+                        PDFHelper::deleteFileAndMeta($order->getOrder(), '_file_upload_negativliste');
                     ?>
                                 
                     <?php if($installer_name): ?>

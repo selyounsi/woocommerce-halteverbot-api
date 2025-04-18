@@ -17,13 +17,19 @@ function add_request_to_order_response($response, $object, $request)
     ];
 
     $negativliste_file = get_post_meta($object->get_id(), '_file_upload_negativliste', true);
-    $negativliste_date = get_post_meta($object->get_id(), '_file_upload_negativliste_date', true);
-    $negativliste_installer = get_post_meta($object->get_id(), '_file_upload_negativliste_installer', true);
+
+    if($negativliste_file) {
+        $installer_date = get_post_meta($object->get_id(), '_file_upload_negativliste_date', true);
+        $installer_name = get_post_meta($object->get_id(), '_file_upload_negativliste_installer', true);
+    } else {
+        $installer_date = get_post_meta($object->get_id(), 'installer_date', true);
+        $installer_name = get_post_meta($object->get_id(), 'installer_name', true);
+    }
 
     $response->data['negativlist'] = [
         'url' => $negativliste_file ? esc_url($negativliste_file) : '',
-        'date' => $negativliste_date ? $negativliste_date : '',
-        'installer' => $negativliste_installer ? $negativliste_installer : ''
+        'date' => $installer_date ? $installer_date : '',
+        'installer' => $installer_name ? $installer_name : ''
     ];
 
     return $response;

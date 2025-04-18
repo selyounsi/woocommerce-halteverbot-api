@@ -26,7 +26,7 @@
 		<table class="head container">
 			<tr>
 				<td class="header">
-				<?php echo $wpo->displayHeaderLogo(); ?>
+						<?php echo $wpo->displayHeaderLogo(); ?>
 				</td>
 				<td class="shop-info">
 					<div class="shop-name"><h3><?php echo $wpo->getTemplatePart("shop_name"); ?></h3></div>

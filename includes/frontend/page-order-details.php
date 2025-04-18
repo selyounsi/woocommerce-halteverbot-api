@@ -21,6 +21,8 @@ get_header(); ?>
 
     <?php
 
+        phpinfo();
+
         $data = [
             "payment_method" => "bacs",
             "payment_method_title" => "Direkte Banküberweisung",
