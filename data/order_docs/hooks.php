@@ -42,11 +42,52 @@ function add_invoice_to_order_response($response, $object, $request)
         $base64_pdf = base64_encode($invoice_wc->get_pdf());
     }
 
+    $positions = $object->get_meta('wpo_wcpdf_invoice_positions', true) ?? [];
+    $invoiceData = $object->get_meta('invoice_data', true) ?? [];
+    
     $response->data['invoice'] = [
-        'base64' => $base64_pdf,
-        'mime_type' => 'application/pdf',
-        'file_name' => $invoice->getFileName("invoice")
+        "type" => "invoice",
+        "status" => $object->get_status(),
+        "customer_note" => $object->get_customer_note(),
+        "created" => $object->get_meta('document_created', true),
+        "pdf" => [
+            'base64' => $base64_pdf,
+            'mime_type' => 'application/pdf',
+            'file_name' => $invoice->getFileName("invoice")
+        ],
+        "positions" => $positions,
+        "customer" => [
+            'company'    => $object->get_billing_company(),
+            'first_name' => $object->get_billing_first_name(),
+            'last_name'  => $object->get_billing_last_name(),
+            'address_1'  => $object->get_billing_address_1(),
+            'city'       => $object->get_billing_city(),
+            'postcode'   => $object->get_billing_postcode(),
+            'phone'      => $object->get_billing_phone(),
+            'email'      => $object->get_billing_email(),
+        ]
     ];
+
+    // Set Invoice Data
+    if(is_array($invoiceData)) {
+        foreach($invoiceData as $key => $value) {
+            $response->data['invoice']['price'][$key] = $value;
+        }
+    }
+
+    // Set order details
+    foreach ($object->get_items() as $item) 
+    {
+        foreach ($item->get_meta_data() as $meta) 
+        {
+            if(!empty($meta->value) && $meta->key !== WCPA_ORDER_META_KEY) {
+                $response->data['invoice']["details"][$meta->key] = $meta->value;
+            }
+        }
+    }
+
+    $response->data['invoice']["details"]["time_duration"] = $object->get_meta('order_time_duration', true) ?? "0";
+    $response->data['invoice']["details"]["selected_time_type"] = $object->get_meta('order_time_type', true) ?? "range";
 
     return $response;
 }
