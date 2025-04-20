@@ -18,7 +18,7 @@
         </li>
     <?php endif; ?>
     <li>- Ausführungsort: <?= $order->getLineItemMeta("Straße + Hausnummer") ?>, <?= $order->getLineItemMeta("Postleitzahl") ?> <?= $order->getLineItemMeta("Ort") ?></li>
-    <li>- Grund: Beantragung und Aufstellung von Halteverbotsschildern für <?= $order->getLineItemMeta("Grund"); ?> (<?= $order->getLineItemMeta("Strecke"); ?>)</li>
+    <li>- Grund: <?= $order->getLineItemMeta("Grund"); ?> (<?= $order->getLineItemMeta("Strecke"); ?>)</li>
 </ul>
 
 <br>
