@@ -84,12 +84,17 @@ function add_invoice_to_order_response($response, $object, $request)
         }
     }
 
-    // Set order details
-    foreach ($object->get_items() as $item) 
-    {
-        foreach ($item->get_meta_data() as $meta) 
-        {
-            if(!empty($meta->value) && $meta->key !== WCPA_ORDER_META_KEY) {
+    // Set order details – nur erster Line Item
+    $items = $object->get_items();
+    $firstItem = reset($items); // holt den ersten Eintrag aus dem Array
+
+    if ($firstItem) {
+
+        $lineItemId = $firstItem->get_id();
+        $response->data['invoice']["details"]['line_item_id'] = $lineItemId;
+
+        foreach ($firstItem->get_meta_data() as $meta) {
+            if (!empty($meta->value) && $meta->key !== WCPA_ORDER_META_KEY) {
                 $response->data['invoice']["details"][$meta->key] = $meta->value;
             }
         }
