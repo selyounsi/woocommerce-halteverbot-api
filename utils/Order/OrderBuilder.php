@@ -267,8 +267,8 @@ class OrderBuilder
 
     public function getCustomerNote()
     {
-        if (is_array($this->order_data) && isset($this->order_data['customer_note'])) {
-            return $this->order_data['customer_note'];
+        if ($this->getOrder()->get_customer_note()) {
+            return $this->getOrder()->get_customer_note();
         }  
 
         return null;
