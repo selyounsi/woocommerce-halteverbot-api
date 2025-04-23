@@ -12,11 +12,11 @@
     <?php endif; ?>
 
 
-    <?php if($order->getBillingData("emailX")): ?>
+    <?php if($order->getBillingData("email")): ?>
         <div class="billing-email"><?= $order->getBillingData("email"); ?></div>
     <?php endif; ?>
 
-    <?php if($order->getBillingData("phoneX")): ?>
+    <?php if($order->getBillingData("phone")): ?>
         <div class="billing-phone"><?= $order->getBillingData("phone"); ?></div>
     <?php endif; ?>
 </td>

@@ -86,7 +86,7 @@
                         <?php if($order->getInvoiceData("discount_amount")): ?>
                         <tr class="invoice">
                             <th class="description">Netto nach Rabatt</th>
-                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($order->getInvoiceData("net_after_discount")); ?></span></td>
+                            <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($order->getInvoiceData("net_after_discount")); ?></span></td>
                         </tr>
                         <?php endif; ?>
 

@@ -49,6 +49,7 @@ function add_invoice_to_order_response($response, $object, $request)
         "type" => "invoice",
         "status" => $object->get_status(),
         "customer_note" => $object->get_customer_note(),
+        "document_note" => $object->get_meta('document_note', true),
         "created" => $object->get_meta('document_created', true),
         "pdf" => [
             'base64' => $base64_pdf,
@@ -65,13 +66,21 @@ function add_invoice_to_order_response($response, $object, $request)
             'postcode'   => $object->get_billing_postcode(),
             'phone'      => $object->get_billing_phone(),
             'email'      => $object->get_billing_email(),
-        ]
+        ],
+        "number" => $object->get_meta('_wcpdf_invoice_number'),
+        "order_number" => $object->get_order_number(),
+        "discountRate" => 0
     ];
 
     // Set Invoice Data
     if(is_array($invoiceData)) {
-        foreach($invoiceData as $key => $value) {
+        foreach($invoiceData as $key => $value) 
+        {
             $response->data['invoice']['price'][$key] = $value;
+
+            if($key === "discount_percentage") {
+                $response->data['invoice']['discountRate'] = $value;
+            }
         }
     }
 

@@ -257,9 +257,9 @@ class OrderBuilder
 
     public function getDocumentNote() 
     {
-        if (is_array($this->order_data) && isset($this->order_data['document_note'])) 
+        if ($this->getMetaValue("document_note")) 
         {
-            return $this->order_data['document_note'];
+            return $this->getMetaValue("document_note");
         }
 
         return null;
