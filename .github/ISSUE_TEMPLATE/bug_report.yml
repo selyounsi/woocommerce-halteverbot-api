@@ -1,0 +1,38 @@
+name: 🐞 Fehler melden
+description: Melde einen Fehler mit Details, damit wir ihn nachvollziehen können
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Wo tritt der Fehler auf?
+      description: Modul, Seite oder Funktion
+      placeholder: z. B. "Rechnungsseite → Speichern-Button"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: Was passiert genau?
+      description: Beschreibe den Fehler so genau wie möglich (inkl. Screenshots oder Fehlermeldungen)
+      placeholder: z. B. "Wenn ich auf 'Speichern' klicke, passiert nichts."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Was hättest du erwartet?
+      placeholder: z. B. "Die Seite speichert die Daten und zeigt eine Bestätigung."
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zur Reproduktion
+      description: Wie kann man das Problem nachstellen?
+      placeholder: |
+        1. Gehe zu ...
+        2. Klicke auf ...
+        3. Beobachte ...

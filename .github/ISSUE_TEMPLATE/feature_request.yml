@@ -1,0 +1,40 @@
+name: ✨ Erweiterung / neue Funktion anfordern
+description: Erfassen Sie Anforderungen für neue Funktionen oder Erweiterungen
+title: "[Anforderung]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        🗂️ **Bitte fülle dieses Formular vollständig aus**, damit wir die gewünschte Funktion korrekt erfassen und bewerten können.
+
+  - type: input
+    id: feature_title
+    attributes:
+      label: Titel der gewünschten Funktion
+      description: Gib einen kurzen, prägnanten Titel für die Funktion ein.
+      placeholder: z. B. "Berichtsexport als ZIP-Datei"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschreibung der Funktion
+      description: Beschreibe, was die Funktion tun soll und in welchem Zusammenhang sie eingesetzt wird.
+      placeholder: z. B. "Die Funktion soll es ermöglichen, alle Rechnungen eines Monats als ZIP-Datei herunterzuladen."
+    validations:
+      required: true
+
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Ziel und Nutzen
+      description: Welches Problem soll gelöst werden oder welchen Vorteil bringt die Funktion?
+      placeholder: z. B. "Automatisierung des Monatsabschlusses durch einfacheren Zugriff auf die Daten."
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Weitere Hinweise oder technische Rahmenbedingungen (optional)
+      description: Falls es spezielle Anforderungen, Beispiele oder Referenzen gibt.

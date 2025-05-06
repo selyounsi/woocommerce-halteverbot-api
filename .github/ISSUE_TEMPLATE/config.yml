@@ -1,0 +1,12 @@
+blank_issues_enabled: false
+
+issue_templates:
+  - name: 🐞 Fehler melden
+    description: Melde einen Fehler in der Anwendung mit klarer Beschreibung und Reproduzierbarkeit.
+    labels: ["bug"]
+    file: bug_report.yml
+
+  - name: ✨ Neue Funktion anfordern
+    description: Erfasse eine neue Anforderung oder gewünschte Erweiterung.
+    labels: ["enhancement"]
+    file: feature_request.yml
