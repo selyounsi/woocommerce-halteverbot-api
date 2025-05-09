@@ -42,7 +42,7 @@ function add_invoice_to_order_response($response, $object, $request)
         $base64_pdf = base64_encode($invoice_wc->get_pdf());
     }
 
-    $positions = $object->get_meta('wpo_wcpdf_invoice_positions', true) ?? [];
+    $positions = ($p = $object->get_meta('wpo_wcpdf_invoice_positions', true)) && is_array($p) ? $p : [];
     $invoiceData = $object->get_meta('invoice_data', true) ?? [];
     
     $response->data['invoice'] = [

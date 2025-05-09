@@ -250,14 +250,14 @@ function send_document(WP_REST_Request $request)
     $recipient = $data["billing"]['email'];
 
     // Dateinamen erstellen (z.B. 'offer_001.pdf')
-    $file_name = strtolower($type) . '_' . $doc->getMetaValue('document_number') . '.pdf';
+    $file_name = $doc->getFileName();
     // Temporäre Datei für das PDF erstellen
     $pdfFilePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $file_name;
     // PDF-Inhalt in die Datei schreiben
     file_put_contents($pdfFilePath, $doc->getBlob());
 
     // Setze die Nummer und den Empfänger
-    $wc_email->number = $doc->getMetaValue('document_number');
+    $wc_email->number = $doc->order->getMetaValue('_wcpdf_invoice_number');
     $wc_email->recipient = $recipient;
 
     // Anhänge (PDF) zur E-Mail hinzufügen

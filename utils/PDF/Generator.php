@@ -53,6 +53,8 @@ class Generator
             return "{$this->order->getOrder()->get_order_number()}-{$fileType}.pdf";
         } else if($this->order->getMetaValue("document_number")) {
             return "{$this->order->getMetaValue("document_number")}-{$fileType}.pdf";
+        } else if($this->order->getMetaValue("_wcpdf_invoice_number")) {
+            return "{$this->order->getMetaValue("_wcpdf_invoice_number")}-{$fileType}.pdf";
         } else {
             return "{$fileType}.pdf";
         }
