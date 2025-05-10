@@ -3,6 +3,10 @@
         <div class="billing-company"><?= $order->getBillingData("company"); ?></div>
     <?php endif; ?>
 
+    <?php if($order->getBillingData("first_name")): ?>
+        <div class="billing-name"><?= $order->getBillingData("first_name"); ?> <?= $order->getBillingData("last_name"); ?></div>
+    <?php endif; ?>
+
     <?php if($order->getBillingData("address_1")): ?>
         <div class="billing-address_1"><?= $order->getBillingData("address_1"); ?></div>
     <?php endif; ?>
