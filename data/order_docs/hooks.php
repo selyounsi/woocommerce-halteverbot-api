@@ -25,7 +25,6 @@ function custom_wcpdf_template_path($template_path, $document_type, $order)
     }
 }
 
-
 /**
  * Inserts invoice into the order object
  */

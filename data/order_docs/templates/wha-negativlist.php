@@ -35,10 +35,6 @@ use Utils\WPCAFields;
 				<td class="header">
 				<?php echo $wpo->displayHeaderLogo(); ?>
 				</td>
-				<td class="shop-info">
-					<div class="shop-name"><h3><?php echo $wpo->getTemplatePart("shop_name"); ?></h3></div>
-					<div class="shop-address"><?php echo $wpo->getTemplatePart("shop_address"); ?></div>
-				</td>
 			</tr>
 		</table>
         <br>
@@ -174,31 +170,5 @@ use Utils\WPCAFields;
             </tbody>
         </table>
 
-        <!-- FOOTER
-        --------------------------------->
-        <div class="bottom-spacer"></div>
-        <htmlpagefooter name="docFooter">
-            <div id="footer">
-                <table>
-                    <tr>
-                        <td style="padding: 4px 10px;">
-                            <?php
-                                echo $wpo->getTemplatePart("extra_1");
-                            ?>
-                        </td>
-                        <td style="padding: 4px 10px;">
-                            <?php
-                                echo $wpo->getTemplatePart("extra_2");
-                            ?>
-                        </td>
-                        <td style="padding: 4px 10px;">
-                            <?php
-                                echo $wpo->getTemplatePart("extra_3");
-                            ?>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </htmlpagefooter>
     </body>
 </html>

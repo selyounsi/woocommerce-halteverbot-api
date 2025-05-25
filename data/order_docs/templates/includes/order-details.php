@@ -104,3 +104,9 @@
         </tr>
     </tfoot>
 </table>
+
+<?php if($order->getMetaValue("payment_term") && isset($order->getMetaValue("payment_term")["description"])): ?>
+    <?= $order->getMetaValue("payment_term")["description"]; ?>
+<?php else: ?>
+    Sollten Sie die Zahlungsoption "Banküberweisung" gewählt haben, möchten wir Sie bitten, den Gesamtbetrag auf unser Konto zu überweisen. Erst nach Zahlungseingang wird Ihre Halteverbotsbestellung bearbeitet. Diese Rechnung wurde maschinell erstellt und ist ohne Unterschrift gültig.
+<?php endif; ?>
