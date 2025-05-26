@@ -148,15 +148,43 @@
 							<?php do_action( 'wpo_wcpdf_after_customer_notes', $this->get_type(), $this->order ); ?>
 						</div>				
 					</td>
+
+
+					<?php
+						// Netto-Gesamtbetrag (Zwischensumme)
+						$net_total = wc_price( $this->order->get_subtotal(), ['currency' => $this->order->get_currency()] );
+
+						// Steuern – einzelne Steuersätze anzeigen
+						$tax_items = $this->order->get_tax_totals();
+
+						// Brutto-Endbetrag
+						$grand_total = wc_price( $this->order->get_total(), ['currency' => $this->order->get_currency()] );
+					?>
+
 					<td class="no-borders" colspan="2">
 						<table class="totals">
 							<tfoot>
-								<?php foreach ( $this->get_woocommerce_totals() as $key => $total ) : ?>
-									<tr class="<?php echo esc_attr( $key ); ?>">
-										<th class="description"><?php echo $total['label']; ?></th>
-										<td class="price"><span class="totals-price"><?php echo $total['value']; ?></span></td>
+								<tr class="order-subtotal">
+									<th class="description">Gesamtnetto</th>
+									<td class="price"><span class="totals-price"><?php echo $net_total; ?></span></td>
+								</tr>
+
+								<?php foreach ( $tax_items as $tax ) : ?>
+									<?php
+									// Prozentsatz aus dem Label extrahieren – z. B. "MwSt. 19 % DE" → "19 %"
+									preg_match( '/(\d{1,2}\s?%)/', $tax->label, $matches );
+									$tax_rate_label = isset( $matches[1] ) ? $matches[1] : $tax->label;
+									?>
+									<tr class="tax-rate">
+										<th class="description">MwSt (<?php echo esc_html( $tax_rate_label ); ?>)</th>
+										<td class="price"><span class="totals-price"><?php echo $tax->formatted_amount; ?></span></td>
 									</tr>
 								<?php endforeach; ?>
+
+								<tr class="order-total">
+									<th class="description">Gesamtbrutto</th>
+									<td class="price"><span class="totals-price"><?php echo $grand_total; ?></span></td>
+								</tr>
 							</tfoot>
 						</table>
 					</td>
