@@ -149,13 +149,15 @@
 						</div>				
 					</td>
 
-
 					<?php
 						// Netto-Gesamtbetrag (Zwischensumme)
 						$net_total = wc_price( $this->order->get_subtotal(), ['currency' => $this->order->get_currency()] );
 
 						// Steuern – einzelne Steuersätze anzeigen
 						$tax_items = $this->order->get_tax_totals();
+
+						// Gebühren (z. B. PayPal)
+						$fees = $this->order->get_fees();
 
 						// Brutto-Endbetrag
 						$grand_total = wc_price( $this->order->get_total(), ['currency' => $this->order->get_currency()] );
@@ -168,6 +170,13 @@
 									<th class="description">Gesamtnetto</th>
 									<td class="price"><span class="totals-price"><?php echo $net_total; ?></span></td>
 								</tr>
+
+								<?php foreach ( $fees as $fee ) : ?>
+									<tr class="order-fee">
+										<th class="description"><?php echo esc_html( $fee->get_name() ); ?></th>
+										<td class="price"><span class="totals-price"><?php echo wc_price( $fee->get_total(), ['currency' => $this->order->get_currency()] ); ?></span></td>
+									</tr>
+								<?php endforeach; ?>
 
 								<?php foreach ( $tax_items as $tax ) : ?>
 									<?php
@@ -188,6 +197,7 @@
 							</tfoot>
 						</table>
 					</td>
+
 				</tr>
 			</tfoot>
 		</table>
