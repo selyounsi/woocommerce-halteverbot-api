@@ -13,11 +13,7 @@ class Generator
     public $type;
     public $data;
     public $order;
-    public $templates = [
-        "offer"         => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-offer.php",
-        "invoice"       => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-invoice.php",
-        "negativlist"   => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-negativlist.php"
-    ];
+    public $templates;
 
     public function __construct($data = [])
     {
@@ -29,17 +25,32 @@ class Generator
         $this->data     = $data;
         $this->order    = new OrderBuilder($data);
         $this->pdf      = new Dompdf($options);
+
+        $this->templates = [
+            "offer" => [
+                "template" => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-offer.php",
+                "fileName" => __('Angebot_', WHA_TRANSLATION_KEY)
+            ],
+            "invoice" => [
+                "template" => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-invoice.php",
+                "fileName" => __('Rechnung_', WHA_TRANSLATION_KEY)
+            ],
+            "negativlist" => [
+                "template" => WHA_PLUGIN_PATH . "/data/order_docs/templates/wha-negativlist.php",
+                "fileName" => __('Negativliste_', WHA_TRANSLATION_KEY)
+            ]
+        ];
     }
 
     public function generatePDF($template_type = ""): void
     {
         $this->type = $template_type;
 
-        if (!$this->templates[$this->type]) {
+        if (!$this->templates[$this->type]["template"]) {
             throw new \Exception("No template was found.");
         }
 
-        $html = $this->buildInvoiceHtml($this->templates[$this->type]);
+        $html = $this->buildInvoiceHtml($this->templates[$this->type]["template"]);
         $this->pdf->loadHtml($html);
         $this->pdf->setPaper('A4', 'portrait');
         $this->pdf->render();
@@ -47,16 +58,22 @@ class Generator
 
     public function getFileName($template_type = "")
     {
-        $fileType = $template_type ? $template_type : $this->type;
+        $type = $template_type ? $template_type : $this->type;
+
+        if (!isset($this->templates[$type])) {
+            return "document.pdf"; // fallback
+        }
+
+        $prefix = $this->templates[$type]['fileName'] ?? $type;
 
         if($this->order->getOrder()->get_order_number()) {
-            return "{$this->order->getOrder()->get_order_number()}-{$fileType}.pdf";
+            return "{$prefix}{$this->order->getOrder()->get_order_number()}.pdf";
         } else if($this->order->getMetaValue("document_number")) {
-            return "{$this->order->getMetaValue("document_number")}-{$fileType}.pdf";
+            return "{$prefix}{$this->order->getMetaValue("document_number")}.pdf";
         } else if($this->order->getMetaValue("_wcpdf_invoice_number")) {
-            return "{$this->order->getMetaValue("_wcpdf_invoice_number")}-{$fileType}.pdf";
+            return "{$prefix}{$this->order->getMetaValue("_wcpdf_invoice_number")}.pdf";
         } else {
-            return "{$fileType}.pdf";
+            return "{$prefix}.pdf";
         }
     }
 
