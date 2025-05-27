@@ -36,7 +36,7 @@
             <?php foreach($positions as $position): ?>
                 <tr>
                     <td class="product">
-                        <?= $position["description"]; ?>
+                        <?= !empty($position['description']) ? $position['description'] : $position['name']; ?>
                     </td>
                     <td class="quantity"><?= $position["quantity"]; ?></td>
                     <td class="price align-right"><?= CurrencyFormatter::formatEuro($position["netto"] ?? $position["total"]); ?></td>
