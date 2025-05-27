@@ -9,10 +9,10 @@
 			<?php include __DIR__ . "/includes/billing-address.php"; ?>
 			<td class="order-data">
 				<table>
-					<!-- Rechnungsnummer -->
+					<!-- Angebotsnummer -->
 					<?php if ($order->getMetaValue("document_number") || $order->getOrder()->get_meta('_wcpdf_invoice_number')): ?>
 						<tr class="invoice-number">
-							<th>Rechnungsnummer:</th>
+							<th>Angebotsnummer:</th>
 							<td>
 								<?= $order->getMetaValue("document_number") ?: $order->getOrder()->get_meta('_wcpdf_invoice_number'); ?>
 							</td>
