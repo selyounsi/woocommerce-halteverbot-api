@@ -135,7 +135,8 @@ use Utils\WPCAFields;
         </table>
 
         <?php 
-            $license_protocols = $order->getMetaValue("_order_license_protocols");
+            // $license_protocols = $order->getMetaValue("_order_license_protocols");
+            $license_protocols = get_post_meta($order->getOrder()->get_id(), '_order_license_protocols', true);
             if (!is_array($license_protocols)) {
                 $license_protocols = []; // Default to an empty array if it's not an array
             }
