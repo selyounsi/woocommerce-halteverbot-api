@@ -30,7 +30,7 @@
 				</td>
 				<td class="shop-info">
 					<div class="shop-name"><h3><?php echo $wpo->getTemplatePart("shop_name"); ?></h3></div>
-					<div class="shop-address"><?php echo $wpo->getTemplatePart("shop_address"); ?></div>
+					<div class="shop-address"><?php echo $wpo->getTemplatePart("shop_address") ?? $wpo->getTemplatePart("shop_address_additional"); ?></div>
 				</td>
 			</tr>
 		</table>
