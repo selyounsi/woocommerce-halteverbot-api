@@ -210,6 +210,7 @@
 		<div class="bottom-spacer"></div>
 		<htmlpagefooter name="docFooter">
 			<div id="footer">
+				<span class="separator"></span>
 				<table style="padding: 0;">
 					<tr>
 						<td>
