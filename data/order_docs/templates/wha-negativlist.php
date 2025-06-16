@@ -76,12 +76,12 @@ use Utils\WPCAFields;
 
                     <?php 
                         if($order->getOrder()->get_id()) {
-                            update_post_meta($order->getOrder()->get_id(), 'installer_name', $order->getMetaValue("installer_name"));
-                            update_post_meta($order->getOrder()->get_id(), 'installer_date', $order->getMetaValue("installer_date"));
+                            update_post_meta($order->getOrder()->get_id(), 'installer_name', $order->getOrder()->get_meta('installer_name'));
+                            update_post_meta($order->getOrder()->get_id(), 'installer_date', $order->getOrder()->get_meta('installer_date'));
                         }
 
-                        $installer_name = $order->getMetaValue("installer_name") ?: $order->getMetaValue("_file_upload_negativliste_installer");
-                        $installer_date = $order->getMetaValue("installer_date") ?: $order->getMetaValue("_file_upload_negativliste_date");
+                        $installer_name = $order->getOrder()->get_meta('installer_name') ?: $order->getMetaValue("_file_upload_negativliste_installer");
+                        $installer_date = $order->getOrder()->get_meta('installer_date') ?: $order->getMetaValue("_file_upload_negativliste_date");
 
                         PDFHelper::deleteFileAndMeta($order->getOrder(), '_file_upload_negativliste');
                     ?>
@@ -106,7 +106,7 @@ use Utils\WPCAFields;
             $Z286_Z283 = "";
             $Z283_Z283 = "";
 
-            $measures = $order->getMetaValue("_traffic_measures");
+            $measures = $order->getOrder()->get_meta('_traffic_measures');
             foreach($measures as $measure) 
             {
                 if($measure["main"] == "286-50" || $measure["main"] == "286") {
@@ -135,7 +135,6 @@ use Utils\WPCAFields;
         </table>
 
         <?php 
-            // $license_protocols = $order->getMetaValue("_order_license_protocols");
             $license_protocols = get_post_meta($order->getOrder()->get_id(), '_order_license_protocols', true);
             if (!is_array($license_protocols)) {
                 $license_protocols = []; // Default to an empty array if it's not an array
