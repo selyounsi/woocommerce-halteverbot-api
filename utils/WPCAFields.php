@@ -83,9 +83,9 @@ class WPCAFields
                 "starttime"     => $item->get_meta('Anfangszeit') ?? "",
                 "enddate"       => $item->get_meta('Enddatum') ?? "",
                 "endtime"       => $item->get_meta('Endzeit') ?? "",
-                "reason"        => preg_replace('/\s*\|\s*Option\s*-\s*\d+/', '', $item->get_meta('Grund') ?? $item->get_meta('_Grund') ?? ""),
+                "reason"        => $this->cleanMetaValue("Grund", $item->get_meta('Grund') ?? $item->get_meta('_Grund') ?? ""),
                 "distance"      => ($item->get_meta('Strecke') ?? $item->get_meta('_Strecke')) ?? "",
-                "distance_unit" => (preg_replace('/^(\d+m).*/', '$1', $item->get_meta('Strecke')) ?? preg_replace('/^(\d+m).*/', '$1', $item->get_meta('_Strecke'))) ?? "",
+                "distance_unit" => ($this->cleanMetaValue("Strecke", $item->get_meta('Strecke')) ?? $this->cleanMetaValue("Strecke", $item->get_meta('_Strecke'))) ?? "",
                 "days"          => ($item->get_meta('Anzahl der Tage') ?? $item->get_meta('_Anzahl der Tage')) ?? "",
                 "address"       => $item->get_meta('Straße + Hausnummer') ?? "",
                 "postalcode"    => $item->get_meta('Postleitzahl') ?? "",
@@ -143,6 +143,7 @@ class WPCAFields
                         }
                     }
 
+                    $meta_fields[$count_field]["line_item_id"] = $item_id;
                     $count_field++;
                 }
             }
@@ -174,5 +175,57 @@ class WPCAFields
         } catch (\Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Liefert alle Werte zu einem Meta-Label aus $this->metaFields.
+     * Werte werden vor Rückgabe ggf. bereinigt.
+     *
+     * @param string $label Das Meta-Feld Label, z.B. 'Strecke' oder 'Grund'
+     * @return array Gefundene Werte (können leer sein)
+     */
+    public function getItemByLabel(string $label): ?string
+    {
+        foreach ($this->metaFields as $fieldset) {
+            if (isset($fieldset[$label])) {
+                $value = $fieldset[$label];
+
+                // Wert bereinigen (Regex o.ä.)
+                return $this->cleanMetaValue($label, $value);
+            }
+        }
+
+        // Label nicht gefunden
+        return null;
+    }
+
+    /**
+     * Führt label-spezifische Bereinigungen am Wert durch.
+     *
+     * @param string $label Meta-Key
+     * @param string $value Originalwert
+     * @return string Bereinigter Wert
+     */
+    protected function cleanMetaValue(string $label, string $value): string
+    {
+        switch ($label) {
+            case 'Strecke':
+                // Beispiel: extrahiere z.B. '15m' aus '15m ...'
+                $value = preg_replace('/^(\d+m).*/', '$1', $value);
+                break;
+
+            case 'Grund':
+                // Beispiel: entferne Muster wie " | Option - 1"
+                $value = preg_replace('/\s*\|\s*Option\s*-\s*\d+/', '', $value);
+                break;
+
+            // Hier kannst du weitere Keys mit eigenen Bereinigungen ergänzen
+
+            default:
+                // keine Bereinigung
+                break;
+        }
+
+        return $value;
     }
 }
