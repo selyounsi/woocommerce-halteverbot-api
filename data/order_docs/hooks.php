@@ -2,6 +2,7 @@
 
 use Utils\PDF\Generator;
 use Utils\PDF\Invoice\Positions;
+use Utils\WPCAFields;
 
 /**
  * Set Positions into all Invoices
@@ -83,24 +84,14 @@ function add_invoice_to_order_response($response, $object, $request)
         }
     }
 
-    // Set order details – nur erster Line Item
-    $items = $object->get_items();
-    $firstItem = reset($items); // holt den ersten Eintrag aus dem Array
+    $WPCAFields = new WPCAFields($object);
+    $getFields = $WPCAFields->getMetaFields();
 
-    if ($firstItem) {
-
-        $lineItemId = $firstItem->get_id();
-        $response->data['invoice']["details"]['line_item_id'] = $lineItemId;
-
-        foreach ($firstItem->get_meta_data() as $meta) {
-            if (!empty($meta->value) && $meta->key !== WCPA_ORDER_META_KEY) {
-                $response->data['invoice']["details"][$meta->key] = $meta->value;
-            }
-        }
+    if($getFields) {
+        $response->data['invoice']["details"] = $getFields[0];
+        $response->data['invoice']["details"]["time_duration"] = $object->get_meta('order_time_duration', true) ?? "0";
+        $response->data['invoice']["details"]["selected_time_type"] = $object->get_meta('order_time_type', true) ?? "range";
     }
-
-    $response->data['invoice']["details"]["time_duration"] = $object->get_meta('order_time_duration', true) ?? "0";
-    $response->data['invoice']["details"]["selected_time_type"] = $object->get_meta('order_time_type', true) ?? "range";
 
     return $response;
 }
