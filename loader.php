@@ -30,10 +30,17 @@
     }
 
     /**
-     * Define the translation key for the plugin
+     * Define route path
      */
     if (!defined('WHA_ROUTE_PATH')) {
         define('WHA_ROUTE_PATH', 'wc/v3');
+    }
+
+    /**
+     * Define upload path
+     */
+    if (!defined('WHA_UPLOAD_PATH')) {
+        define('WHA_UPLOAD_PATH', 'WHA/');
     }
 
     /**
