@@ -1,5 +1,8 @@
 <?php
 // Sicherstellen, dass das Skript nicht direkt aufgerufen wird
+
+use Utils\FileHanlder;
+
 defined('ABSPATH') or die('No script kiddies please!');
 
 /**
@@ -114,33 +117,32 @@ function upload_or_update_order_measures_file($request)
         return new WP_Error('no_file', __('No file uploaded.', WHA_TRANSLATION_KEY), ['status' => 400]);
     }
 
-    // Load the required file for wp_handle_upload function
-    require_once ABSPATH . 'wp-admin/includes/file.php';
-
     $file = $_FILES['file'];
-    $upload = wp_handle_upload($file, ['test_form' => false]);
 
-    if (isset($upload['error'])) {
-        return new WP_Error('upload_error', $upload['error'], ['status' => 500]);
+    // Nutze die eigene Klasse für den Upload
+    $result = FileHanlder::upload($file, WHA_UPLOAD_PATH . "{$order_id}/traffic_measures");
+
+    if (is_wp_error($result)) {
+        return $result; // Upload-Fehler zurückgeben
     }
 
-    $file_url = esc_url($upload['url']);
+    $file_url = $result['url'];
 
-    // Retrieve files and ensure it is an array
+    // Aktuelle Dateien aus Meta laden und als Array absichern
     $files = get_post_meta($order_id, '_traffic_measures_files', true);
     if (!is_array($files)) {
-        $files = []; // Initialize as an empty array if not already an array
+        $files = [];
     }
 
-    // Add the new file URL
+    // Neue Datei-URL anhängen
     $files[] = $file_url;
 
-    // Update the post meta
+    // Meta aktualisieren
     update_post_meta($order_id, '_traffic_measures_files', $files);
 
     return rest_ensure_response([
         'message' => __('File uploaded successfully.', WHA_TRANSLATION_KEY),
-        'file_url' => $file_url
+        'file_url' => $file_url,
     ]);
 } 
 

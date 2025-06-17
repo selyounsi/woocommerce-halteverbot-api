@@ -1,6 +1,6 @@
 <?php
 
-use Utils\NegativeListPdfGenerator;
+use Utils\FileHanlder;
 use Utils\PDF\PDFHelper; 
 
 // Register the custom REST API endpoint for reading and updating file uploads
@@ -76,17 +76,23 @@ function update_order_files($request)
             //     return new WP_Error('encrypted_pdf', __('The uploaded PDF is encrypted and cannot be processed.', WHA_TRANSLATION_KEY), ['status' => 400]);
             // }
 
-            // Upload the file and get the URL
-            $upload = wp_handle_upload($_FILES[$file_key], ['test_form' => false]);
+            $result = FileHanlder::upload(
+                $_FILES[ $file_key ],
+                WHA_UPLOAD_PATH . "{$order_id}"
+            );
 
-            if (isset($upload['error'])) {
-                return new WP_Error('upload_error', $upload['error'], ['status' => 500]);
+            if ( is_wp_error( $result ) ) {
+                return new WP_Error('upload_error', $result, ['status' => 500]);
             }
 
-            // Store the file URL
-            $file_urls[$file_key] = esc_url($upload['url']);
-            // Update the order meta with the uploaded file URL
-            update_post_meta($order_id, '_file_upload_' . $file_key, $file_urls[$file_key]);
+            $file_urls[ $file_key ] = $result['url'];
+
+            // Meta speichern
+            update_post_meta(
+                $order_id,
+                '_file_upload_' . $file_key,
+                $result['url']
+            );
         }
     }
 

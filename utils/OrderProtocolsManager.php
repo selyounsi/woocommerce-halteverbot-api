@@ -64,20 +64,19 @@ class OrderProtocolsManager
     // Upload or update a file
     public function uploadFile($file)
     {
-        // Load the required file for wp_handle_upload function
-        require_once ABSPATH . 'wp-admin/includes/file.php';
+        $result = FileHanlder::upload($file, WHA_UPLOAD_PATH . "{$this->order_id}/protocols");
 
-        $upload = wp_handle_upload($file, ['test_form' => false]);
-
-        if (isset($upload['error'])) {
-            return new WP_Error('upload_error', $upload['error'], ['status' => 500]);
+        if (is_wp_error($result)) {
+            return $result; // Fehler weiterreichen
         }
 
-        $file_url = esc_url($upload['url']);
+        $file_url = $result['url'];
+
         $files = get_post_meta($this->order_id, '_order_file_protocols', true);
         if (!is_array($files)) {
             $files = [];
         }
+
         $files[] = $file_url;
         update_post_meta($this->order_id, '_order_file_protocols', $files);
 
