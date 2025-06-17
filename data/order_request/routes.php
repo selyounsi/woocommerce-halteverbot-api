@@ -20,15 +20,7 @@ add_action('rest_api_init', function ()
         'permission_callback' => function () {
             return current_user_can('manage_woocommerce');
         }
-    ]);
-
-    register_rest_route('wc/v3', '/generate-negative-list/(?P<order_id>\d+)', [
-        'methods' => 'POST',
-        'callback' => 'generate_negative_pdf',
-        'permission_callback' => function () {
-            return current_user_can('manage_woocommerce');
-        }
-    ]);    
+    ]);  
 });
 
 /**
@@ -109,45 +101,4 @@ function update_order_files($request)
         'order_number' => $order->get_order_number(),
         'files' => $file_urls
     ];
-}
-
-/**
- * Generate the Negative List PDF and store its URL in the order meta
- */
-function generate_negative_pdf($request) 
-{
-    $order_id = $request->get_param('order_id');
-    $post_data = $request->get_json_params();
-
-    $date           = $post_data["date"] ?? "";
-    $status         = $post_data["status"] ?? "";
-    $installer      = $post_data["installer"] ?? "";
-    
-    // Check if the order exists
-    $order = wc_get_order($order_id);
-    if (!$order) {
-        return new WP_Error('invalid_order', 'Invalid order ID', ['status' => 404]);
-    }
-
-    // Checks whether the licence plate number was also transferred
-    if (isset($post_data["license_plates"])) {
-        $manager = new \Utils\OrderProtocolsManager($order_id);
-        $manager->updateLicenses($post_data["license_plates"]);    
-    }
-
-    // Create an instance of NegativeListPdfGenerator
-    $pdf_generator = new NegativeListPdfGenerator($order, $installer, $date, $status); 
-
-    try {
-        // Generate the PDF
-        $pdf_url = $pdf_generator->generatePdf();
-
-        return [
-            'message' => 'Negative list PDF generated successfully',
-            'order_id' => $order_id,
-            'file' => $pdf_url,
-        ];
-    } catch (Exception $e) {
-        return new WP_Error('pdf_generation_error', $e->getMessage(), ['status' => 500]);
-    }
 }
