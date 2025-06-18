@@ -75,15 +75,43 @@ use Utils\WPCAFields;
                     </tr>
 
                     <?php 
-                        if($order->getOrder()->get_id()) {
-                            update_post_meta($order->getOrder()->get_id(), 'installer_name', $order->getOrder()->get_meta('installer_name'));
-                            update_post_meta($order->getOrder()->get_id(), 'installer_date', $order->getOrder()->get_meta('installer_date'));
+                        // Kurz‑Alias, damit der Code besser lesbar bleibt
+                        $wc_order = $order->getOrder();
+
+                        if ( $wc_order && $wc_order->get_id() ) {
+
+                            /**
+                             * Installer‑Name
+                             */
+                            $installer_name = $wc_order->get_meta( 'installer_name' );
+                            if ( empty( $installer_name ) ) {
+                                $installer_name = $order->getMetaValue( '_file_upload_negativliste_installer' );
+                                if ( ! empty( $installer_name ) ) {
+                                    $wc_order->update_meta_data( 'installer_name', $installer_name );
+                                }
+                            }
+
+                            /**
+                             * Installer‑Datum
+                             */
+                            $installer_date = $wc_order->get_meta( 'installer_date' );
+                            if ( empty( $installer_date ) ) {
+                                $installer_date = $order->getMetaValue( '_file_upload_negativliste_date' );
+                                if ( ! empty( $installer_date ) ) {
+                                    $wc_order->update_meta_data( 'installer_date', $installer_date );
+                                }
+                            }
+
+                            /**
+                             * Änderungen speichern
+                             */
+                            $wc_order->save();
                         }
 
-                        $installer_name = $order->getOrder()->get_meta('installer_name') ?: $order->getMetaValue("_file_upload_negativliste_installer");
-                        $installer_date = $order->getOrder()->get_meta('installer_date') ?: $order->getMetaValue("_file_upload_negativliste_date");
-
-                        PDFHelper::deleteFileAndMeta($order->getOrder(), '_file_upload_negativliste');
+                        /**
+                         * Datei + alte Metadaten bereinigen (wie gehabt)
+                         */
+                        PDFHelper::deleteFileAndMeta( $wc_order, '_file_upload_negativliste' );
                     ?>
                                 
                     <?php if($installer_name): ?>
