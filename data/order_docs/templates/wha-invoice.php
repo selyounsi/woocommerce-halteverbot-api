@@ -86,6 +86,17 @@
 	--------------------------------->
 	<?php include __DIR__ . "/includes/order-details.php"; ?>
 
+	<?php 
+		$paymentTerm = $order->getMetaValue("payment_term");
+		$footerHtml  = $wpo->getTemplatePart("footer");
+	?>
+
+	<?php if (!empty($paymentTerm)): ?>
+		<?= $paymentTerm; ?>
+	<?php elseif (!empty($footerHtml)): ?>
+		<?= html_entity_decode($footerHtml); ?>
+	<?php endif; ?>
+
 	<!-- FOOTER
 	--------------------------------->
 	<?php include __DIR__ . "/includes/footer.php"; ?>
