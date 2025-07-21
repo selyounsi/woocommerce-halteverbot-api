@@ -19,6 +19,10 @@
     <?php endif; ?>
     <li>- Ausführungsort: <?= $order->getLineItemMeta("Straße + Hausnummer") ?>, <?= $order->getLineItemMeta("Postleitzahl") ?> <?= $order->getLineItemMeta("Ort") ?></li>
     <li>- Grund: <?= $order->getLineItemMeta("Grund"); ?> (<?= $order->getLineItemMeta("Strecke"); ?>)</li>
+
+    <?php if($order->getLineItemMeta("Gegenüberliegende Straßenseite sperren")): ?>
+        <li>- Gegenüberliegende Straßenseite sperren</li>
+    <?php endif; ?>    
 </ul>
 
 <br>

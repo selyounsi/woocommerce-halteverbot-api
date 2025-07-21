@@ -43,4 +43,27 @@ class FileHanlder {
             'path' => $target_path,
         ];
     }
+
+    /**
+     * Normalisiert das $_FILES-Array bei Mehrfach-Uploads
+     *
+     * @param array $files
+     * @return array Array einzelner Datei-Arrays
+     */
+    public static function normalizeFilesArray(array $files): array
+    {
+        $normalized = [];
+
+        foreach ($files['name'] as $index => $name) {
+            $normalized[] = [
+                'name' => $name,
+                'type' => $files['type'][$index],
+                'tmp_name' => $files['tmp_name'][$index],
+                'error' => $files['error'][$index],
+                'size' => $files['size'][$index],
+            ];
+        }
+
+        return $normalized;
+    }
 }

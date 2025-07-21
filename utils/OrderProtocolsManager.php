@@ -61,8 +61,10 @@ class OrderProtocolsManager
         return true;
     }
 
-    // Upload or update a file
-    public function uploadFile($file)
+    /**
+     * Upload or update a file
+     */
+    public function uploadFile($files)
     {
         $result = FileHanlder::upload($file, WHA_UPLOAD_PATH . "{$this->order_id}/protocols");
 
@@ -83,6 +85,34 @@ class OrderProtocolsManager
         return $file_url;
     }
 
+    /**
+     * Upload or update multiple files
+     */
+    public function uploadFiles($files)
+    {
+        $normalized_files = FileHanlder::normalizeFilesArray($files);
+        $uploaded_urls = [];
+
+        foreach ($normalized_files as $file) {
+            $result = FileHanlder::upload($file, WHA_UPLOAD_PATH . "{$this->order_id}/protocols");
+
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
+            $uploaded_urls[] = $result['url'];
+        }
+
+        $existing = get_post_meta($this->order_id, '_order_file_protocols', true);
+        if (!is_array($existing)) {
+            $existing = [];
+        }
+
+        $combined = array_merge($existing, $uploaded_urls);
+        update_post_meta($this->order_id, '_order_file_protocols', $combined);
+
+        return $uploaded_urls;
+    }
 
     // Delete a file
     public function deleteFileX($file_url) 

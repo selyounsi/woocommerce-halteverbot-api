@@ -48,6 +48,9 @@ add_action('rest_api_init', function () {
     ]);
 });
 
+/**
+ * get_order_protocols
+ */
 function get_order_protocols(WP_REST_Request $request)
 {
     $order_id = $request['order_id'];
@@ -56,6 +59,9 @@ function get_order_protocols(WP_REST_Request $request)
     return rest_ensure_response($manager->getProtocols());
 }
 
+/**
+ * update_order_licenses
+ */
 function update_order_licenses(WP_REST_Request $request)
 {
     $order_id = $request['order_id'];
@@ -70,6 +76,9 @@ function update_order_licenses(WP_REST_Request $request)
     return rest_ensure_response(['message' => __('Licenses updated successfully.', WHA_TRANSLATION_KEY)]);
 }
 
+/**
+ * delete_order_license
+ */
 function delete_order_license(WP_REST_Request $request)
 {
     $order_id = $request['order_id'];
@@ -84,26 +93,30 @@ function delete_order_license(WP_REST_Request $request)
     return rest_ensure_response(['message' => __('License deleted successfully.', WHA_TRANSLATION_KEY)]);
 }
 
+/**
+ * upload_or_update_order_file
+ */
 function upload_or_update_order_file(WP_REST_Request $request)
 {
     $order_id = $request['order_id'];
 
-    if (empty($_FILES['file'])) {
-        return new WP_Error('no_file', __('No file uploaded.', WHA_TRANSLATION_KEY), ['status' => 400]);
+    if (empty($_FILES['files'])) {
+        return new WP_Error('no_files', __('No files uploaded.', WHA_TRANSLATION_KEY), ['status' => 400]);
     }
 
     $manager = new \Utils\OrderProtocolsManager($order_id);
-    $result = $manager->uploadFile($_FILES['file']);
-
-    // delete_post_meta($order_id, '_order_file_protocols');
+    $result = $manager->uploadFiles($_FILES['files']);
 
     if (is_wp_error($result)) {
-        return rest_ensure_response(['error' => $result->get_error_message()], $result->get_error_data('status') ?: 500);
+        return new WP_Error('no_files', $result->get_error_message(), ['status' => 400]);
     }
 
-    return rest_ensure_response(['message' => __('File uploaded successfully.', WHA_TRANSLATION_KEY), 'file_url' => $result]);
+    return rest_ensure_response(['message' => __('File uploaded successfully.', WHA_TRANSLATION_KEY), 'file_urls' => $result]);
 }
 
+/**
+ * delete_order_file
+ */
 function delete_order_file(WP_REST_Request $request)
 {
     $order_id = $request['order_id'];
