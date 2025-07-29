@@ -14,7 +14,7 @@ class FileHanlder {
     public static function upload($file, $subdir = '') 
     {
         if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
-            return new WP_Error('upload_error', 'Ungültige Datei.');
+            return new \WP_Error('upload_error', 'Ungültige Datei.');
         }
 
         $upload_dir = wp_upload_dir();
@@ -24,18 +24,21 @@ class FileHanlder {
         // Ordner anlegen, wenn er nicht existiert
         if (!file_exists($target_dir)) {
             if (!wp_mkdir_p($target_dir)) {
-                return new WP_Error('upload_error', 'Directory could not be created.');
+                return new \WP_Error('upload_error', 'Directory could not be created.');
             }
         }
 
-        // Sicheren Dateinamen erstellen
-        $filename = sanitize_file_name($file['name']);
+        // Eindeutigen Dateinamen erstellen
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $unique_name = uniqid('upload_', true) . '.' . $extension;
+        $filename = sanitize_file_name($unique_name);
+
         $target_path = $target_dir . $filename;
         $file_url = $target_url . $filename;
 
         // Datei verschieben
         if (!move_uploaded_file($file['tmp_name'], $target_path)) {
-            return new WP_Error('upload_error', 'File could not be moved.');
+            return new \WP_Error('upload_error', 'File could not be moved.');
         }
 
         return [
@@ -54,14 +57,25 @@ class FileHanlder {
     {
         $normalized = [];
 
+        // Einzelne Datei
+        if (!is_array($files['name'])) {
+            if (!empty($files['tmp_name']) && $files['error'] === UPLOAD_ERR_OK) {
+                $normalized[] = $files;
+            }
+            return $normalized;
+        }
+
+        // Mehrere Dateien
         foreach ($files['name'] as $index => $name) {
-            $normalized[] = [
-                'name' => $name,
-                'type' => $files['type'][$index],
-                'tmp_name' => $files['tmp_name'][$index],
-                'error' => $files['error'][$index],
-                'size' => $files['size'][$index],
-            ];
+            if (!empty($files['tmp_name'][$index]) && $files['error'][$index] === UPLOAD_ERR_OK) {
+                $normalized[] = [
+                    'name'     => $files['name'][$index],
+                    'type'     => $files['type'][$index],
+                    'tmp_name' => $files['tmp_name'][$index],
+                    'error'    => $files['error'][$index],
+                    'size'     => $files['size'][$index],
+                ];
+            }
         }
 
         return $normalized;

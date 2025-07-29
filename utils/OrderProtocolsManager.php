@@ -64,8 +64,12 @@ class OrderProtocolsManager
     /**
      * Upload or update a file
      */
-    public function uploadFile($files)
+    public function uploadFile($file)
     {
+        if (empty($file) || !isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
+            return new \WP_Error('upload_error', __('Ungültige Datei.', WHA_TRANSLATION_KEY), ['status' => 400]);
+        }
+
         $result = FileHanlder::upload($file, WHA_UPLOAD_PATH . "{$this->order_id}/protocols");
 
         if (is_wp_error($result)) {
@@ -96,24 +100,24 @@ class OrderProtocolsManager
         foreach ($normalized_files as $file) {
             $result = FileHanlder::upload($file, WHA_UPLOAD_PATH . "{$this->order_id}/protocols");
 
-            if (is_wp_error($result)) {
-                return $result;
+            if (!is_wp_error($result)) {
+                $uploaded_urls[] = $result['url'];
             }
+        }
 
-            $uploaded_urls[] = $result['url'];
+        if (empty($uploaded_urls)) {
+            return new \WP_Error('upload_error', __('Keine Datei konnte hochgeladen werden.', WHA_TRANSLATION_KEY), ['status' => 400]);
         }
 
         $existing = get_post_meta($this->order_id, '_order_file_protocols', true);
-        if (!is_array($existing)) {
-            $existing = [];
-        }
+        $existing = is_array($existing) ? $existing : [];
 
         $combined = array_merge($existing, $uploaded_urls);
         update_post_meta($this->order_id, '_order_file_protocols', $combined);
 
         return $uploaded_urls;
     }
-
+    
     // Delete a file
     public function deleteFileX($file_url) 
     {
