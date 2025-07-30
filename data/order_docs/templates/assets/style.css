@@ -179,9 +179,13 @@ table.notes-totals {
 	margin-bottom: 20px;
 }
 
-.quantity,
+.days,
+.quantity {
+	width: 10%;
+}
+
 .price {
-	width: 20%;
+	width: 10%;
 }
 
 .order-details tr,
