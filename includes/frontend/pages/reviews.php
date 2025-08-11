@@ -193,12 +193,12 @@
                     return;
                 }
 
-                const confirmed = await confirmAsync(
-                    'Bewertung abschicken',
-                    'Möchten Sie diese Bewertung wirklich abschicken?'
-                );
+                // const confirmed = await confirmAsync(
+                //     'Bewertung abschicken',
+                //     'Möchten Sie diese Bewertung wirklich abschicken?'
+                // );
 
-                if (!confirmed) return;
+                // if (!confirmed) return;
 
                 // Formatiere Daten als URLSearchParams
                 const data = new URLSearchParams();
