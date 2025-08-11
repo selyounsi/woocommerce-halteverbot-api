@@ -68,7 +68,7 @@ class WC_Email_Review extends WC_Email
         $placeholders = array(
             '{number}'       => $this->number,
             '{review_link}'  => $base_url,
-            '{review_button}' => '<br><a href="' . esc_url($base_url) . '" target="_blank" style="color:#ffffff;background-color:#0071a1;padding:10px 20px;text-decoration:none;border-radius:4px;">Jetzt bewerten</a>',
+            '{review_button}' => '<a href="' . esc_url($base_url) . '" target="_blank" style="color:#ffffff;background-color:#0071a1;padding:10px 20px;text-decoration:none;border-radius:4px;display: inline-block;">Jetzt bewerten</a>',
         );
 
         foreach ( $placeholders as $placeholder => $replacement ) {
