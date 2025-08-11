@@ -125,8 +125,8 @@
                         </div>
 
                         <label for="referral_source" class="mb-2">Wie haben Sie uns gefunden?</label>
-                        <select class="form-select mb-3" id="referral_source" name="referral_source" required>
-                            <option selected>Wählen Sie eine Option</option>
+                        <select class="form-select mb-3" id="referral_source" name="referral_source">
+                            <option selected>Bitte wählen Sie eine Option (optional)</option>
                             <?php foreach ($settings['card_rating']['referral_source'] as $index => $source): ?>
                                 <option value="<?php echo $source; ?>"><?php echo $source; ?></option>
                             <?php endforeach; ?>
@@ -188,10 +188,10 @@
                 }
 
                 const referral = form.querySelector('select[name="referral_source"]');
-                if (!referral || referral.value === 'Wählen Sie eine Option') {
-                    Notiflix.Notify.failure('Bitte wählen Sie eine Option aus, wie Sie uns gefunden haben.');
-                    return;
-                }
+                // if (!referral || referral.value === 'Wählen Sie eine Option') {
+                //     Notiflix.Notify.failure('Bitte wählen Sie eine Option aus, wie Sie uns gefunden haben.');
+                //     return;
+                // }
 
                 // const confirmed = await confirmAsync(
                 //     'Bewertung abschicken',
