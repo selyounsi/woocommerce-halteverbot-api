@@ -13,8 +13,8 @@ function halteverbot_app_add_menu() {
         'manage_options',
         'halteverbot-app',
         'halteverbot_app_page_main',
-        'dashicons-admin-generic',
-        6                         
+        'dashicons-car',
+        2                        
     );
 
     // Submenü: Direkt auf die interne Seite 'order_status' verweisen
@@ -28,13 +28,33 @@ function halteverbot_app_add_menu() {
     );
 
     // Submenü 1: Halteverbotszonen verwalten
+    // add_submenu_page(
+    //     'halteverbot-app',
+    //     'Einstellungen',
+    //     'Einstellungen',
+    //     'manage_options',
+    //     'halteverbot-app-settings',
+    //     'halteverbot_app_page_settings'
+    // );
+
+    // Submenü 1: Halteverbotszonen verwalten
     add_submenu_page(
         'halteverbot-app',
-        'Einstellungen',
-        'Einstellungen',
+        'Bewertungen',
+        'Bewertungen',
         'manage_options',
-        'halteverbot-app-settings',
-        'halteverbot_app_page_settings'
+        'halteverbot-app-reviews',
+        'halteverbot_app_page_reviews'
+    );
+
+    // Submenü 1: Halteverbotszonen verwalten
+    add_submenu_page(
+        'halteverbot-app',
+        'Bewertungs-Setup',
+        'Bewertungs-Setup',
+        'manage_options',
+        'halteverbot-app-reviews-settings',
+        'halteverbot_app_page_reviews_settings'
     );
 }
 add_action('admin_menu', 'halteverbot_app_add_menu');
@@ -44,7 +64,7 @@ add_action('admin_menu', 'halteverbot_app_add_menu');
  */
 function halteverbot_app_page_main() 
 {
-    include('page-main.php');
+    include('pages/main.php');
 }
 
 /**
@@ -61,5 +81,21 @@ function halteverbot_app_page_order_status()
  * SETTINGS PAGE
  */
 function halteverbot_app_page_settings() {
-    include('page-settings.php');
+    include('pages/settings.php');
+}
+
+
+/**
+ * SETTINGS PAGE
+ */
+function halteverbot_app_page_reviews() {
+    include('pages/reviews.php');
+}
+
+
+/**
+ * SETTINGS PAGE
+ */
+function halteverbot_app_page_reviews_settings() {
+    include('pages/reviews-settings.php');
 }

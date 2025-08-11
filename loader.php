@@ -23,6 +23,13 @@
     }
 
     /**
+     * Define a constant for the plugin url
+     */
+    if (!defined('WHA_PLUGIN_ASSETS_URL')) {
+        define('WHA_PLUGIN_ASSETS_URL', plugin_dir_url(__FILE__) . 'assets');
+    }
+
+    /**
      * Define the translation key for the plugin
      */
     if (!defined('WHA_TRANSLATION_KEY')) {
@@ -109,8 +116,24 @@
         }
     }
 
+    /**
+     * Funktion zum Laden aller Hook-Dateien aus dem hooks/-Ordner
+     */
+    function wha_load_hooks() {
+        $hooks_dir = plugin_dir_path(__FILE__) . 'hooks/';
+
+        if (!is_dir($hooks_dir)) {
+            return; // Ordner existiert nicht
+        }
+
+        foreach (glob($hooks_dir . '*.php') as $hook_file) {
+            require_once $hook_file;
+        }
+    }
+    wha_load_hooks();
+
     // Include die Dateien für das Admin-Menü
-    require_once plugin_dir_path(__FILE__) . 'includes/admin/admin-menu.php';
+    require_once plugin_dir_path(__FILE__) . 'includes/admin/register.php';
 
     // Include die Dateien für das Admin-Menü
     require_once plugin_dir_path(__FILE__) . 'includes/frontend/register.php';

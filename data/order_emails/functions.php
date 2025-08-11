@@ -4,6 +4,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+/**
+ * OFFER E-MAIL
+ */
 function add_custom_offer_email( $email_classes ) 
 {
     $class_file = WHA_PLUGIN_PATH . '/data/order_emails/classes/offer-email-class.php';
@@ -17,6 +20,9 @@ function add_custom_offer_email( $email_classes )
 }
 add_filter( 'woocommerce_email_classes', 'add_custom_offer_email' );
 
+/**
+ * INVOICE E-MAIL
+ */
 function add_custom_invoice_email( $email_classes ) 
 {
     $class_file = WHA_PLUGIN_PATH . '/data/order_emails/classes/invoice-email-class.php';
@@ -29,3 +35,19 @@ function add_custom_invoice_email( $email_classes )
     return $email_classes;
 }
 add_filter( 'woocommerce_email_classes', 'add_custom_invoice_email' );
+
+/**
+ * REVIEW E-MAIL
+ */
+function add_custom_review_email( $email_classes ) 
+{
+    $class_file = WHA_PLUGIN_PATH . '/data/order_emails/classes/review-email-class.php';
+
+    // include our custom email class
+    require_once( $class_file );
+
+    // add the email class to the list of email classes that WooCommerce loads
+    $email_classes['WC_Email_review'] = new WC_Email_Review();
+    return $email_classes;
+}
+add_filter( 'woocommerce_email_classes', 'add_custom_review_email' );
