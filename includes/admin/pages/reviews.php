@@ -159,7 +159,7 @@ $reviews = $manager->getAll();
 
                             <?php if (!empty($review->order) && $review->order instanceof WC_Order): ?>
                                 <div style="margin-top: 15px; padding: 10px; border: 1px solid #ddd; background: #f9f9f9; border-radius: 5px;">
-                                    <strong>Kundendaten zur Bestellung #<?php echo esc_html($review->order->get_id()); ?>:</strong>
+                                    <strong>Kundendaten zur Bestellung #<?php echo esc_html($review->order->get_order_number()); ?>:</strong>
                                     <ul style="list-style: none; padding-left: 0; margin: 5px 0 0 0;">
                                         <li><strong>Name:</strong> <?php echo esc_html($review->order->get_billing_first_name() . ' ' . $review->order->get_billing_last_name()); ?></li>
                                         <li><strong>E-Mail:</strong> <?php echo esc_html($review->order->get_billing_email()); ?></li>
