@@ -13,8 +13,8 @@ class VisitorTracker {
     public function __construct() {
         global $wpdb;
         $this->wpdb = $wpdb;
-        $this->table_logs = $wpdb->prefix . 'visitor_logs';
-        $this->table_wc_events = $wpdb->prefix . 'wc_visitor_events';
+        $this->table_logs = $wpdb->prefix . 'wha_visitor_logs';
+        $this->table_wc_events = $wpdb->prefix . 'wha_visitor_events';
 
         register_activation_hook(__FILE__, [$this, 'create_tables']);
 
@@ -102,39 +102,46 @@ class VisitorTracker {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-
     /**
      * Besucher erfassen
      */
-    public function track_visit() {
+    public function track_visit($data = []) {
         if (wp_doing_cron()) {
             error_log("TRACKER: Visit skipped: doing cron");
             return;
         }
 
-        error_log("TRACKER: track_visit() wurde aufgerufen");
+        // Prüfen, ob Werte übergeben wurden (AJAX), sonst Fallback auf $_SERVER
+        $user_agent = $data['user_agent'] ?? ($_SERVER['HTTP_USER_AGENT'] ?? '');
+        $referrer   = $data['referrer'] ?? ($_SERVER['HTTP_REFERER'] ?? '');
+        $url        = $data['url'] ?? (
+            (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http")
+            . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]"
+        );
+
+        if (stripos($user_agent, 'Mozilla') !== 0) {
+            error_log("TRACKER: Visit skipped: kein Browser User-Agent");
+            return;
+        }
 
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        $referrer = $_SERVER['HTTP_REFERER'] ?? '';
-        $url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
         $visit_time = current_time('mysql');
 
-        $device_type = $this->detect_device($user_agent);
+        $device_type  = $this->detect_device($user_agent);
         $browser_name = $this->detect_browser($user_agent);
-        $keywords = $this->extract_keywords($referrer);
+        $keywords     = $this->extract_keywords($referrer);
 
         $result = $this->wpdb->insert(
             $this->table_logs,
             [
-                'ip' => $ip,
-                'user_agent' => $user_agent,
-                'referrer' => $referrer,
-                'url' => $url,
-                'visit_time' => $visit_time,
-                'device_type' => $device_type,
+                'ip'           => $ip,
+                'user_agent'   => $user_agent,
+                'referrer'     => $referrer,
+                'url'          => $url,
+                'visit_time'   => $visit_time,
+                'device_type'  => $device_type,
                 'browser_name' => $browser_name,
-                'keywords' => $keywords,
+                'keywords'     => $keywords,
             ],
             ['%s','%s','%s','%s','%s','%s','%s','%s']
         );
@@ -205,23 +212,32 @@ class VisitorTracker {
         return 'desktop';
     }
 
-    private function detect_browser($user_agent) {
-        $browsers = [
-            'Edge' => 'Edge',
-            'Chrome' => 'Chrome',
-            'Safari' => 'Safari',
-            'Firefox' => 'Firefox',
-            'MSIE' => 'Internet Explorer',
-            'Trident/7' => 'Internet Explorer 11',
-            'Opera' => 'Opera',
-            'OPR' => 'Opera',
-        ];
+    function is_real_browser(string $userAgent): bool {
+        return stripos($userAgent, 'mozilla/') === 0;
+    }
 
-        foreach ($browsers as $key => $name) {
-            if (strpos(strtolower($user_agent), strtolower($key)) !== false) {
-                return $name;
-            }
+    private function detect_browser($user_agent) {
+        $ua = strtolower($user_agent);
+
+        if (strpos($ua, 'edg/') !== false) {
+            return 'Edge'; // Edge Chromium basiert auf Chrome, aber "Edg/" im UA-String ist der Key
         }
+        if (strpos($ua, 'opr/') !== false || strpos($ua, 'opera') !== false) {
+            return 'Opera';
+        }
+        if (strpos($ua, 'chrome') !== false) {
+            return 'Chrome';
+        }
+        if (strpos($ua, 'safari') !== false && strpos($ua, 'chrome') === false) {
+            return 'Safari';
+        }
+        if (strpos($ua, 'firefox') !== false) {
+            return 'Firefox';
+        }
+        if (strpos($ua, 'msie') !== false || strpos($ua, 'trident/7') !== false) {
+            return 'Internet Explorer';
+        }
+
         return 'Unknown';
     }
 
