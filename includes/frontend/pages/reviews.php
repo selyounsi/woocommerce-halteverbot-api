@@ -87,13 +87,17 @@
                 max-width: 240px;
             }
 
+            .google-rating-img {
+                width: 142px;
+            }
+
             @media (min-width: 480px) {
                 .card {
                     width: 480px;
                 }
 
                 .branding {
-                    max-width: 300px;
+                    max-width: 348px;
                 }
             }
         </style>
@@ -109,7 +113,7 @@
                 }
             ?>
 
-            <div class="card " id="card_rating">
+            <div class="card" id="card_rating">
                 <div class="card-body text-center py-5 px-4">
                     <h1 class="h4"><?php echo $settings["card_rating"]["headline"] ?></h1>
                     <form>
@@ -147,6 +151,13 @@
                 <div class="card-body text-center py-5 px-4">
                     <h1 class="h4"><?php echo $settings["card_google"]["headline"] ?></h1>
                     <p><?php echo $settings["card_google"]["text"] ?></p>
+
+                    <div class="google-rating-img-container mb-3">
+                         <a target="_blank" href="<?php echo $settings["card_google"]["button_link"] ?>" title="<?php echo $settings["card_google"]["button_text"] ?>">
+                            <img src="<?php echo WHA_PLUGIN_ASSETS_URL ?>/img/google-rating.webp" alt="" class="google-rating-img">
+                        </a>
+                    </div>
+
                     <a class="btn btn-danger" target="_blank" href="<?php echo $settings["card_google"]["button_link"] ?>" title="<?php echo $settings["card_google"]["button_text"] ?>">
                         <?php echo $settings["card_google"]["button_text"] ?>
                     </a>
