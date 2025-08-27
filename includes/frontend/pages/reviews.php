@@ -88,7 +88,7 @@
             }
 
             .google-rating-img {
-                width: 142px;
+                width: 222px;
             }
 
             @media (min-width: 480px) {
@@ -97,7 +97,7 @@
                 }
 
                 .branding {
-                    max-width: 348px;
+                    max-width: 248px;
                 }
             }
         </style>
@@ -106,15 +106,18 @@
         
         <div class="text-center">
 
-            <?php 
-    
-                if ( $email_logo_id ) {
-                    echo '<img class="branding mb-4" src="' . esc_url( $email_logo_id ) . '" alt="Shop Logo">';
-                }
-            ?>
+
 
             <div class="card" id="card_rating">
                 <div class="card-body text-center py-5 px-4">
+
+                    <?php 
+            
+                        if ( $email_logo_id ) {
+                            echo '<img class="branding mb-4" src="' . esc_url( $email_logo_id ) . '" alt="Shop Logo">';
+                        }
+                    ?>
+
                     <h1 class="h4"><?php echo $settings["card_rating"]["headline"] ?></h1>
                     <form>
                         <div class="star-rating">
@@ -137,7 +140,7 @@
                         </select>
 
                         <?php if($settings["card_rating"]["show_textarea"]): ?>
-                            <div class="mb-3">
+                            <div class="mb-4">
                                 <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" placeholder="<?php echo $settings["card_rating"]["textarea_placeholder"] ?>"></textarea>
                             </div>
                         <?php endif; ?>
@@ -149,12 +152,20 @@
 
             <div class="card d-none" id="card_google">
                 <div class="card-body text-center py-5 px-4">
+
+                    <?php 
+            
+                        if ( $email_logo_id ) {
+                            echo '<img class="branding mb-2" src="' . esc_url( $email_logo_id ) . '" alt="Shop Logo">';
+                        }
+                    ?>
+
                     <h1 class="h4"><?php echo $settings["card_google"]["headline"] ?></h1>
                     <p><?php echo $settings["card_google"]["text"] ?></p>
 
                     <div class="google-rating-img-container mb-3">
                          <a target="_blank" href="<?php echo $settings["card_google"]["button_link"] ?>" title="<?php echo $settings["card_google"]["button_text"] ?>">
-                            <img src="<?php echo WHA_PLUGIN_ASSETS_URL ?>/img/google-rating.webp" alt="" class="google-rating-img">
+                            <img src="<?php echo WHA_PLUGIN_ASSETS_URL ?>/img/google-rating.jpg" alt="" class="google-rating-img">
                         </a>
                     </div>
 
@@ -166,6 +177,14 @@
 
             <div class="card d-none" id="card_end">
                 <div class="card-body text-center py-5 px-4">
+
+                    <?php 
+            
+                        if ( $email_logo_id ) {
+                            echo '<img class="branding mb-4" src="' . esc_url( $email_logo_id ) . '" alt="Shop Logo">';
+                        }
+                    ?>
+
                     <h1 class="h4"><?php echo $settings["card_end"]["headline"] ?></h1>
                     <p><?php echo $settings["card_end"]["text"] ?></p>
                     <a class="btn btn-danger" href="/" title="Zur Website">Zur Website</a>
