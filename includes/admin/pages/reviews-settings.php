@@ -32,7 +32,7 @@ if (
         ],
         'card_google' => [
             'headline' => sanitize_text_field($_POST['card_google_headline'] ?? ''),
-            'text' => sanitize_textarea_field($_POST['card_google_text'] ?? ''),
+            'text' => wp_kses_post($_POST['card_google_text'] ?? ''),
             'button_link' => esc_url_raw($_POST['card_google_button_link'] ?? ''),
             'button_text' => sanitize_text_field($_POST['card_google_button_text'] ?? ''),
         ],
@@ -141,7 +141,20 @@ $statuses = wc_get_order_statuses();
                 <div class="inside">
                     <h2 class="hndle"><span>Card: Google</span></h2>
                     <p><label>Überschrift<br><input type="text" name="card_google_headline" value="<?php echo esc_attr($settings['card_google']['headline']); ?>" class="regular-text"></label></p>
-                    <p><label>Text<br><textarea name="card_google_text" rows="3" class="large-text"><?php echo esc_textarea($settings['card_google']['text']); ?></textarea></label></p>
+                    <p>
+                        <?php
+                        $editor_id = 'card_google_text';
+                        $content = $settings['card_google']['text'];
+                        $editor_settings = array(
+                            'textarea_name' => 'card_google_text',
+                            'textarea_rows' => 5,
+                            'media_buttons' => false, // Medien-Buttons deaktivieren
+                            'teeny' => true, // Vereinfachte Toolbar
+                            'quicktags' => true
+                        );
+                        wp_editor($content, $editor_id, $editor_settings);
+                        ?>
+                    </p>
                     <p><label>Button Link<br><input type="url" name="card_google_button_link" value="<?php echo esc_attr($settings['card_google']['button_link']); ?>" class="regular-text"></label></p>
                     <p class="description" style="font-size: 12px; color: #555;">
                         Um den Link zur Google-Bewertung zu erstellen, benötigen Sie Ihre <strong>Google Place ID</strong>.  
