@@ -59,6 +59,32 @@ $settings = ReviewsSettings::getSettings();
  * GET ALL STATUSES
  */
 $statuses = wc_get_order_statuses();
+
+
+/**
+ * TINYMCE Settings
+ */
+add_filter('tiny_mce_before_init', function ($init) {
+
+    // Erste Toolbar-Reihe: wichtigste Formatierungen + Undo/Redo
+    $init['toolbar1'] = 'formatselect,fontsizeselect,forecolor,backcolor,bold,italic,underline,removeformat,bullist,numlist,outdent,indent,alignleft,aligncenter,alignright,link,unlink,hr,charmap,undo,redo';
+
+    // Schriftgrößen-Auswahl
+    $init['fontsize_formats'] = '10px 12px 14px 16px 18px 24px 36px';
+
+    // Schriftarten-Auswahl (optional)
+    $init['font_formats'] = 'Arial=arial,helvetica,sans-serif;Times New Roman=times new roman,times;Roboto=roboto,sans-serif;';
+
+    // Eigene Formatvorlagen (optional, z. B. für Info-Boxen oder Buttons)
+    $init['style_formats'] = json_encode(array(
+        array('title' => 'Info Box', 'block' => 'div', 'classes' => 'info-box'),
+        array('title' => 'Hinweis', 'block' => 'div', 'classes' => 'hint-box'),
+        array('title' => 'Call-to-Action Button', 'selector' => 'a', 'classes' => 'cta-button'),
+    ));
+
+    return $init;
+});
+
 ?>
 <div class="wrap">
     <h1 class="wp-heading-inline">Bewertungen</h1>
@@ -148,9 +174,10 @@ $statuses = wc_get_order_statuses();
                         $editor_settings = array(
                             'textarea_name' => 'card_google_text',
                             'textarea_rows' => 5,
-                            'media_buttons' => false, // Medien-Buttons deaktivieren
-                            'teeny' => true, // Vereinfachte Toolbar
-                            'quicktags' => true
+                            'media_buttons' => false,
+                            'teeny' => false, // Wichtig: teeny muss false sein für erweiterte Formatierungsoptionen
+                            'quicktags' => true,
+                            'toolbar1' => 'formatselect,fontsizeselect,bold,italic,underline,bullist,numlist,alignleft,aligncenter,alignright,link,unlink,undo,redo',
                         );
                         wp_editor($content, $editor_id, $editor_settings);
                         ?>
