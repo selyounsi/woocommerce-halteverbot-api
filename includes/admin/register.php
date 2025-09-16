@@ -28,14 +28,14 @@ function halteverbot_app_add_menu() {
     );
 
     // Submenü 1: Halteverbotszonen verwalten
-    // add_submenu_page(
-    //     'halteverbot-app',
-    //     'Einstellungen',
-    //     'Einstellungen',
-    //     'manage_options',
-    //     'halteverbot-app-settings',
-    //     'halteverbot_app_page_settings'
-    // );
+    add_submenu_page(
+        'halteverbot-app',
+        'Einstellungen',
+        'Einstellungen',
+        'manage_options',
+        'halteverbot-app-settings',
+        'halteverbot_app_page_settings'
+    );
 
     // Submenü 1: Halteverbotszonen verwalten
     add_submenu_page(
