@@ -3,9 +3,7 @@
 namespace Utils\Tracker;
 
 use WhichBrowser\Parser;
-use DeviceDetector\ClientHints;
 use DeviceDetector\DeviceDetector;
-use DeviceDetector\Parser\Device\AbstractDeviceParser;
 
 class VisitorTracker {
 
@@ -21,11 +19,17 @@ class VisitorTracker {
         $this->table_logs = $wpdb->prefix . 'wha_visitor_logs';
         $this->table_wc_events = $wpdb->prefix . 'wha_visitor_events';
 
-        // DeviceDetector initialisieren
-        DeviceParserAbstract::setVersionTruncation(DeviceParserAbstract::VERSION_TRUNCATION_NONE);
+        // DeviceDetector sicher initialisieren
         $this->deviceDetector = new DeviceDetector();
+        
+        // Nur setzen wenn Klasse existiert
+        // if (class_exists('\DeviceDetector\Parser\Device\DeviceParserAbstract')) {
+        //     \DeviceDetector\Parser\Device\DeviceParserAbstract::setVersionTruncation(
+        //         \DeviceDetector\Parser\Device\DeviceParserAbstract::VERSION_TRUNCATION_NONE
+        //     );
+        // }
 
-        register_activation_hook(WHA_PLUGIN_FILE, [$this, 'create_tables']);
+        register_activation_hook(__FILE__, [$this, 'create_tables']);
 
         // Tracking Hooks
         add_action('wp_footer', [$this, 'track_visit']);
@@ -88,7 +92,7 @@ class VisitorTracker {
             time_on_page INT DEFAULT 0,
             page_load_time INT NULL,
             screen_resolution VARCHAR(20) NULL,
-            language VARCHAR(10) NULL,
+            language VARCHAR(50) NULL,
             
             -- Technical Details
             java_enabled TINYINT(1) DEFAULT 0,
@@ -136,8 +140,11 @@ class VisitorTracker {
      * Haupt-Tracking Methode
      */
     public function track_visit($data = []) {
-        if (wp_doing_cron()) return;
-        if (is_admin() && !wp_doing_ajax()) return;
+
+        // if (wp_doing_cron()) return;
+        // var_dump("test2");
+        // if (is_admin()) return;
+        // var_dump("test3");
 
         // Basis-Daten
         $user_agent = $data['user_agent'] ?? ($_SERVER['HTTP_USER_AGENT'] ?? '');
@@ -354,7 +361,8 @@ class VisitorTracker {
     /**
      * Visit in Datenbank speichern
      */
-    private function save_visit($data) {
+    private function save_visit($data) 
+    {
         $visit_time = current_time('mysql');
 
         $result = $this->wpdb->insert(
@@ -409,6 +417,7 @@ class VisitorTracker {
         );
 
         if ($result === false) {
+            var_dump($data);
             error_log("TRACKER: INSERT fehlgeschlagen: " . $this->wpdb->last_error);
         }
     }
