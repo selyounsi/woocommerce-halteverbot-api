@@ -33,6 +33,7 @@ add_action('init', function () {
 
 // Ajax-Handler
 add_action('wp_ajax_nopriv_track_visitor', function () {
+    
     if (!wp_verify_nonce($_POST['nonce'] ?? '', 'visitor_tracker_nonce')) {
         wp_send_json_error('Invalid nonce');
     }

@@ -152,7 +152,7 @@ class VisitorTracker {
         $url = $data['url'] ?? $this->get_current_url();
         $page_title = $data['page_title'] ?? $this->get_page_title();
         $ip = $data['ip'] ?? $this->get_client_ip();
-
+        
         // Validierungen
         if (!$this->is_real_browser($user_agent)) return;
         if (!$this->is_valid_ip($ip)) return;
@@ -197,6 +197,7 @@ class VisitorTracker {
         $whichBrowser = new Parser($user_agent);
 
         return [
+            'user_agent' => $user_agent,
             'device_type' => $this->get_device_type(),
             'device_brand' => $this->deviceDetector->getBrandName() ?: 'Unknown',
             'device_model' => $this->deviceDetector->getModel() ?: '',
@@ -289,7 +290,8 @@ class VisitorTracker {
                 'medium' => $utm_medium,
                 'campaign' => $utm_campaign,
                 'content' => $utm_content,
-                'keywords' => $this->extract_keywords($referrer)
+                'keywords' => $this->extract_keywords($referrer),
+                'referrer' => $referrer
             ];
         }
 
@@ -301,7 +303,8 @@ class VisitorTracker {
                 'medium' => 'referral',
                 'campaign' => '',
                 'content' => '',
-                'keywords' => $ref_data['keywords']
+                'keywords' => $ref_data['keywords'],
+                'referrer' => $referrer
             ];
         }
 
@@ -311,7 +314,8 @@ class VisitorTracker {
             'medium' => 'none',
             'campaign' => '',
             'content' => '',
-            'keywords' => ''
+            'keywords' => '',
+            'referrer' => $referrer
         ];
     }
 
@@ -335,6 +339,39 @@ class VisitorTracker {
         if (strpos($host, 'twitter.') !== false) return ['channel' => 'social', 'source' => 'Twitter', 'keywords' => $keywords];
 
         return ['channel' => 'referral', 'source' => $host, 'keywords' => $keywords];
+    }
+
+    /**
+     * Keywords aus Referrer-URL extrahieren
+     */
+    private function extract_keywords($referrer) {
+        if (empty($referrer)) return '';
+
+        $host = parse_url($referrer, PHP_URL_HOST);
+        $query = parse_url($referrer, PHP_URL_QUERY);
+
+        if (empty($host) || empty($query)) return '';
+
+        parse_str($query, $params);
+
+        // Suchmaschinen Keywords erkennen
+        if (strpos($host, 'google.') !== false) {
+            return $params['q'] ?? '';
+        }
+        if (strpos($host, 'bing.') !== false) {
+            return $params['q'] ?? '';
+        }
+        if (strpos($host, 'yahoo.') !== false) {
+            return $params['p'] ?? '';
+        }
+        if (strpos($host, 'duckduckgo.') !== false) {
+            return $params['q'] ?? '';
+        }
+        if (strpos($host, 'ecosia.') !== false) {
+            return $params['q'] ?? '';
+        }
+
+        return '';
     }
 
     /**
