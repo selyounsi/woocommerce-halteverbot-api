@@ -6,10 +6,18 @@ namespace Composer\Autoload;
 
 class ComposerStaticInit589ea93b2d3e332bddf6555b2b30090e
 {
+    public static $files = array (
+        '04c6c5c2f7095ccf6c481d3e53e1776f' => __DIR__ . '/..' . '/mustangostang/spyc/Spyc.php',
+    );
+
     public static $prefixLengthsPsr4 = array (
         's' => 
         array (
             'setasign\\Fpdi\\' => 14,
+        ),
+        'W' => 
+        array (
+            'WhichBrowser\\' => 13,
         ),
         'U' => 
         array (
@@ -19,6 +27,10 @@ class ComposerStaticInit589ea93b2d3e332bddf6555b2b30090e
         array (
             'Svg\\' => 4,
             'Sabberworm\\CSS\\' => 15,
+        ),
+        'P' => 
+        array (
+            'Psr\\Cache\\' => 10,
         ),
         'M' => 
         array (
@@ -31,6 +43,7 @@ class ComposerStaticInit589ea93b2d3e332bddf6555b2b30090e
         'D' => 
         array (
             'Dompdf\\' => 7,
+            'DeviceDetector\\' => 15,
         ),
     );
 
@@ -38,6 +51,10 @@ class ComposerStaticInit589ea93b2d3e332bddf6555b2b30090e
         'setasign\\Fpdi\\' => 
         array (
             0 => __DIR__ . '/..' . '/setasign/fpdi/src',
+        ),
+        'WhichBrowser\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/whichbrowser/parser/src',
         ),
         'Utils\\' => 
         array (
@@ -51,6 +68,10 @@ class ComposerStaticInit589ea93b2d3e332bddf6555b2b30090e
         array (
             0 => __DIR__ . '/..' . '/sabberworm/php-css-parser/src',
         ),
+        'Psr\\Cache\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/psr/cache/src',
+        ),
         'Masterminds\\' => 
         array (
             0 => __DIR__ . '/..' . '/masterminds/html5/src',
@@ -62,6 +83,10 @@ class ComposerStaticInit589ea93b2d3e332bddf6555b2b30090e
         'Dompdf\\' => 
         array (
             0 => __DIR__ . '/..' . '/dompdf/dompdf/src',
+        ),
+        'DeviceDetector\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/matomo/device-detector',
         ),
     );
 
