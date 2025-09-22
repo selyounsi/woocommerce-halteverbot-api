@@ -17,8 +17,10 @@ class VisitorAnalytics extends VisitorTracker
         parent::__construct(); 
     }
 
+    // --- Grundlegende Besucherstatistiken ---
+
     private function query_count($where_sql = '', $params = []) {
-        $sql = "SELECT COUNT(DISTINCT ip) FROM {$this->table_logs} WHERE 1=1 $where_sql";
+        $sql = "SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs} WHERE 1=1 $where_sql";
         return (int) $this->wpdb->get_var($this->wpdb->prepare($sql, $params));
     }
 
@@ -52,189 +54,362 @@ class VisitorAnalytics extends VisitorTracker
         return $this->query_count(' AND DATE(visit_time) BETWEEN %s AND %s', [$start_date, $end_date]);
     }
 
+    // --- Erweiterte Analytik ---
+
     public function visitors_by_referrer() {
         $sql = "SELECT 
             CASE 
-                WHEN referrer LIKE '%google.%' THEN 'Google'
-                WHEN referrer LIKE '%bing.%' THEN 'Bing'
-                WHEN referrer LIKE '%yahoo.%' THEN 'Yahoo'
-                WHEN referrer = '' OR referrer IS NULL THEN 'Direkt'
-                ELSE 'Andere'
+                WHEN source_channel = 'organic' THEN 'Organische Suche'
+                WHEN source_channel = 'campaign' THEN 'Kampagne'
+                WHEN source_channel = 'social' THEN 'Social Media'
+                WHEN source_channel = 'direct' THEN 'Direkt'
+                ELSE source_channel
             END as source,
             COUNT(*) as count
             FROM {$this->table_logs}
-            GROUP BY source
+            GROUP BY source_channel
             ORDER BY count DESC";
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
     public function visitors_by_device() {
-        $sql = "SELECT device_type, COUNT(*) as count FROM {$this->table_logs} GROUP BY device_type ORDER BY count DESC";
+        $sql = "SELECT device_type, device_brand, device_model, COUNT(*) as count 
+                FROM {$this->table_logs} 
+                GROUP BY device_type, device_brand, device_model 
+                ORDER BY count DESC";
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
     public function visitors_by_browser() {
-        $sql = "SELECT browser_name, COUNT(*) as count FROM {$this->table_logs} GROUP BY browser_name ORDER BY count DESC";
+        $sql = "SELECT browser_name, browser_version, platform, COUNT(*) as count 
+                FROM {$this->table_logs} 
+                GROUP BY browser_name, browser_version, platform 
+                ORDER BY count DESC";
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    public function visitors_by_country() {
+        $sql = "SELECT country_code, country_name, COUNT(*) as count 
+                FROM {$this->table_logs} 
+                WHERE country_code != '' 
+                GROUP BY country_code, country_name 
+                ORDER BY count DESC";
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
     public function page_views() {
-        $sql = "SELECT url, COUNT(*) as count FROM {$this->table_logs} GROUP BY url ORDER BY count DESC LIMIT 20";
+        $sql = "SELECT url, page_title, COUNT(*) as count 
+                FROM {$this->table_logs} 
+                GROUP BY url, page_title 
+                ORDER BY count DESC 
+                LIMIT 20";
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
     public function popular_keywords() {
-        $sql = "SELECT keywords, COUNT(*) as count FROM {$this->table_logs} WHERE keywords != '' GROUP BY keywords ORDER BY count DESC LIMIT 20";
+        $sql = "SELECT keywords, COUNT(*) as count 
+                FROM {$this->table_logs} 
+                WHERE keywords != '' 
+                GROUP BY keywords 
+                ORDER BY count DESC 
+                LIMIT 20";
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-    // WooCommerce Event Auswertungen
+    // --- Session-basierte Analytik ---
 
-    /**
-     * Anzahl Events nach Typ (z.B. Produkt-Views, Add-to-Cart, Orders)
-     */
-    public function wc_events_count_by_type() {
-        $sql = "SELECT event_type, COUNT(*) as count FROM {$this->table_wc_events} GROUP BY event_type ORDER BY count DESC";
-        return $this->wpdb->get_results($sql, ARRAY_A);
-    }
-
-    /**
-     * Meist betrachtete Produkte (Produkt-Views)
-     */
-    public function wc_top_viewed_products($limit = 10) {
-        $sql = $this->wpdb->prepare("SELECT product_id, COUNT(*) as views FROM {$this->table_wc_events} WHERE event_type = %s GROUP BY product_id ORDER BY views DESC LIMIT %d", 'product_view', $limit);
-        return $this->wpdb->get_results($sql, ARRAY_A);
-    }
-
-    /**
-     * Meist zum Warenkorb hinzugefügte Produkte
-     */
-    public function wc_top_added_to_cart_products($limit = 10) {
-        $sql = $this->wpdb->prepare("SELECT product_id, SUM(quantity) as qty_added FROM {$this->table_wc_events} WHERE event_type = %s GROUP BY product_id ORDER BY qty_added DESC LIMIT %d", 'add_to_cart', $limit);
-        return $this->wpdb->get_results($sql, ARRAY_A);
-    }
-
-    /**
-     * Anzahl Bestellungen
-     */
-    public function wc_order_count() {
-        $sql = $this->wpdb->prepare("SELECT COUNT(DISTINCT order_id) FROM {$this->table_wc_events} WHERE event_type = %s", 'order_complete');
+    public function average_session_duration() {
+        $sql = "SELECT AVG(session_duration) as avg_duration FROM (
+            SELECT session_id, 
+                   TIMESTAMPDIFF(SECOND, MIN(visit_time), MAX(visit_time)) as session_duration
+            FROM {$this->table_logs}
+            GROUP BY session_id
+            HAVING COUNT(*) > 1
+        ) as sessions";
         return (int) $this->wpdb->get_var($sql);
     }
 
-    /**
-     * Durchschnittliche Menge pro Bestellung (über alle add_to_cart Events)
-     */
+    public function pages_per_session() {
+        $sql = "SELECT AVG(page_count) as avg_pages FROM (
+            SELECT session_id, COUNT(*) as page_count
+            FROM {$this->table_logs}
+            GROUP BY session_id
+        ) as sessions";
+        return round($this->wpdb->get_var($sql), 1);
+    }
+
+    public function bounce_rate() {
+        $total_sessions = $this->wpdb->get_var("SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs}");
+        $single_page_sessions = $this->wpdb->get_var("
+            SELECT COUNT(*) FROM (
+                SELECT session_id FROM {$this->table_logs} 
+                GROUP BY session_id 
+                HAVING COUNT(*) = 1
+            ) as single_page
+        ");
+        
+        if ($total_sessions > 0) {
+            return round(($single_page_sessions / $total_sessions) * 100, 1);
+        }
+        return 0;
+    }
+
+    public function average_time_on_page() {
+        $sql = "SELECT AVG(time_on_page) as avg_time 
+                FROM {$this->table_logs} 
+                WHERE time_on_page > 0";
+        return round($this->wpdb->get_var($sql), 1);
+    }
+
+    // --- WooCommerce Event Auswertungen ---
+
+    public function wc_events_count_by_type() {
+        $sql = "SELECT event_type, COUNT(*) as count 
+                FROM {$this->table_wc_events} 
+                GROUP BY event_type 
+                ORDER BY count DESC";
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    public function wc_top_viewed_products($limit = 10) {
+        $sql = $this->wpdb->prepare(
+            "SELECT product_id, COUNT(*) as views 
+             FROM {$this->table_wc_events} 
+             WHERE event_type = %s 
+             GROUP BY product_id 
+             ORDER BY views DESC 
+             LIMIT %d", 
+            'product_view', 
+            $limit
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    public function wc_top_added_to_cart_products($limit = 10) {
+        $sql = $this->wpdb->prepare(
+            "SELECT product_id, SUM(quantity) as qty_added 
+             FROM {$this->table_wc_events} 
+             WHERE event_type = %s 
+             GROUP BY product_id 
+             ORDER BY qty_added DESC 
+             LIMIT %d", 
+            'add_to_cart', 
+            $limit
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    public function wc_order_count() {
+        $sql = $this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT order_id) 
+             FROM {$this->table_wc_events} 
+             WHERE event_type = %s", 
+            'order_complete'
+        );
+        return (int) $this->wpdb->get_var($sql);
+    }
+
     public function wc_avg_quantity_per_order() {
         $sql = "SELECT AVG(qty_per_order) FROM (
-            SELECT SUM(quantity) as qty_per_order, order_id FROM {$this->table_wc_events}
+            SELECT SUM(quantity) as qty_per_order, order_id 
+            FROM {$this->table_wc_events}
             WHERE event_type = 'add_to_cart'
             GROUP BY order_id
         ) as t";
-        return $this->wpdb->get_var($sql);
+        return round($this->wpdb->get_var($sql), 2);
+    }
+
+    public function wc_conversion_rate() {
+        $total_visitors = $this->wpdb->get_var("SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs}");
+        $total_orders = $this->wc_order_count();
+        
+        if ($total_visitors > 0) {
+            return round(($total_orders / $total_visitors) * 100, 2);
+        }
+        return 0;
     }
 
 
+    // --- Kompletter Report ---
+
     public function get_report($start_date, $end_date): array {
-        // Alle Besuche (einmalig)
-        $total_visits = $this->visitors_by_period($start_date, $end_date);
+        return [
+            'total_visits' => $this->visitors_by_period($start_date, $end_date),
+            'session_metrics' => [
+                'avg_duration' => $this->get_avg_session_duration_by_period($start_date, $end_date),
+                'avg_pages' => $this->get_avg_pages_per_session_by_period($start_date, $end_date),
+                'bounce_rate' => $this->get_bounce_rate_by_period($start_date, $end_date),
+                'avg_time_on_page' => $this->get_avg_time_on_page_by_period($start_date, $end_date)
+            ],
+            'devices' => $this->get_devices_by_period($start_date, $end_date),
+            'browsers' => $this->get_browsers_by_period($start_date, $end_date),
+            'countries' => $this->get_countries_by_period($start_date, $end_date),
+            'traffic_sources' => $this->get_traffic_sources_by_period($start_date, $end_date),
+            'pages' => $this->get_pages_by_period($start_date, $end_date),
+            'keywords' => $this->get_keywords_by_period($start_date, $end_date),
+            'wc_metrics' => [
+                'events' => $this->get_wc_events_by_period($start_date, $end_date),
+                'conversion_rate' => $this->get_wc_conversion_rate_by_period($start_date, $end_date),
+                'revenue' => $this->wc_revenue_by_period($start_date, $end_date)
+            ]
+        ];
+    }
 
-        // Besuche nach Device
-        $devices = $this->wpdb->get_results(
-            $this->wpdb->prepare(
-                "SELECT device_type, COUNT(*) as count 
-                FROM {$this->table_logs} 
-                WHERE DATE(visit_time) BETWEEN %s AND %s 
-                GROUP BY device_type 
-                ORDER BY count DESC",
-                $start_date, $end_date
-            ),
-            ARRAY_A
-        );
+    // --- Hilfsmethoden für Perioden-Filter ---
 
-        // Besuche nach Browser
-        $browsers = $this->wpdb->get_results(
-            $this->wpdb->prepare(
-                "SELECT browser_name, COUNT(*) as count 
-                FROM {$this->table_logs} 
-                WHERE DATE(visit_time) BETWEEN %s AND %s 
-                GROUP BY browser_name 
-                ORDER BY count DESC",
-                $start_date, $end_date
-            ),
-            ARRAY_A
-        );
-
-        // Referrer (Herkunft)
-        $referrers = $this->wpdb->get_results(
-            $this->wpdb->prepare(
-                "SELECT 
-                    CASE 
-                        WHEN referrer LIKE '%%google.%%' THEN 'Google'
-                        WHEN referrer LIKE '%%bing.%%' THEN 'Bing'
-                        WHEN referrer LIKE '%%yahoo.%%' THEN 'Yahoo'
-                        WHEN referrer = '' OR referrer IS NULL THEN 'Direkt'
-                        ELSE 'Andere'
-                    END as source,
-                    COUNT(*) as count
+    private function get_avg_session_duration_by_period($start_date, $end_date) {
+        $sql = $this->wpdb->prepare(
+            "SELECT AVG(session_duration) FROM (
+                SELECT session_id, TIMESTAMPDIFF(SECOND, MIN(visit_time), MAX(visit_time)) as session_duration
                 FROM {$this->table_logs}
                 WHERE DATE(visit_time) BETWEEN %s AND %s
-                GROUP BY source
-                ORDER BY count DESC",
-                $start_date, $end_date
-            ),
-            ARRAY_A
+                GROUP BY session_id
+                HAVING COUNT(*) > 1
+            ) as sessions",
+            $start_date, $end_date
         );
+        return (int) $this->wpdb->get_var($sql);
+    }
 
-        // Beliebte Seiten
-        $pages = $this->wpdb->get_results(
-            $this->wpdb->prepare(
-                "SELECT url, COUNT(*) as count 
-                FROM {$this->table_logs} 
-                WHERE DATE(visit_time) BETWEEN %s AND %s 
-                GROUP BY url 
-                ORDER BY count DESC 
-                LIMIT 20",
-                $start_date, $end_date
-            ),
-            ARRAY_A
+    private function get_avg_pages_per_session_by_period($start_date, $end_date) {
+        $sql = $this->wpdb->prepare(
+            "SELECT AVG(page_count) FROM (
+                SELECT session_id, COUNT(*) as page_count
+                FROM {$this->table_logs}
+                WHERE DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id
+            ) as sessions",
+            $start_date, $end_date
         );
+        return round($this->wpdb->get_var($sql), 1);
+    }
 
-        // Keywords
-        $keywords = $this->wpdb->get_results(
-            $this->wpdb->prepare(
-                "SELECT keywords, COUNT(*) as count 
-                FROM {$this->table_logs} 
-                WHERE keywords != '' AND DATE(visit_time) BETWEEN %s AND %s 
-                GROUP BY keywords 
-                ORDER BY count DESC 
-                LIMIT 20",
-                $start_date, $end_date
-            ),
-            ARRAY_A
+    private function get_bounce_rate_by_period($start_date, $end_date) {
+        $total = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs} WHERE DATE(visit_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+        
+        $bounced = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM (
+                SELECT session_id FROM {$this->table_logs} 
+                WHERE DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id 
+                HAVING COUNT(*) = 1
+            ) as single_page",
+            $start_date, $end_date
+        ));
+        
+        return $total > 0 ? round(($bounced / $total) * 100, 1) : 0;
+    }
+
+    private function get_avg_time_on_page_by_period($start_date, $end_date) {
+        $sql = $this->wpdb->prepare(
+            "SELECT AVG(time_on_page) FROM {$this->table_logs} 
+             WHERE time_on_page > 0 AND DATE(visit_time) BETWEEN %s AND %s",
+            $start_date, $end_date
         );
+        return round($this->wpdb->get_var($sql), 1);
+    }
 
-        // WC-Events in Zeitraum
-        $wc_events = $this->wpdb->get_results(
-            $this->wpdb->prepare(
-                "SELECT event_type, COUNT(*) as count 
-                FROM {$this->table_wc_events} 
-                WHERE DATE(event_time) BETWEEN %s AND %s 
-                GROUP BY event_type 
-                ORDER BY count DESC",
-                $start_date, $end_date
-            ),
-            ARRAY_A
+    private function get_devices_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT device_type, device_brand, device_model, COUNT(*) as count 
+             FROM {$this->table_logs} 
+             WHERE DATE(visit_time) BETWEEN %s AND %s 
+             GROUP BY device_type, device_brand, device_model 
+             ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_countries_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT country_code, country_name, COUNT(*) as count 
+             FROM {$this->table_logs} 
+             WHERE country_code != '' AND DATE(visit_time) BETWEEN %s AND %s 
+             GROUP BY country_code, country_name 
+             ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_traffic_sources_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT source_channel, source_name, medium, COUNT(*) as count 
+             FROM {$this->table_logs} 
+             WHERE DATE(visit_time) BETWEEN %s AND %s 
+             GROUP BY source_channel, source_name, medium 
+             ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_wc_conversion_rate_by_period($start_date, $end_date) {
+        $visitors = $this->visitors_by_period($start_date, $end_date);
+        $orders = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT order_id) FROM {$this->table_wc_events} 
+             WHERE event_type = 'order_complete' AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+        
+        return $visitors > 0 ? round(($orders / $visitors) * 100, 2) : 0;
+    }
+
+    public function wc_revenue_by_period($start_date, $end_date) {
+        $sql = $this->wpdb->prepare(
+            "SELECT SUM(product_price * quantity) as revenue
+             FROM {$this->table_wc_events} 
+             WHERE event_type = 'add_to_cart' 
+             AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
         );
+        return round($this->wpdb->get_var($sql) ?? 0, 2);
+    }
 
-        return [
-            'total_visits' => $total_visits,
-            'devices' => $devices,
-            'browsers' => $browsers,
-            'referrers' => $referrers,
-            'pages' => $pages,
-            'keywords' => $keywords,
-            'wc_events' => $wc_events,
-        ];
+    private function get_browsers_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT browser_name, browser_version, platform, COUNT(*) as count 
+            FROM {$this->table_logs} 
+            WHERE DATE(visit_time) BETWEEN %s AND %s 
+            GROUP BY browser_name, browser_version, platform 
+            ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_pages_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT url, page_title, COUNT(*) as count 
+            FROM {$this->table_logs} 
+            WHERE DATE(visit_time) BETWEEN %s AND %s 
+            GROUP BY url, page_title 
+            ORDER BY count DESC 
+            LIMIT 20",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_keywords_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT keywords, COUNT(*) as count 
+            FROM {$this->table_logs} 
+            WHERE keywords != '' AND DATE(visit_time) BETWEEN %s AND %s 
+            GROUP BY keywords 
+            ORDER BY count DESC 
+            LIMIT 20",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_wc_events_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT event_type, COUNT(*) as count 
+            FROM {$this->table_wc_events} 
+            WHERE DATE(event_time) BETWEEN %s AND %s 
+            GROUP BY event_type 
+            ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
     }
 }
