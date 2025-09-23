@@ -241,6 +241,9 @@ class VisitorAnalytics extends VisitorTracker
                 'bounce_rate' => $this->get_bounce_rate_by_period($start_date, $end_date),
                 'avg_time_on_page' => $this->get_avg_time_on_page_by_period($start_date, $end_date)
             ],
+            'entry_pages' => $this->entry_pages_by_period($start_date, $end_date, 10),
+            'exit_pages' => $this->exit_pages_by_period($start_date, $end_date, 10),
+            'exit_rates' => $this->exit_rates_by_period($start_date, $end_date, 10),
             'devices' => $this->get_devices_by_period($start_date, $end_date),
             'browsers' => $this->get_browsers_by_period($start_date, $end_date),
             'countries' => $this->get_countries_by_period($start_date, $end_date),
@@ -411,5 +414,167 @@ class VisitorAnalytics extends VisitorTracker
             ORDER BY count DESC",
             $start_date, $end_date
         ), ARRAY_A);
+    }
+
+    // --- Entry & Exit Pages ---
+
+    /**
+     * Einstiegsseiten (erste Seite pro Session)
+     */
+    public function entry_pages($limit = 20) {
+        $sql = $this->wpdb->prepare(
+            "SELECT url, page_title, COUNT(*) as entries 
+            FROM (
+                SELECT session_id, url, page_title 
+                FROM {$this->table_logs} 
+                WHERE visit_time = (
+                    SELECT MIN(visit_time) 
+                    FROM {$this->table_logs} as sub 
+                    WHERE sub.session_id = {$this->table_logs}.session_id
+                )
+            ) as entry_pages 
+            GROUP BY url, page_title 
+            ORDER BY entries DESC 
+            LIMIT %d",
+            $limit
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    /**
+     * Ausstiegsseiten (letzte Seite pro Session)
+     */
+    public function exit_pages($limit = 20) {
+        $sql = $this->wpdb->prepare(
+            "SELECT url, page_title, COUNT(*) as exits 
+            FROM (
+                SELECT session_id, url, page_title 
+                FROM {$this->table_logs} 
+                WHERE visit_time = (
+                    SELECT MAX(visit_time) 
+                    FROM {$this->table_logs} as sub 
+                    WHERE sub.session_id = {$this->table_logs}.session_id
+                )
+            ) as exit_pages 
+            GROUP BY url, page_title 
+            ORDER BY exits DESC 
+            LIMIT %d",
+            $limit
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    /**
+     * Einstiegsseiten für bestimmten Zeitraum
+     */
+    public function entry_pages_by_period($start_date, $end_date, $limit = 20) {
+        $sql = $this->wpdb->prepare(
+            "SELECT url, page_title, COUNT(*) as entries 
+            FROM (
+                SELECT session_id, url, page_title 
+                FROM {$this->table_logs} 
+                WHERE DATE(visit_time) BETWEEN %s AND %s 
+                AND visit_time = (
+                    SELECT MIN(visit_time) 
+                    FROM {$this->table_logs} as sub 
+                    WHERE sub.session_id = {$this->table_logs}.session_id
+                    AND DATE(sub.visit_time) BETWEEN %s AND %s
+                )
+            ) as entry_pages 
+            GROUP BY url, page_title 
+            ORDER BY entries DESC 
+            LIMIT %d",
+            $start_date, $end_date, $start_date, $end_date, $limit
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    /**
+     * Ausstiegsseiten für bestimmten Zeitraum
+     */
+    public function exit_pages_by_period($start_date, $end_date, $limit = 20) {
+        $sql = $this->wpdb->prepare(
+            "SELECT url, page_title, COUNT(*) as exits 
+            FROM (
+                SELECT session_id, url, page_title 
+                FROM {$this->table_logs} 
+                WHERE DATE(visit_time) BETWEEN %s AND %s 
+                AND visit_time = (
+                    SELECT MAX(visit_time) 
+                    FROM {$this->table_logs} as sub 
+                    WHERE sub.session_id = {$this->table_logs}.session_id
+                    AND DATE(sub.visit_time) BETWEEN %s AND %s
+                )
+            ) as exit_pages 
+            GROUP BY url, page_title 
+            ORDER BY exits DESC 
+            LIMIT %d",
+            $start_date, $end_date, $start_date, $end_date, $limit
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    /**
+     * Exit Rate pro Seite (wie oft war sie die letzte Seite)
+     */
+    public function exit_rates($limit = 20) {
+        $sql = $this->wpdb->prepare(
+            "SELECT 
+                url, 
+                page_title,
+                COUNT(*) as total_views,
+                SUM(is_exit) as exit_views,
+                ROUND((SUM(is_exit) / COUNT(*)) * 100, 1) as exit_rate
+            FROM (
+                SELECT 
+                    url, 
+                    page_title,
+                    CASE WHEN visit_time = (
+                        SELECT MAX(visit_time) 
+                        FROM {$this->table_logs} as sub 
+                        WHERE sub.session_id = {$this->table_logs}.session_id
+                    ) THEN 1 ELSE 0 END as is_exit
+                FROM {$this->table_logs}
+            ) as page_analysis
+            GROUP BY url, page_title
+            HAVING total_views > 5
+            ORDER BY exit_rate DESC 
+            LIMIT %d",
+            $limit
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A);
+    }
+
+    /**
+     * Exit Rates für Zeitraum
+     */
+    private function exit_rates_by_period($start_date, $end_date, $limit = 20) {
+        $sql = $this->wpdb->prepare(
+            "SELECT 
+                url, 
+                page_title,
+                COUNT(*) as total_views,
+                SUM(is_exit) as exit_views,
+                ROUND((SUM(is_exit) / COUNT(*)) * 100, 1) as exit_rate
+            FROM (
+                SELECT 
+                    url, 
+                    page_title,
+                    CASE WHEN visit_time = (
+                        SELECT MAX(visit_time) 
+                        FROM {$this->table_logs} as sub 
+                        WHERE sub.session_id = {$this->table_logs}.session_id
+                        AND DATE(sub.visit_time) BETWEEN %s AND %s
+                    ) THEN 1 ELSE 0 END as is_exit
+                FROM {$this->table_logs}
+                WHERE DATE(visit_time) BETWEEN %s AND %s
+            ) as page_analysis
+            GROUP BY url, page_title
+            HAVING total_views > 2
+            ORDER BY exit_rate DESC 
+            LIMIT %d",
+            $start_date, $end_date, $start_date, $end_date, $limit
+        );
+        return $this->wpdb->get_results($sql, ARRAY_A);
     }
 }
