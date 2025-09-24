@@ -114,6 +114,7 @@ class VisitorTracker {
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             session_id VARCHAR(32) NOT NULL,
             event_type VARCHAR(50) NOT NULL,
+            extra_value VARCHAR(255) NOT NULL,
             user_ip VARCHAR(45) NOT NULL,
             user_agent TEXT NOT NULL,
             event_time DATETIME NOT NULL,
@@ -605,6 +606,7 @@ class VisitorTracker {
      */
     public function track_wc_event($data = []) {
         $event_type = $data['event_type'] ?? '';
+        $extra_value = $data['extra_value'] ?? '';
         $product_id = $data['product_id'] ?? null;
         $quantity = $data['quantity'] ?? null;
         $order_id = $data['order_id'] ?? null;
@@ -613,10 +615,10 @@ class VisitorTracker {
             return;
         }
         
-        $this->insert_wc_event($event_type, $product_id, $order_id, $quantity);
+        $this->insert_wc_event($event_type, $product_id, $order_id, $quantity, $extra_value);
     }
 
-    private function insert_wc_event($event_type, $product_id = null, $order_id = null, $quantity = null) {
+    private function insert_wc_event($event_type, $product_id = null, $order_id = null, $quantity = null, $extra_value = null) {
         $product_price = $product_id ? $this->get_product_price($product_id) : null;
         $product_category = $product_id ? $this->get_product_category($product_id) : null;
         
@@ -625,6 +627,7 @@ class VisitorTracker {
             [
                 'session_id' => $this->get_or_create_session_id(),
                 'event_type' => $event_type,
+                'extra_value' => $extra_value,
                 'user_ip' => $this->get_client_ip(),
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
                 'event_time' => current_time('mysql'),
@@ -636,7 +639,7 @@ class VisitorTracker {
                 'cart_total' => WC()->cart ? WC()->cart->get_total('edit') : null,
                 'user_status' => is_user_logged_in() ? 'logged_in' : 'guest'
             ],
-            ['%s','%s','%s','%s','%s','%d','%d','%d','%f','%s','%f','%s']
+            ['%s','%s','%s','%s','%s','%s','%d','%d','%d','%f','%s','%f','%s']
         );
     }
 
