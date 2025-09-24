@@ -31,6 +31,29 @@ add_action('init', function () {
     }
 }, 20);
 
+
+// Ajax-Handler für WooCommerce Events
+add_action('wp_ajax_nopriv_track_wc_event', function () {
+    if (!wp_verify_nonce($_POST['nonce'] ?? '', 'visitor_tracker_nonce')) {
+        wp_send_json_error('Invalid nonce');
+    }
+
+    $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
+    $ip = explode(',', $ip)[0];
+    
+    VisitorTracker::getInstance()->track_wc_event([
+        'event_type' => sanitize_text_field($_POST['event_type'] ?? ''),
+        'product_id' => absint($_POST['product_id'] ?? 0),
+        'quantity' => absint($_POST['quantity'] ?? 1),
+        'order_id' => absint($_POST['order_id'] ?? 0),
+        'url' => sanitize_text_field($_POST['url'] ?? ''),
+        'user_agent' => sanitize_text_field($_POST['userAgent'] ?? ''),
+        'ip' => $ip
+    ]);
+
+    wp_send_json_success();
+});
+
 // Ajax-Handler
 add_action('wp_ajax_nopriv_track_visitor', function () {
     

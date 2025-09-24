@@ -15,6 +15,12 @@
         exit;
     }
 
+    // Composer-Autoloader einbinden
+    $vendor_autoload = plugin_dir_path(__FILE__) . 'vendor/autoload.php';
+    if (file_exists($vendor_autoload)) {
+        require_once $vendor_autoload;
+    }
+
     /**
      * Define a constant for the plugin root path
      */
@@ -91,12 +97,6 @@
     function load_app_data() {
         // Pfad zum data-Verzeichnis
         $data_directory = plugin_dir_path(__FILE__) . 'data/';
-        
-        // Composer-Autoloader einbinden
-        $vendor_autoload = plugin_dir_path(__FILE__) . 'vendor/autoload.php';
-        if (file_exists($vendor_autoload)) {
-            require_once $vendor_autoload;
-        }
 
         // Prefix festlegen (z.B. "exclude_" oder ein anderer Wert)
         $prefix_to_exclude = 'exclude_';

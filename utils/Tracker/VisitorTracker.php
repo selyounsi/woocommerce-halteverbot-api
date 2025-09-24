@@ -141,11 +141,6 @@ class VisitorTracker {
      */
     public function track_visit($data = []) {
 
-        // if (wp_doing_cron()) return;
-        // var_dump("test2");
-        // if (is_admin()) return;
-        // var_dump("test3");
-
         // Basis-Daten
         $user_agent = $data['user_agent'] ?? ($_SERVER['HTTP_USER_AGENT'] ?? '');
         $referrer = $data['referrer'] ?? ($_SERVER['HTTP_REFERER'] ?? '');
@@ -605,18 +600,20 @@ class VisitorTracker {
 
     // --- WooCommerce Tracking ---
 
-    public function track_product_view() {
-        if (!is_product()) return;
-        global $product;
-        $this->insert_wc_event('product_view', $product->get_id());
-    }
-
-    public function track_add_to_cart($cart_item_key, $product_id, $quantity, $variation_id, $variation, $cart_item_data) {
-        $this->insert_wc_event('add_to_cart', $product_id, null, $quantity);
-    }
-
-    public function track_order_complete($order_id) {
-        $this->insert_wc_event('order_complete', null, $order_id);
+    /**
+     * WooCommerce Event Tracking per JavaScript
+     */
+    public function track_wc_event($data = []) {
+        $event_type = $data['event_type'] ?? '';
+        $product_id = $data['product_id'] ?? null;
+        $quantity = $data['quantity'] ?? null;
+        $order_id = $data['order_id'] ?? null;
+        
+        if (empty($event_type)) {
+            return;
+        }
+        
+        $this->insert_wc_event($event_type, $product_id, $order_id, $quantity);
     }
 
     private function insert_wc_event($event_type, $product_id = null, $order_id = null, $quantity = null) {
