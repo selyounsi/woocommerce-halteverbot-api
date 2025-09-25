@@ -43,6 +43,7 @@ add_action('wp_ajax_nopriv_track_wc_event', function () {
     
     VisitorTracker::getInstance()->track_wc_event([
         'event_type' => sanitize_text_field($_POST['event_type'] ?? ''),
+        'extra_value' => sanitize_text_field($_POST['extra_value'] ?? ''),
         'product_id' => absint($_POST['product_id'] ?? 0),
         'quantity' => absint($_POST['quantity'] ?? 1),
         'order_id' => absint($_POST['order_id'] ?? 0),
