@@ -149,9 +149,12 @@ class VisitorTracker {
         $page_title = $data['page_title'] ?? $this->get_page_title();
         $ip = $data['ip'] ?? $this->get_client_ip();
         
-        // Validierungen
-        if (!$this->is_real_browser($user_agent)) return;
+        // Check IP
         if (!$this->is_valid_ip($ip)) return;
+
+        // Device + Bot Check
+        $device = $this->get_device_data($user_agent);
+        if ($device['is_bot']) return;
 
         // Session handling
         $session_id = $this->get_or_create_session_id();
@@ -488,21 +491,12 @@ class VisitorTracker {
     }
 
     private function is_valid_ip($ip) {
-        return !empty($ip) && !in_array($ip, ['127.0.0.1', '::1', 'localhost']);
-    }
+        if (empty($ip)) return false;
 
-    private function is_real_browser($user_agent) {
-        if (empty($user_agent)) return false;
-        
-        $bots = ['bot', 'crawler', 'spider', 'scraper', 'curl', 'wget'];
-        $ua_lower = strtolower($user_agent);
-        
-        foreach ($bots as $bot) {
-            if (strpos($ua_lower, $bot) !== false) return false;
-        }
-        
-        return stripos($user_agent, 'Mozilla') === 0 || 
-               preg_match('/(chrome|safari|firefox|edge|opera)\//i', $user_agent);
+        $blocked = ['127.0.0.1', '::1', 'localhost'];
+        if (in_array($ip, $blocked, true)) return false;
+
+        return filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
     private function get_or_create_session_id() {
