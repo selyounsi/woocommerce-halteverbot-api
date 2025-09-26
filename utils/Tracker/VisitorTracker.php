@@ -153,8 +153,7 @@ class VisitorTracker {
         if (!$this->is_valid_ip($ip)) return;
 
         // Device + Bot Check
-        $device = $this->get_device_data($user_agent);
-        if ($device['is_bot']) return;
+        if (!$this->is_real_browser($user_agent)) return;
 
         // Session handling
         $session_id = $this->get_or_create_session_id();
@@ -488,6 +487,22 @@ class VisitorTracker {
             }
         }
         return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    }
+
+    private function is_real_browser($user_agent) {
+        if (empty($user_agent)) return false;
+
+        $ua_lower = strtolower($user_agent);
+        foreach (['bot', 'crawler', 'spider', 'scraper', 'curl', 'wget'] as $bot) {
+            if (strpos($ua_lower, $bot) !== false) return false;
+        }
+
+        $this->deviceDetector->setUserAgent($user_agent);
+        $this->deviceDetector->parse();
+        if ($this->deviceDetector->isBot()) return false;
+
+        return stripos($user_agent, 'Mozilla') === 0 ||
+            preg_match('/(chrome|safari|firefox|edge|opera)\//i', $user_agent);
     }
 
     private function is_valid_ip($ip) {

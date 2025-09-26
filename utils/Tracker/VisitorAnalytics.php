@@ -19,8 +19,19 @@ class VisitorAnalytics extends VisitorTracker
 
     // --- Grundlegende Besucherstatistiken ---
 
-    private function query_count($where_sql = '', $params = []) {
-        $sql = "SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs} WHERE 1=1 $where_sql";
+    private function query_count($where_sql = '', $params = [], $min_requests = 1) {
+        $sql = "
+            SELECT COUNT(*) FROM (
+                SELECT session_id, COUNT(*) as requests
+                FROM {$this->table_logs}
+                WHERE 1=1 $where_sql
+                GROUP BY session_id
+                HAVING requests >= %d
+            ) t
+        ";
+        // %d für min_requests an die params anhängen
+        $params[] = $min_requests;
+
         return (int) $this->wpdb->get_var($this->wpdb->prepare($sql, $params));
     }
 
