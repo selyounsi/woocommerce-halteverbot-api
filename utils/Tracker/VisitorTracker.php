@@ -15,21 +15,29 @@ class VisitorTracker {
 
     private $search_engines = [
         'google.' => 'Google',
-        'bing.' => 'Bing',
+        'bing.' => 'Bing', 
         'yahoo.' => 'Yahoo',
         'duckduckgo.' => 'DuckDuckGo',
         'ecosia.' => 'Ecosia',
         'startpage.' => 'Startpage',
         'qwant.' => 'Qwant',
         'brave.' => 'Brave Search',
-        'search.' => 'Other Search Engine'
+        'search.' => 'Other Search Engine',
+
+        'yandex.' => 'Yandex', // Russland
+        'baidu.' => 'Baidu', // China
+        'naver.' => 'Naver', // Korea
+        'seznam.' => 'Seznam', // Tschechien
+
+        'metager.' => 'MetaGer',
+        'swisscows.' => 'Swisscows',
     ];
 
     private $social_platforms = [
         'facebook.' => 'Facebook',
         'twitter.' => 'Twitter',
         'x.com' => 'X',
-        'instagram.' => 'Instagram',
+        'instagram.' => 'Instagram', 
         'linkedin.' => 'LinkedIn',
         'pinterest.' => 'Pinterest',
         'youtube.' => 'YouTube',
@@ -37,7 +45,48 @@ class VisitorTracker {
         'reddit.' => 'Reddit',
         'threads.' => 'Threads',
         'whatsapp.' => 'WhatsApp',
-        'telegram.' => 'Telegram'
+        'telegram.' => 'Telegram',
+
+        'snapchat.' => 'Snapchat',
+        'discord.' => 'Discord',
+        'twitch.' => 'Twitch',
+        'flickr.' => 'Flickr',
+        'vimeo.' => 'Vimeo',
+        'dribbble.' => 'Dribbble',
+        'behance.' => 'Behance',
+        'github.' => 'GitHub',
+        'medium.' => 'Medium',
+        'quora.' => 'Quora'
+    ];
+
+    private $news_aggregators = [
+        'feedly.' => 'Feedly',
+        'flipboard.' => 'Flipboard',
+        'news.google' => 'Google News',
+        'apple.news' => 'Apple News',
+        'smartnews.' => 'SmartNews'
+    ];
+
+    private $email_clients = [
+        'mail.google' => 'Gmail',
+        'outlook.live' => 'Outlook',
+        'yahoo.com/mail' => 'Yahoo Mail',
+        'protonmail.' => 'ProtonMail'
+    ];
+
+    private $messaging_apps = [
+        'whatsapp.' => 'WhatsApp',
+        'telegram.' => 'Telegram',
+        'signal.' => 'Signal',
+        'messenger.' => 'Facebook Messenger',
+        'slack.' => 'Slack',
+        'discord.' => 'Discord'
+    ];
+
+    private $app_stores = [
+        'play.google' => 'Google Play Store',
+        'apps.apple' => 'Apple App Store',
+        'microsoft.com/store' => 'Microsoft Store'
     ];
 
     public function __construct() {
@@ -176,11 +225,10 @@ class VisitorTracker {
         $page_title = $data['page_title'] ?? $this->get_page_title();
         $ip = $data['ip'] ?? $this->get_client_ip();
         
-        // Check IP
+        // Erweiterte Checks
         if (!$this->is_valid_ip($ip)) return;
-
-        // Device + Bot Check
         if (!$this->is_real_browser($user_agent)) return;
+        if (!$this->should_track_visit($url, $page_title, $user_agent)) return;
 
         // Session handling
         $session_id = $this->get_or_create_session_id();
@@ -352,7 +400,7 @@ class VisitorTracker {
         if ($host && $query) {
             parse_str($query, $params);
             
-            // Prüfen ob es eine Suchmaschine ist
+            // Keywords für alle Suchmaschinen extrahieren
             foreach ($this->search_engines as $domain => $name) {
                 if (strpos($host, $domain) !== false) {
                     $keywords = $params['q'] ?? $params['p'] ?? $params['query'] ?? '';
@@ -361,42 +409,33 @@ class VisitorTracker {
             }
         }
 
-        // Suchmaschinen durchlaufen
-        foreach ($this->search_engines as $domain => $name) {
-            if (strpos($host, $domain) !== false) {
-                return [
-                    'channel' => 'organic', 
-                    'source' => $name, 
-                    'keywords' => $keywords
-                ];
+        // Durch alle Kategorien iterieren
+        $categories = [
+            'search_engines' => ['channel' => 'organic', 'type' => 'search'],
+            'social_platforms' => ['channel' => 'social', 'type' => 'social'],
+            'news_aggregators' => ['channel' => 'referral', 'type' => 'news'],
+            'messaging_apps' => ['channel' => 'social', 'type' => 'messaging'],
+            'app_stores' => ['channel' => 'referral', 'type' => 'app_store']
+        ];
+
+        foreach ($categories as $category => $info) {
+            foreach ($this->{$category} as $domain => $name) {
+                if (strpos($host, $domain) !== false) {
+                    return [
+                        'channel' => $info['channel'],
+                        'source' => $name,
+                        'type' => $info['type'], // Zusätzliches Feld für genauere Klassifizierung
+                        'keywords' => $keywords
+                    ];
+                }
             }
         }
 
-        // Soziale Medien durchlaufen
-        foreach ($this->social_platforms as $domain => $name) {
-            if (strpos($host, $domain) !== false) {
-                return [
-                    'channel' => 'social', 
-                    'source' => $name, 
-                    'keywords' => $keywords
-                ];
-            }
-        }
-
-        // Interner Traffic (eigene Domain)
-        $site_domain = parse_url(home_url(), PHP_URL_HOST);
-        if ($site_domain && strpos($host, $site_domain) !== false) {
-            return [
-                'channel' => 'internal',
-                'source' => $site_domain,
-                'keywords' => ''
-            ];
-        }
-
-        // Alle anderen als Referral
+        // Fallback
         return [
             'channel' => 'referral', 
-            'source' => $host ?: 'direct', 
+            'source' => $host ?: 'direct',
+            'type' => 'other',
             'keywords' => $keywords
         ];
     }
@@ -555,7 +594,16 @@ class VisitorTracker {
         if (empty($user_agent)) return false;
 
         $ua_lower = strtolower($user_agent);
-        foreach (['bot', 'crawler', 'spider', 'scraper', 'curl', 'wget'] as $bot) {
+        
+        // Erweiterte Bot-Keywords
+        $bot_patterns = [
+            'bot', 'crawler', 'spider', 'scraper', 'curl', 'wget', 'python', 'java', 
+            'php', 'requests', 'scrapy', 'screenshot', 'monitor', 'checker', 'scan',
+            'analyzer', 'indexer', 'headless', 'phantom', 'selenium', 'puppeteer',
+            'playwright', 'http-client', 'feed', 'rss', 'parser', 'collector'
+        ];
+        
+        foreach ($bot_patterns as $bot) {
             if (strpos($ua_lower, $bot) !== false) return false;
         }
 
@@ -563,8 +611,45 @@ class VisitorTracker {
         $this->deviceDetector->parse();
         if ($this->deviceDetector->isBot()) return false;
 
-        return stripos($user_agent, 'Mozilla') === 0 ||
-            preg_match('/(chrome|safari|firefox|edge|opera)\//i', $user_agent);
+        // Valide Browser müssen Mozilla-based sein ODER bekannte Browser enthalten
+        $valid_browsers = ['chrome', 'safari', 'firefox', 'edge', 'opera', 'ie', 'samsung'];
+        $has_valid_browser = false;
+        foreach ($valid_browsers as $browser) {
+            if (strpos($ua_lower, $browser) !== false) {
+                $has_valid_browser = true;
+                break;
+            }
+        }
+
+        return (stripos($user_agent, 'Mozilla') === 0 && $has_valid_browser) || 
+            preg_match('/(chrome|safari|firefox|edge|opera|msie|trident)\//i', $user_agent);
+    }
+
+    private function should_track_visit($url, $page_title, $user_agent) {
+        // 404-Seiten nicht tracken
+        if (strpos($page_title, 'nicht gefunden') !== false || 
+            strpos($page_title, '404') !== false ||
+            strpos($page_title, 'Seite wurde nicht gefunden') !== false ||
+            strpos($url, 'wp-content/uploads/berita-terbaru') !== false) { // Spezifischer Spam-Pfad
+            return false;
+        }
+
+        // Verdächtige URL-Patterns
+        $suspicious_patterns = [
+            '/\.html$/', // Statische HTML-Spam-Seiten
+            '/\/uploads\//', // Upload-Verzeichnis
+            '/\/wp-content\//', // WordPress Content (wenn nicht Ihre eigenen Seiten)
+            '/\/cache\//', // Cache-Verzeichnis
+            '/\.php\?/', // PHP mit Query-Parametern (kann Spam sein)
+        ];
+        
+        foreach ($suspicious_patterns as $pattern) {
+            if (preg_match($pattern, $url)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function is_valid_ip($ip) {

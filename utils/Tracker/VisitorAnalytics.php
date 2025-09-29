@@ -290,7 +290,14 @@ class VisitorAnalytics extends VisitorTracker
             'pages' => $this->get_pages_by_period($start_date, $end_date),
             'search_engines' => $this->get_search_engines_by_period($start_date, $end_date),
             'social_networks' => $this->get_social_networks_by_period($start_date, $end_date),
+            'traffic_channels' => $this->get_traffic_channels_by_period($start_date, $end_date),
+            'operating_systems' => $this->get_operating_systems_by_period($start_date, $end_date),
+            'visitor_types' => $this->get_visitor_types_by_period($start_date, $end_date),
+            'visit_times' => $this->get_visit_times_by_period($start_date, $end_date),
+            'screen_resolutions' => $this->get_screen_resolutions_by_period($start_date, $end_date),
+            'languages' => $this->get_languages_by_period($start_date, $end_date),
             'keywords' => $this->get_keywords_by_period($start_date, $end_date),
+            'cities' => $this->get_cities_by_period($start_date, $end_date),
             'wc_metrics' => [
                 'events' => $this->get_wc_events_by_period($start_date, $end_date),
                 'conversion_rate' => $this->get_wc_conversion_rate_by_period($start_date, $end_date),
@@ -570,6 +577,123 @@ class VisitorAnalytics extends VisitorTracker
             ) as sessions
             GROUP BY source_name 
             ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_traffic_channels_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT source_channel, COUNT(*) as count,
+                    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            FROM (
+                SELECT session_id, source_channel
+                FROM {$this->table_logs}
+                WHERE DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id, source_channel
+            ) as sessions
+            GROUP BY source_channel 
+            ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_operating_systems_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT platform, COUNT(*) as count,
+                    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            FROM (
+                SELECT session_id, platform
+                FROM {$this->table_logs}
+                WHERE DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id, platform
+            ) as sessions
+            GROUP BY platform 
+            ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_screen_resolutions_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT screen_resolution, COUNT(*) as count,
+                    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            FROM (
+                SELECT session_id, screen_resolution
+                FROM {$this->table_logs}
+                WHERE screen_resolution != '' AND DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id, screen_resolution
+            ) as sessions
+            GROUP BY screen_resolution 
+            ORDER BY count DESC
+            LIMIT 15",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_languages_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT language, COUNT(*) as count,
+                    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            FROM (
+                SELECT session_id, language
+                FROM {$this->table_logs}
+                WHERE language != '' AND DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id, language
+            ) as sessions
+            GROUP BY language 
+            ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_visit_times_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT HOUR(visit_time) as hour, COUNT(*) as count
+            FROM (
+                SELECT session_id, MIN(visit_time) as visit_time
+                FROM {$this->table_logs}
+                WHERE DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id
+            ) as sessions
+            GROUP BY HOUR(visit_time)
+            ORDER BY hour ASC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_visitor_types_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT 
+                CASE 
+                    WHEN visit_count = 1 THEN 'New Visitors'
+                    ELSE 'Returning Visitors'
+                END as visitor_type,
+                COUNT(*) as count,
+                ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            FROM (
+                SELECT session_id, COUNT(DISTINCT DATE(visit_time)) as visit_count
+                FROM {$this->table_logs}
+                WHERE DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id
+            ) as visits
+            GROUP BY visitor_type",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_cities_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT city, country_name, COUNT(*) as count,
+                    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            FROM (
+                SELECT session_id, city, country_name
+                FROM {$this->table_logs}
+                WHERE city != '' AND DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id, city, country_name
+            ) as sessions
+            GROUP BY city, country_name 
+            ORDER BY count DESC
+            LIMIT 20",
             $start_date, $end_date
         ), ARRAY_A);
     }
