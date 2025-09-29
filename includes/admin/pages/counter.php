@@ -8,7 +8,8 @@ use Utils\Tracker\VisitorAnalytics;
 
 $analyticsInstance = VisitorAnalytics::getAnalyticsInstance();
 
-var_dump($analyticsInstance->visitors_today());
+$report = $analyticsInstance->get_report_this_month();
+
 ?>
 <div class="wrap">
 
@@ -26,6 +27,8 @@ var_dump($analyticsInstance->visitors_today());
         <div class="wp-list-table widefat fixed striped"> 
 
             <h3>Grundlegende Daten</h3>
+
+            <?php var_dump($report); ?>
 
             <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
 
@@ -64,17 +67,87 @@ var_dump($analyticsInstance->visitors_today());
                 </div>
 
                 <div class="postbox" style="width: 100%; flex-basis: 100%">
-                    
-                    <div class="inside" style="max-height: 220px; overflow-y: auto;">
-                        <h2 class="hndle" style="margin-bottom: 10px;"><span>Herkunft</span></h2>
+                    <div class="inside">
+                        <h2 class="hndle" style="margin-bottom: 10px;"><span>Geräte</span></h2>
+                        <?php var_dump($report["devices"]); ?>
                         <table class="widefat fixed striped">
                             <tbody>
-                                <?php // foreach ($referrals as $source => $count): ?>
+                                <?php foreach ($report["devices"] as $key => $value): ?>
                                     <tr>
-                                        <td><?php // echo esc_html($source); ?></td>
-                                        <td><strong><?php // echo $count; ?></strong></td>
+                                        <td><?php echo esc_html($value["device_type"]); ?></td>
+                                        <td><strong><?php echo $value["count"]; ?></strong></td>
                                     </tr>
-                                <?php // endforeach; ?>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+                <div class="postbox" style="width: 100%; flex-basis: 100%">
+                    <div class="inside">
+                        <h2 class="hndle" style="margin-bottom: 10px;"><span>Browsers</span></h2>
+                        <?php var_dump($report["browsers"]); ?>
+                        <table class="widefat fixed striped">
+                            <tbody>
+                                <?php foreach ($report["browsers"] as $key => $value): ?>
+                                    <tr>
+                                        <td><?php echo esc_html($value["browser_name"]); ?></td>
+                                        <td><strong><?php echo $value["count"]; ?></strong></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="postbox" style="width: 100%; flex-basis: 100%">
+                    <div class="inside">
+                        <h2 class="hndle" style="margin-bottom: 10px;"><span>Herkunft</span></h2>
+                        <?php var_dump($report["traffic_sources"]); ?>
+                        <table class="widefat fixed striped">
+                            <tbody>
+                                <?php foreach ($report["traffic_sources"] as $key => $value): ?>
+                                    <tr>
+                                        <td><?php echo esc_html($value["source_name"]); ?></td>
+                                        <td><strong><?php echo $value["count"]; ?></strong></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+                <div class="postbox" style="width: 100%; flex-basis: 100%">
+                    <div class="inside">
+                        <h2 class="hndle" style="margin-bottom: 10px;"><span>Suchmaschinen</span></h2>
+                        <?php var_dump($report["search_engines"]); ?>
+                        <table class="widefat fixed striped">
+                            <tbody>
+                                <?php foreach ($report["search_engines"] as $key => $value): ?>
+                                    <tr>
+                                        <td><?php echo esc_html($value["source_name"]); ?></td>
+                                        <td><strong><?php echo $value["count"]; ?></strong></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="postbox" style="width: 100%; flex-basis: 100%">
+                    <div class="inside">
+                        <h2 class="hndle" style="margin-bottom: 10px;"><span>Soziale Netzwerke</span></h2>
+                        <?php var_dump($report["social_networks"]); ?>
+                        <table class="widefat fixed striped">
+                            <tbody>
+                                <?php foreach ($report["social_networks"] as $key => $value): ?>
+                                    <tr>
+                                        <td><?php echo esc_html($value["source_name"]); ?></td>
+                                        <td><strong><?php echo $value["count"]; ?></strong></td>
+                                    </tr>
+                                <?php endforeach; ?>
                             </tbody>
                         </table>
                     </div>

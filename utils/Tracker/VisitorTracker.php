@@ -13,6 +13,33 @@ class VisitorTracker {
     public $wpdb;
     private $deviceDetector;
 
+    private $search_engines = [
+        'google.' => 'Google',
+        'bing.' => 'Bing',
+        'yahoo.' => 'Yahoo',
+        'duckduckgo.' => 'DuckDuckGo',
+        'ecosia.' => 'Ecosia',
+        'startpage.' => 'Startpage',
+        'qwant.' => 'Qwant',
+        'brave.' => 'Brave Search',
+        'search.' => 'Other Search Engine'
+    ];
+
+    private $social_platforms = [
+        'facebook.' => 'Facebook',
+        'twitter.' => 'Twitter',
+        'x.com' => 'X',
+        'instagram.' => 'Instagram',
+        'linkedin.' => 'LinkedIn',
+        'pinterest.' => 'Pinterest',
+        'youtube.' => 'YouTube',
+        'tiktok.' => 'TikTok',
+        'reddit.' => 'Reddit',
+        'threads.' => 'Threads',
+        'whatsapp.' => 'WhatsApp',
+        'telegram.' => 'Telegram'
+    ];
+
     public function __construct() {
         global $wpdb;
         $this->wpdb = $wpdb;
@@ -324,19 +351,54 @@ class VisitorTracker {
         $keywords = '';
         if ($host && $query) {
             parse_str($query, $params);
-            if (strpos($host, 'google.') !== false) {
-                $keywords = $params['q'] ?? '';
-            } elseif (strpos($host, 'bing.') !== false) {
-                $keywords = $params['q'] ?? '';
+            
+            // Prüfen ob es eine Suchmaschine ist
+            foreach ($this->search_engines as $domain => $name) {
+                if (strpos($host, $domain) !== false) {
+                    $keywords = $params['q'] ?? $params['p'] ?? $params['query'] ?? '';
+                    break;
+                }
             }
         }
 
-        if (strpos($host, 'google.') !== false) return ['channel' => 'organic', 'source' => 'Google', 'keywords' => $keywords];
-        if (strpos($host, 'bing.') !== false) return ['channel' => 'organic', 'source' => 'Bing', 'keywords' => $keywords];
-        if (strpos($host, 'facebook.') !== false) return ['channel' => 'social', 'source' => 'Facebook', 'keywords' => $keywords];
-        if (strpos($host, 'twitter.') !== false) return ['channel' => 'social', 'source' => 'Twitter', 'keywords' => $keywords];
+        // Suchmaschinen durchlaufen
+        foreach ($this->search_engines as $domain => $name) {
+            if (strpos($host, $domain) !== false) {
+                return [
+                    'channel' => 'organic', 
+                    'source' => $name, 
+                    'keywords' => $keywords
+                ];
+            }
+        }
 
-        return ['channel' => 'referral', 'source' => $host, 'keywords' => $keywords];
+        // Soziale Medien durchlaufen
+        foreach ($this->social_platforms as $domain => $name) {
+            if (strpos($host, $domain) !== false) {
+                return [
+                    'channel' => 'social', 
+                    'source' => $name, 
+                    'keywords' => $keywords
+                ];
+            }
+        }
+
+        // Interner Traffic (eigene Domain)
+        $site_domain = parse_url(home_url(), PHP_URL_HOST);
+        if ($site_domain && strpos($host, $site_domain) !== false) {
+            return [
+                'channel' => 'internal',
+                'source' => $site_domain,
+                'keywords' => ''
+            ];
+        }
+
+        // Alle anderen als Referral
+        return [
+            'channel' => 'referral', 
+            'source' => $host ?: 'direct', 
+            'keywords' => $keywords
+        ];
     }
 
     /**
