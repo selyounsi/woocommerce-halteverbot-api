@@ -3,7 +3,6 @@ if (!is_admin()) {
     return;
 }
 
-use Utils\Tracker\Google\GoogleAuth;
 use Utils\Tracker\Google\GoogleSearchConsole;
 use Utils\Tracker\VisitorAnalytics;
 
@@ -12,7 +11,7 @@ $analyticsInstance = VisitorAnalytics::getAnalyticsInstance();
 $report = $analyticsInstance->get_report_this_month();
 
 
-$gsc = new GoogleSearchConsole();
+$gsc = GoogleSearchConsole::getInstance();
 $status = $gsc->getStatus();
 
 // Formular verarbeiten
@@ -70,8 +69,6 @@ if (isset($_GET['code'])) {
         <div class="wp-list-table widefat fixed striped"> 
 
             <h3>Grundlegende Daten</h3>
-
-            <?php var_dump($report); ?>
 
             <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
 
@@ -195,6 +192,24 @@ if (isset($_GET['code'])) {
                         </table>
                     </div>
                 </div>
+
+                <div class="postbox" style="width: 100%; flex-basis: 100%">
+                    <div class="inside">
+                        <h2 class="hndle" style="margin-bottom: 10px;"><span>Keywords</span></h2>
+                        <?php var_dump($report["gsc_keywords"]); ?>
+                        <table class="widefat fixed striped">
+                            <tbody>
+                                <?php foreach ($report["gsc_keywords"] as $key => $value): ?>
+                                    <tr>
+                                        <td><?php echo esc_html($value["keywords"]); ?></td>
+                                        <td><strong><?php echo $value["count"]; ?></strong></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
 
             </div>
         </div>
@@ -383,7 +398,20 @@ if (isset($_GET['code'])) {
                                     $startDate = date('Y-m-d', strtotime('-30 days'));
                                     $endDate = date('Y-m-d');
                                     
-                                    $analyticsData = $gsc->getPrimaryDomainData($startDate, $endDate, ['query']);
+                                    $payload = [
+                                        'startDate' => $startDate,
+                                        'endDate' => $endDate,
+                                        'dimensions' => ['query'],
+                                        'rowLimit' => 10,
+                                        'orderBy' => [
+                                            [
+                                                'dimension' => 'CLICKS',
+                                                'sortOrder' => 'DESCENDING'
+                                            ]
+                                        ]
+                                    ];
+                                    
+                                    $analyticsData = $gsc->getPrimaryDomainData($payload);
                                     
                                     if ($analyticsData['success'] && !empty($analyticsData['data'])):
                                         $rows = $analyticsData['data'];
@@ -400,7 +428,7 @@ if (isset($_GET['code'])) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php foreach (array_slice($rows, 0, 10) as $row): ?>
+                                                <?php foreach ($rows as $row): ?>
                                                     <tr>
                                                         <td><?php echo esc_html($row['keys'][0] ?? 'N/A'); ?></td>
                                                         <td><?php echo esc_html($row['clicks'] ?? 0); ?></td>
@@ -411,7 +439,6 @@ if (isset($_GET['code'])) {
                                                 <?php endforeach; ?>
                                             </tbody>
                                         </table>
-                                        <p><em>Zeige Top 10 von <?php echo count($rows); ?> Suchbegriffen</em></p>
                                     <?php else: ?>
                                         <p>Keine Daten verfügbar oder Fehler: <?php echo esc_html($analyticsData['error'] ?? 'Unbekannter Fehler'); ?></p>
                                     <?php endif; ?>

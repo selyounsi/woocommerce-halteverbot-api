@@ -5,6 +5,7 @@ namespace Utils\Tracker;
 class VisitorAnalytics extends VisitorTracker 
 {
     private static $analytics_instance = null;
+    private $gsc;
 
     public static function getAnalyticsInstance(): self {
         if (self::$analytics_instance === null) {
@@ -15,6 +16,7 @@ class VisitorAnalytics extends VisitorTracker
 
     public function __construct() {
         parent::__construct(); 
+        $this->gsc = \Utils\Tracker\Google\GoogleSearchConsole::getInstance();
     }
 
     // --- Grundlegende Besucherstatistiken ---
@@ -298,6 +300,7 @@ class VisitorAnalytics extends VisitorTracker
             'languages' => $this->get_languages_by_period($start_date, $end_date),
             'keywords' => $this->get_keywords_by_period($start_date, $end_date),
             'cities' => $this->get_cities_by_period($start_date, $end_date),
+            'gsc_keywords' => $this->get_gsc_keywords_by_period($start_date, $end_date), 
             'wc_metrics' => [
                 'events' => $this->get_wc_events_by_period($start_date, $end_date),
                 'conversion_rate' => $this->get_wc_conversion_rate_by_period($start_date, $end_date),
@@ -726,6 +729,50 @@ class VisitorAnalytics extends VisitorTracker
             LIMIT 20",
             $start_date, $end_date
         ), ARRAY_A);
+    }
+
+    private function get_gsc_keywords_by_period($start_date, $end_date) {
+        try {
+            if (!$this->gsc->isAuthenticated() || !$this->gsc->getPrimaryDomain()) {
+                return [];
+            }
+            
+            $payload = [
+                'startDate' => $start_date,
+                'endDate' => $end_date,
+                'dimensions' => ['query'],
+                'rowLimit' => 30,
+                'orderBy' => [
+                    [
+                        'dimension' => 'CLICKS',
+                        'sortOrder' => 'DESCENDING'
+                    ]
+                ]
+            ];
+            
+            $result = $this->gsc->getSearchAnalyticsData($payload);
+            
+            if ($result['success'] && !empty($result['data'])) {
+                $totalClicks = array_sum(array_column($result['data'], 'clicks'));
+                
+                return array_map(function($row) use ($totalClicks) {
+                    $clicks = $row['clicks'] ?? 0;
+                    $percentage = $totalClicks > 0 ? round(($clicks / $totalClicks) * 100, 1) : 0;
+                    
+                    return [
+                        'keywords' => $row['keys'][0] ?? 'N/A',
+                        'count' => $clicks,
+                        'percentage' => $percentage
+                    ];
+                }, $result['data']);
+            }
+            
+            return [];
+            
+        } catch (\Exception $e) {
+            error_log('GSC Keywords Error: ' . $e->getMessage());
+            return [];
+        }
     }
 
     private function get_wc_events_by_period($start_date, $end_date) {

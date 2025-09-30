@@ -5,6 +5,7 @@ namespace Utils\Tracker\Google;
 use GuzzleHttp\Client;
 
 class GoogleSearchConsole {
+    private static $instance = null;
     private $clientId;
     private $clientSecret;
     private $optionName = 'halteverbot_google_search_console';
@@ -16,6 +17,19 @@ class GoogleSearchConsole {
         $this->clientSecret = $clientSecret ?: ($options['client_secret'] ?? '');
         $this->httpClient = new Client();
     }
+
+    /**
+     * Gibt immer die gleiche Instanz zurück
+     */
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    // Verhindere Klonen
+    private function __clone() {}
 
     /**
      * Getter für Client ID
@@ -377,7 +391,7 @@ class GoogleSearchConsole {
     /**
      * Holt Search Analytics Daten für die primäre Domain
      */
-    public function getPrimaryDomainData($startDate, $endDate, $dimensions = ['query']) {
+    public function getPrimaryDomainData($payload) {
         $primaryDomain = $this->getPrimaryDomain();
         
         if (empty($primaryDomain)) {
@@ -387,28 +401,30 @@ class GoogleSearchConsole {
             ];
         }
 
-        return $this->getSearchAnalytics($primaryDomain, $startDate, $endDate, $dimensions);
+        return $this->getSearchAnalyticsData($payload);
     }
 
     /**
-     * Holt Search Analytics für eine spezifische Domain
+     * Holt Search Analytics Daten mit komplettem Payload
      */
-    public function getSearchAnalytics($siteUrl, $startDate, $endDate, $dimensions = ['query']) {
+    public function getSearchAnalyticsData($payload) {
         try {
+            $primaryDomain = $this->getPrimaryDomain();
+            
+            if (empty($primaryDomain)) {
+                return [
+                    'success' => false,
+                    'error' => 'Keine primäre Domain festgelegt'
+                ];
+            }
+
             $token = $this->getValidToken();
             if (!$token['success']) {
                 return $token;
             }
 
-            $payload = [
-                'startDate' => $startDate,
-                'endDate' => $endDate,
-                'dimensions' => $dimensions,
-                'rowLimit' => 1000
-            ];
-
             $response = $this->httpClient->post(
-                "https://searchconsole.googleapis.com/webmasters/v3/sites/" . urlencode($siteUrl) . "/searchAnalytics/query",
+                "https://searchconsole.googleapis.com/webmasters/v3/sites/" . urlencode($primaryDomain) . "/searchAnalytics/query",
                 [
                     'headers' => [
                         'Authorization' => "Bearer {$token['access_token']}",
@@ -431,8 +447,7 @@ class GoogleSearchConsole {
 
             return [
                 'success' => true,
-                'data' => $data['rows'] ?? [],
-                'site' => $siteUrl
+                'data' => $data['rows'] ?? []
             ];
 
         } catch (\Exception $e) {
