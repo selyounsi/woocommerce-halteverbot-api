@@ -58,6 +58,11 @@ class VisitorAnalytics extends VisitorTracker
         return $this->query_count(' AND DATE_FORMAT(visit_time, "%Y-%m") = %s', [$month]);
     }
 
+    public function visitors_last_month() {
+        $last_month = date('Y-m', strtotime('-1 month', current_time('timestamp')));
+        return $this->query_count(' AND DATE_FORMAT(visit_time, "%Y-%m") = %s', [$last_month]);
+    }
+
     public function visitors_this_year() {
         $year = date('Y', current_time('timestamp'));
         return $this->query_count(' AND YEAR(visit_time) = %s', [$year]);
@@ -286,6 +291,8 @@ class VisitorAnalytics extends VisitorTracker
             'exit_pages' => $this->exit_pages_by_period($start_date, $end_date, 10),
             'exit_rates' => $this->exit_rates_by_period($start_date, $end_date, 10),
             'devices' => $this->get_devices_by_period($start_date, $end_date),
+            'device_types' => $this->get_device_types_by_period($start_date, $end_date),
+            'device_brands' => $this->get_device_brands_by_period($start_date, $end_date),
             'browsers' => $this->get_browsers_by_period($start_date, $end_date),
             'countries' => $this->get_countries_by_period($start_date, $end_date),
             'traffic_sources' => $this->get_traffic_sources_by_period($start_date, $end_date),
@@ -304,7 +311,8 @@ class VisitorAnalytics extends VisitorTracker
             'wc_metrics' => [
                 'events' => $this->get_wc_events_by_period($start_date, $end_date),
                 'conversion_rate' => $this->get_wc_conversion_rate_by_period($start_date, $end_date),
-                'revenue' => $this->wc_revenue_by_period($start_date, $end_date)
+                'revenue' => $this->wc_revenue_by_period($start_date, $end_date),
+                'confirmed_revenue' => $this->wc_confirmed_revenue_by_period($start_date, $end_date)
             ]
         ];
     }
@@ -488,16 +496,59 @@ class VisitorAnalytics extends VisitorTracker
     // --- Breakdown Reports (Devices, Browser, Countries, Traffic, Pages, Keywords, Events) ---
     private function get_devices_by_period($start_date, $end_date) {
         return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT device_type, device_brand, device_model, COUNT(*) as count,
-                    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            "SELECT 
+                device_type,
+                device_brand,
+                device_model,
+                COUNT(*) as count,
+                ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
             FROM (
-                SELECT session_id, device_type, device_brand, device_model
+                SELECT 
+                    session_id, 
+                    device_type,
+                    COALESCE(NULLIF(device_brand, ''), 'Unknown') as device_brand,
+                    COALESCE(NULLIF(device_model, ''), 'Unknown') as device_model
                 FROM {$this->table_logs}
                 WHERE DATE(visit_time) BETWEEN %s AND %s
                 GROUP BY session_id, device_type, device_brand, device_model
             ) as sessions
             GROUP BY device_type, device_brand, device_model 
+            ORDER BY device_type, count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_device_types_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT device_type, COUNT(*) as count,
+                    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            FROM (
+                SELECT session_id, device_type
+                FROM {$this->table_logs}
+                WHERE DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id, device_type
+            ) as sessions
+            GROUP BY device_type 
             ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    private function get_device_brands_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT 
+                COALESCE(NULLIF(device_brand, ''), 'Unknown') as brand,
+                COUNT(*) as count,
+                ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            FROM (
+                SELECT session_id, device_brand
+                FROM {$this->table_logs}
+                WHERE DATE(visit_time) BETWEEN %s AND %s
+                GROUP BY session_id, device_brand
+            ) as sessions
+            GROUP BY brand 
+            ORDER BY count DESC
+            LIMIT 10",
             $start_date, $end_date
         ), ARRAY_A);
     }
@@ -635,20 +686,37 @@ class VisitorAnalytics extends VisitorTracker
 
     private function get_languages_by_period($start_date, $end_date) {
         return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT language, COUNT(*) as count,
-                    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            "SELECT 
+                CASE 
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'de' THEN 'Deutsch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'en' THEN 'Englisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'fr' THEN 'Französisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'es' THEN 'Spanisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'it' THEN 'Italienisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'ru' THEN 'Russisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'uk' THEN 'Ukrainisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'pl' THEN 'Polnisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'tr' THEN 'Türkisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'ar' THEN 'Arabisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'zh' THEN 'Chinesisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'ja' THEN 'Japanisch'
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(language, ',', 1), '-', 1) = 'ko' THEN 'Koreanisch'
+                    ELSE 'Andere'
+                END as language_clean,
+                COUNT(*) as count,
+                ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
             FROM (
                 SELECT session_id, language
                 FROM {$this->table_logs}
                 WHERE language != '' AND DATE(visit_time) BETWEEN %s AND %s
                 GROUP BY session_id, language
             ) as sessions
-            GROUP BY language 
+            GROUP BY language_clean 
             ORDER BY count DESC",
             $start_date, $end_date
         ), ARRAY_A);
     }
-
+    
     private function get_visit_times_by_period($start_date, $end_date) {
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT HOUR(visit_time) as hour, COUNT(*) as count
@@ -788,31 +856,51 @@ class VisitorAnalytics extends VisitorTracker
     }
 
     private function get_wc_conversion_rate_by_period($start_date, $end_date) {
-        $product_viewers = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(DISTINCT visitor_id) 
-             FROM {$this->table_wc_events} 
-             WHERE event_type = 'product_view' 
-             AND DATE(event_time) BETWEEN %s AND %s",
+        $product_views = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'product_view' 
+            AND DATE(event_time) BETWEEN %s AND %s",
             $start_date, $end_date
         ));
 
         $orders = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(DISTINCT order_id) 
-             FROM {$this->table_wc_events} 
-             WHERE event_type = 'order_complete' 
-             AND DATE(event_time) BETWEEN %s AND %s",
+            "SELECT COUNT(*) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'order_complete' 
+            AND DATE(event_time) BETWEEN %s AND %s",
             $start_date, $end_date
         ));
 
-        return $product_viewers > 0 ? round(($orders / $product_viewers) * 100, 2) : 0;
+        return $product_views > 0 ? round(($orders / $product_views) * 100, 2) : 0;
     }
 
+    // Aktueller Umsatz (alle order_complete Events)
     public function wc_revenue_by_period($start_date, $end_date) {
+        $orders_table = $this->wpdb->prefix . 'wc_orders';
+        
         $sql = $this->wpdb->prepare(
-            "SELECT SUM(product_price * quantity) as revenue
-             FROM {$this->table_wc_events} 
-             WHERE event_type = 'add_to_cart' 
-             AND DATE(event_time) BETWEEN %s AND %s",
+            "SELECT SUM(o.total_amount) as revenue
+            FROM {$this->table_wc_events} e
+            LEFT JOIN {$orders_table} o ON e.order_id = o.id
+            WHERE e.event_type = 'order_complete' 
+            AND DATE(e.event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        );
+        return round($this->wpdb->get_var($sql) ?? 0, 2);
+    }
+
+    // Bestätigter Umsatz (nur completed Orders)
+    public function wc_confirmed_revenue_by_period($start_date, $end_date) {
+        $orders_table = $this->wpdb->prefix . 'wc_orders';
+        
+        $sql = $this->wpdb->prepare(
+            "SELECT SUM(o.total_amount) as revenue
+            FROM {$this->table_wc_events} e
+            LEFT JOIN {$orders_table} o ON e.order_id = o.id
+            WHERE e.event_type = 'order_complete' 
+            AND DATE(e.event_time) BETWEEN %s AND %s
+            AND o.status = 'completed'",
             $start_date, $end_date
         );
         return round($this->wpdb->get_var($sql) ?? 0, 2);
