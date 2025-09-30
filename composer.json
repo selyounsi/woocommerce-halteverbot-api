@@ -4,7 +4,8 @@
         "dompdf/dompdf": "^3.0",
         "setasign/fpdi": "^2.6",
         "whichbrowser/parser": "^2.1",
-        "matomo/device-detector": "^6.4"
+        "matomo/device-detector": "^6.4",
+        "guzzlehttp/guzzle": "^7.10"
     },
     "autoload": {
         "psr-4": {
