@@ -307,7 +307,7 @@ class VisitorAnalytics extends VisitorTracker
             'languages' => $this->get_languages_by_period($start_date, $end_date),
             'keywords' => $this->get_keywords_by_period($start_date, $end_date),
             'cities' => $this->get_cities_by_period($start_date, $end_date),
-            'gsc_keywords' => $this->get_gsc_keywords_by_period($start_date, $end_date), 
+            'gsc_keywords' => $this->get_gsc_keywords_16_months(), 
             'wc_metrics' => [
                 'events' => $this->get_wc_events_by_period($start_date, $end_date),
                 'conversion_rate' => $this->get_wc_conversion_rate_by_period($start_date, $end_date),
@@ -716,7 +716,7 @@ class VisitorAnalytics extends VisitorTracker
             $start_date, $end_date
         ), ARRAY_A);
     }
-    
+
     private function get_visit_times_by_period($start_date, $end_date) {
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT HOUR(visit_time) as hour, COUNT(*) as count
@@ -797,6 +797,13 @@ class VisitorAnalytics extends VisitorTracker
             LIMIT 20",
             $start_date, $end_date
         ), ARRAY_A);
+    }
+
+    private function get_gsc_keywords_16_months() {
+        $end_date = date('Y-m-d');
+        $start_date = date('Y-m-d', strtotime('-16 months'));
+        
+        return $this->get_gsc_keywords_by_period($start_date, $end_date);
     }
 
     private function get_gsc_keywords_by_period($start_date, $end_date) {
