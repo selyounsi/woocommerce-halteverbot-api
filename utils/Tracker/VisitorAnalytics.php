@@ -281,6 +281,14 @@ class VisitorAnalytics extends VisitorTracker
     public function get_report($start_date, $end_date): array {
         return [
             'total_visits' => $this->visitors_by_period($start_date, $end_date),
+            'visitors' => [
+                'today' => $this->visitors_today(),
+                'yesterday' => $this->visitors_yesterday(),
+                'this_week' => $this->visitors_this_week(),
+                'this_month' => $this->visitors_this_month(),
+                'last_month' => $this->visitors_last_month(),
+                'this_year' => $this->visitors_this_year()
+            ],
             'session_metrics' => [
                 'avg_duration' => $this->get_avg_session_duration_by_period($start_date, $end_date),
                 'avg_pages' => $this->get_avg_pages_per_session_by_period($start_date, $end_date),
@@ -310,9 +318,23 @@ class VisitorAnalytics extends VisitorTracker
             'gsc_keywords' => $this->get_gsc_keywords_16_months(), 
             'wc_metrics' => [
                 'events' => $this->get_wc_events_by_period($start_date, $end_date),
-                'conversion_rate' => $this->get_wc_conversion_rate_by_period($start_date, $end_date),
-                'revenue' => $this->wc_revenue_by_period($start_date, $end_date),
-                'confirmed_revenue' => $this->wc_confirmed_revenue_by_period($start_date, $end_date)
+                'current_period' => [
+                    'conversion_rate' => $this->get_wc_conversion_rate_by_period($start_date, $end_date),
+                    'revenue' => $this->wc_revenue_by_period($start_date, $end_date),
+                    'confirmed_revenue' => $this->wc_confirmed_revenue_by_period($start_date, $end_date)
+                ],
+                'last_7_days' => [
+                    'conversion_rate' => $this->get_wc_conversion_rate_by_period(date('Y-m-d', strtotime('-7 days')), $end_date),
+                    'revenue' => $this->wc_revenue_by_period(date('Y-m-d', strtotime('-7 days')), $end_date),
+                    'confirmed_revenue' => $this->wc_confirmed_revenue_by_period(date('Y-m-d', strtotime('-7 days')), $end_date),
+                    'daily_data' => $this->get_daily_wc_events_for_days(7)
+                ],
+                'last_30_days' => [
+                    'conversion_rate' => $this->get_wc_conversion_rate_by_period(date('Y-m-d', strtotime('-30 days')), $end_date),
+                    'revenue' => $this->wc_revenue_by_period(date('Y-m-d', strtotime('-30 days')), $end_date),
+                    'confirmed_revenue' => $this->wc_confirmed_revenue_by_period(date('Y-m-d', strtotime('-30 days')), $end_date),
+                    'daily_data' => $this->get_daily_wc_events_for_days(30)
+                ]
             ]
         ];
     }
@@ -911,5 +933,56 @@ class VisitorAnalytics extends VisitorTracker
             $start_date, $end_date
         );
         return round($this->wpdb->get_var($sql) ?? 0, 2);
+    }
+
+
+    /**
+     * Holt tägliche Events für X Tage (immer vollständige Anzahl Einträge)
+     */
+    private function get_daily_wc_events_for_days($days) {
+        $end_date = date('Y-m-d');
+        $start_date = date('Y-m-d', strtotime('-'.($days-1).' days'));
+        
+        // Erstelle alle Tage
+        $daily_data = [];
+        for ($i = $days-1; $i >= 0; $i--) {
+            $day = date('Y-m-d', strtotime("-$i days"));
+            $daily_data[$day] = [
+                'conversion_rate' => 0,
+                'product_view' => 0,        // Korrigiert: product_view statt product_views
+                'add_to_cart' => 0,
+                'checkout_start' => 0,
+                'order_complete' => 0,
+                'phone_click' => 0,
+                'email_click' => 0
+            ];
+        }
+
+        // Hole echte Daten aus der Datenbank
+        $results = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT DATE(event_time) as day, event_type, COUNT(*) as count
+            FROM {$this->table_wc_events} 
+            WHERE DATE(event_time) BETWEEN %s AND %s 
+            GROUP BY day, event_type 
+            ORDER BY day",
+            $start_date, $end_date
+        ), ARRAY_A);
+
+        // Fülle die täglichen Daten
+        foreach ($results as $row) {
+            $day = $row['day'];
+            if (isset($daily_data[$day])) {
+                $daily_data[$day][$row['event_type']] = (int)$row['count'];
+            }
+        }
+
+        // Berechne Conversion Rate für jeden Tag
+        foreach ($daily_data as $day => &$data) {
+            $product_views = $data['product_view'];  // Korrigiert: product_view statt product_views
+            $orders = $data['order_complete'];
+            $data['conversion_rate'] = $product_views > 0 ? round(($orders / $product_views) * 100, 2) : 0;
+        }
+
+        return $daily_data;
     }
 }
