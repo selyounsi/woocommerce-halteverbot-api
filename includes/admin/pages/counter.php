@@ -403,6 +403,32 @@ if (isset($_GET['code'])) {
                     </div>
                 </div>
 
+                <!-- WC Events -->
+                <table class="widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th>Event-Typ</th>
+                            <th>Anzahl</th>
+                            <th>Anteil</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($report["wc_metrics"]["events"])): ?>
+                            <?php foreach ($report["wc_metrics"]["events"] as $event): ?>
+                                <tr>
+                                    <td><?php echo esc_html($event["event_type"]); ?></td>
+                                    <td><strong><?php echo $event["count"]; ?></strong></td>
+                                    <td><?php echo $event["percentage"]; ?>%</td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="3" style="text-align: center;">Keine WooCommerce Events verfügbar</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+
                 <!-- NEUE: Erweiterte Diagramme -->
                 <div style="display: flex; gap: 1rem; margin-bottom: 20px; flex-wrap: wrap;">
                     <!-- Funnel Diagramm -->
