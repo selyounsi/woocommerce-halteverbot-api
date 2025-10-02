@@ -363,8 +363,13 @@ class VisitorAnalytics extends VisitorTracker
                 
                 // Kunden Metriken
                 'customer_metrics' => [
-                    'repeat_customer_rate' => $this->get_repeat_customer_rate($start_date, $end_date),
-                    'new_vs_returning' => $this->get_new_vs_returning_customers($start_date, $end_date)
+                    'session_analysis' => $this->get_session_analysis($start_date, $end_date),
+                    'conversion_breakdown' => [
+                        'online_orders' => $this->get_online_orders($start_date, $end_date),
+                        'contact_leads' => $this->get_contact_leads($start_date, $end_date),
+                        'total_conversions' => $this->get_online_orders($start_date, $end_date) + $this->get_contact_leads($start_date, $end_date),
+                        'high_value_sessions' => $this->get_high_value_sessions($start_date, $end_date)
+                    ]
                 ],
                 
                 // Geräte Performance
@@ -1136,60 +1141,73 @@ class VisitorAnalytics extends VisitorTracker
     }
 
     /**
-     * Berechnet Wiederholungskunden-Rate
+     * Einfache Session Analyse mit session_id
      */
-    private function get_repeat_customer_rate($start_date, $end_date) {
-        $customer_orders = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT customer_id, COUNT(*) as order_count 
-            FROM {$this->table_wc_events} 
-            WHERE event_type = 'order_complete' 
-            AND customer_id IS NOT NULL
-            AND DATE(event_time) BETWEEN %s AND %s 
-            GROUP BY customer_id",
+    private function get_session_analysis($start_date, $end_date) {
+        $sessions_per_visitor = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT ip, user_agent, COUNT(DISTINCT session_id) as session_count
+            FROM {$this->table_logs} 
+            WHERE DATE(visit_time) BETWEEN %s AND %s
+            GROUP BY ip, user_agent",
             $start_date, $end_date
         ), ARRAY_A);
         
-        $total_customers = count($customer_orders);
-        $repeat_customers = count(array_filter($customer_orders, function($customer) {
-            return $customer['order_count'] > 1;
-        }));
+        $new_sessions = 0;
+        $returning_sessions = 0;
         
-        return $total_customers > 0 ? round(($repeat_customers / $total_customers) * 100, 2) : 0;
-    }
-
-    /**
-     * Gibt Verhältnis von neuen zu wiederkehrenden Kunden zurück
-     */
-    private function get_new_vs_returning_customers($start_date, $end_date) {
-        $customer_orders = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT customer_id, COUNT(*) as order_count 
-            FROM {$this->table_wc_events} 
-            WHERE event_type = 'order_complete' 
-            AND customer_id IS NOT NULL
-            AND DATE(event_time) BETWEEN %s AND %s 
-            GROUP BY customer_id",
-            $start_date, $end_date
-        ), ARRAY_A);
-        
-        $new_customers = 0;
-        $returning_customers = 0;
-        
-        foreach ($customer_orders as $customer) {
-            if ($customer['order_count'] == 1) {
-                $new_customers++;
+        foreach ($sessions_per_visitor as $visitor) {
+            if ($visitor['session_count'] == 1) {
+                $new_sessions++;
             } else {
-                $returning_customers++;
+                $returning_sessions++;
             }
         }
         
-        $total = $new_customers + $returning_customers;
-        
         return [
-            'new_customers' => $new_customers,
-            'returning_customers' => $returning_customers,
-            'new_percentage' => $total > 0 ? round(($new_customers / $total) * 100, 2) : 0,
-            'returning_percentage' => $total > 0 ? round(($returning_customers / $total) * 100, 2) : 0
+            'new_sessions' => $new_sessions,
+            'returning_sessions' => $returning_sessions,
+            'total_visitors' => count($sessions_per_visitor)
         ];
+    }
+
+    /**
+     * Zählt High-Value Sessions (mit Bestellung oder Kontakt)
+     */
+    private function get_high_value_sessions($start_date, $end_date) {
+        return $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT e.session_id) 
+            FROM {$this->table_wc_events} e
+            INNER JOIN {$this->table_logs} l ON e.session_id = l.session_id
+            WHERE e.event_type IN ('order_complete', 'phone_click', 'email_click')
+            AND DATE(e.event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+    }
+
+    /**
+     * Online Bestellungen
+     */
+    private function get_online_orders($start_date, $end_date) {
+        return $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'order_complete' 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+    }
+
+    /**
+     * Kontakt Leads
+     */
+    private function get_contact_leads($start_date, $end_date) {
+        return $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT session_id) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type IN ('phone_click', 'email_click')
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
     }
 
     /**

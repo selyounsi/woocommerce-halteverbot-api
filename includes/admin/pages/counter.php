@@ -230,22 +230,29 @@ if (isset($_GET['code'])) {
                         </div>
                     </div>
 
-                    <!-- Bestellungen & Kunden -->
-                    <div style="flex: 1; min-width: 160px; text-align: center; padding: 15px; background: #fff8e1; border-radius: 5px;">
-                        <h3 style="margin: 0 0 5px 0; font-size: 14px;">Bestellungen & Kunden</h3>
-                        <div style="font-size: 16px; font-weight: bold; color: #f57c00; margin: 5px 0;">
-                            <?php echo $report['wc_metrics']['current_period']['total_orders']; ?> Bestellungen
-                        </div>
-                        <div style="font-size: 16px; font-weight: bold; color: #f57c00; margin: 5px 0;">
-                            <?php echo $report['wc_metrics']['current_period']['unique_customers']; ?> Kunden
-                        </div>
-                        <div style="font-size: 14px; color: #666; margin-top: 5px;">
-                            <?php echo $report['wc_metrics']['customer_metrics']['repeat_customer_rate']; ?>% Stammkunden
-                        </div>
-                        <!-- NEU: Kontakt Engagement -->
-                        <div style="font-size: 12px; color: #666; margin-top: 5px; border-top: 1px solid #eee; padding-top: 5px;">
-                            Kontakt Rate: <?php echo $report['wc_metrics']['funnel']['contact_engagement'] ?? 0; ?>%
-                        </div>
+                    <!-- Session Analyse -->
+                    <div style="flex: 1; min-width: 300px; padding: 15px; background: #e8f5e8; border-radius: 5px;">
+                        <h3 style="margin: 0 0 15px 0; color: #2e7d32;">👥 Besucher Analyse</h3>
+                        <table style="width: 100%;">
+                            <tr>
+                                <td>Einmalige Besucher:</td>
+                                <td style="text-align: right; font-weight: bold;">
+                                    <?php echo $report['wc_metrics']['customer_metrics']['session_analysis']['new_sessions']; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Mehrfach-Besucher:</td>
+                                <td style="text-align: right; font-weight: bold;">
+                                    <?php echo $report['wc_metrics']['customer_metrics']['session_analysis']['returning_sessions']; ?>
+                                </td>
+                            </tr>
+                            <tr style="border-top: 1px solid #ddd;">
+                                <td><strong>Gesamt Besucher:</strong></td>
+                                <td style="text-align: right; font-weight: bold; color: #2e7d32;">
+                                    <?php echo $report['wc_metrics']['customer_metrics']['session_analysis']['total_visitors']; ?>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
 
                     <!-- Bestätigte Umsätze -->
@@ -381,22 +388,32 @@ if (isset($_GET['code'])) {
                         </table>
                     </div>
 
-                    <!-- Kunden Analyse -->
-                    <div style="flex: 1; min-width: 300px; padding: 15px; background: #e8f5e8; border-radius: 5px;">
-                        <h3 style="margin: 0 0 15px 0; color: #2e7d32;">👥 Kunden Analyse</h3>
+                    <!-- Conversion Analyse -->
+                    <div style="flex: 1; min-width: 300px; padding: 15px; background: #e3f2fd; border-radius: 5px;">
+                        <h3 style="margin: 0 0 15px 0; color: #1976d2;">🎯 Conversion Analyse</h3>
                         <table style="width: 100%;">
                             <tr>
-                                <td>Neue Kunden:</td>
+                                <td>Online Bestellungen:</td>
                                 <td style="text-align: right; font-weight: bold;">
-                                    <?php echo $report['wc_metrics']['customer_metrics']['new_vs_returning']['new_customers']; ?>
-                                    (<?php echo $report['wc_metrics']['customer_metrics']['new_vs_returning']['new_percentage']; ?>%)
+                                    <?php echo $report['wc_metrics']['customer_metrics']['conversion_breakdown']['online_orders']; ?>
                                 </td>
                             </tr>
                             <tr>
-                                <td>Stammkunden:</td>
+                                <td>Kontakt Leads:</td>
                                 <td style="text-align: right; font-weight: bold;">
-                                    <?php echo $report['wc_metrics']['customer_metrics']['new_vs_returning']['returning_customers']; ?>
-                                    (<?php echo $report['wc_metrics']['customer_metrics']['new_vs_returning']['returning_percentage']; ?>%)
+                                    <?php echo $report['wc_metrics']['customer_metrics']['conversion_breakdown']['contact_leads']; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>High-Value Sessions:</td>
+                                <td style="text-align: right; font-weight: bold; color: #d32f2f;">
+                                    <?php echo $report['wc_metrics']['customer_metrics']['conversion_breakdown']['high_value_sessions']; ?>
+                                </td>
+                            </tr>
+                            <tr style="border-top: 1px solid #ddd;">
+                                <td><strong>Gesamt Conversions:</strong></td>
+                                <td style="text-align: right; font-weight: bold; color: #2e7d32;">
+                                    <?php echo $report['wc_metrics']['customer_metrics']['conversion_breakdown']['total_conversions']; ?>
                                 </td>
                             </tr>
                         </table>
