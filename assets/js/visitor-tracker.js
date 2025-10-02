@@ -14,6 +14,14 @@ jQuery(document).ready(function($) {
     trackOrderComplete();
     trackAddToCart();
     trackContactClicks();
+    trackCheckoutStart();
+    trackProductSearch();
+    trackCategoryView();
+    trackWishlistEvents();
+    trackCouponUsage();
+    trackAccountActions();
+    trackShippingSelection();
+    trackPaymentSelection();
 });
 
 /**
@@ -136,4 +144,140 @@ function trackOrderComplete()
         console.log('TRACKER: Order complete - Key:', orderKey, 'ID:', orderId);
         sendTrackedEvent('order_complete', null, null, null, orderId, orderKey);
     }
+}
+
+/**
+ * Track Checkout Start - Optimierte Version
+ */
+function trackCheckoutStart() {
+    let checkoutTracked = false;
+    
+    // Prüfe ob wir auf der Checkout-Seite sind
+    const isCheckoutPage = window.location.href.includes('/checkout') || 
+                          document.body.classList.contains('checkout') ||
+                          document.querySelector('form.woocommerce-checkout');
+    
+    if (!isCheckoutPage) return;
+    
+    function trackCheckout() {
+        if (!checkoutTracked) {
+            checkoutTracked = true;
+            sendTrackedEvent('checkout_start');
+            console.log('Checkout gestartet getrackt');
+        }
+    }
+    
+    // 1. Sofort tracken wenn von Warenkorb kommend
+    if (document.referrer.includes('/cart')) {
+        trackCheckout();
+        return;
+    }
+    
+    // 2. Tracken bei erster Interaktion mit Formular
+    const formFields = document.querySelectorAll('form.woocommerce-checkout input, form.woocommerce-checkout select');
+    formFields.forEach(field => {
+        field.addEventListener('focus', trackCheckout, { once: true });
+        field.addEventListener('input', trackCheckout, { once: true });
+    });
+    
+    // 3. Falls keine Interaktion: nach 8 Sekunden tracken
+    setTimeout(trackCheckout, 8000);
+}
+
+/**
+ * Track Product Search
+ */
+function trackProductSearch() {
+    const searchForm = document.querySelector('form[role="search"], .woocommerce-product-search');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            const searchInput = this.querySelector('input[type="search"], input[name="s"]');
+            if (searchInput && searchInput.value.trim()) {
+                sendTrackedEvent('product_search', searchInput.value.trim());
+            }
+        });
+    }
+}
+
+/**
+ * Track Category/Shop Views
+ */
+function trackCategoryView() {
+    if (document.body.classList.contains('archive') || 
+        document.body.classList.contains('tax-product_cat') ||
+        window.location.href.includes('/shop') ||
+        window.location.href.includes('/product-category')) {
+        sendTrackedEvent('category_view');
+    }
+}
+
+/**
+ * Track Wishlist/Bookmark Events
+ */
+function trackWishlistEvents() {
+    document.addEventListener('click', function(e) {
+        // Wishlist Buttons erkennen
+        if (e.target.closest('.add_to_wishlist, .wishlist-button, [class*="wishlist"], .yith-wcwl-add-to-wishlist')) {
+            const productId = e.target.closest('button')?.dataset?.product_id || 
+                            document.querySelector('[name="add-to-cart"]')?.value;
+            if (productId) {
+                sendTrackedEvent('add_to_wishlist', null, productId);
+            }
+        }
+    });
+}
+
+/**
+ * Track Coupon Usage
+ */
+function trackCouponUsage() {
+    const couponForm = document.querySelector('.coupon-form, [class*="coupon"]');
+    if (couponForm) {
+        couponForm.addEventListener('submit', function(e) {
+            const couponInput = this.querySelector('input[name="coupon_code"]');
+            if (couponInput && couponInput.value.trim()) {
+                sendTrackedEvent('coupon_applied', couponInput.value.trim());
+            }
+        });
+    }
+}
+
+/**
+ * Track Account Actions
+ */
+function trackAccountActions() {
+    // Login
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.login-button, [href*="my-account"]')) {
+            sendTrackedEvent('account_login_attempt');
+        }
+    });
+    
+    // Registration
+    if (window.location.href.includes('my-account') && 
+        document.querySelector('form[class*="register"]')) {
+        sendTrackedEvent('account_registration_view');
+    }
+}
+
+/**
+ * Track Shipping Method Selection
+ */
+function trackShippingSelection() {
+    document.addEventListener('change', function(e) {
+        if (e.target.name === 'shipping_method[0]' || e.target.name === 'shipping_method') {
+            sendTrackedEvent('shipping_method_selected', e.target.value);
+        }
+    });
+}
+
+/**
+ * Track Payment Method Selection
+ */
+function trackPaymentSelection() {
+    document.addEventListener('change', function(e) {
+        if (e.target.name === 'payment_method' || e.target.closest('.wc_payment_method')) {
+            sendTrackedEvent('payment_method_selected', e.target.value);
+        }
+    });
 }

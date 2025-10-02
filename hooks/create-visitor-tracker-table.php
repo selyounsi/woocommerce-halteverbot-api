@@ -19,7 +19,7 @@ add_action('init', function () {
             'visitor-tracker',
             WHA_PLUGIN_ASSETS_URL . '/js/visitor-tracker.js',
             ['jquery'],
-            null,
+            '1.0',
             true
         );
 

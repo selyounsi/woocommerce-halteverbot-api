@@ -318,22 +318,78 @@ class VisitorAnalytics extends VisitorTracker
             'gsc_keywords' => $this->get_gsc_keywords_16_months(), 
             'wc_metrics' => [
                 'events' => $this->get_wc_events_by_period($start_date, $end_date),
+                
+                // Aktuelle Periode
                 'current_period' => [
                     'conversion_rate' => $this->get_wc_conversion_rate_by_period($start_date, $end_date),
                     'revenue' => $this->wc_revenue_by_period($start_date, $end_date),
-                    'confirmed_revenue' => $this->wc_confirmed_revenue_by_period($start_date, $end_date)
+                    'confirmed_revenue' => $this->wc_confirmed_revenue_by_period($start_date, $end_date),
+                    'average_order_value' => $this->get_average_order_value($start_date, $end_date),
+                    'total_orders' => $this->get_total_orders($start_date, $end_date),
+                    'unique_customers' => $this->get_unique_customers($start_date, $end_date),
+                    'contact_conversions' => $this->get_contact_conversions($start_date, $end_date) // NEU
                 ],
+                
+                // Letzte 7 Tage
                 'last_7_days' => [
                     'conversion_rate' => $this->get_wc_conversion_rate_by_period(date('Y-m-d', strtotime('-7 days')), $end_date),
                     'revenue' => $this->wc_revenue_by_period(date('Y-m-d', strtotime('-7 days')), $end_date),
                     'confirmed_revenue' => $this->wc_confirmed_revenue_by_period(date('Y-m-d', strtotime('-7 days')), $end_date),
+                    'average_order_value' => $this->get_average_order_value(date('Y-m-d', strtotime('-7 days')), $end_date),
+                    'total_orders' => $this->get_total_orders(date('Y-m-d', strtotime('-7 days')), $end_date),
+                    'contact_conversions' => $this->get_contact_conversions(date('Y-m-d', strtotime('-7 days')), $end_date), // NEU
                     'daily_data' => $this->get_daily_wc_events_for_days(7)
                 ],
+                
+                // Letzte 30 Tage
                 'last_30_days' => [
                     'conversion_rate' => $this->get_wc_conversion_rate_by_period(date('Y-m-d', strtotime('-30 days')), $end_date),
                     'revenue' => $this->wc_revenue_by_period(date('Y-m-d', strtotime('-30 days')), $end_date),
                     'confirmed_revenue' => $this->wc_confirmed_revenue_by_period(date('Y-m-d', strtotime('-30 days')), $end_date),
+                    'average_order_value' => $this->get_average_order_value(date('Y-m-d', strtotime('-30 days')), $end_date),
+                    'total_orders' => $this->get_total_orders(date('Y-m-d', strtotime('-30 days')), $end_date),
+                    'contact_conversions' => $this->get_contact_conversions(date('Y-m-d', strtotime('-30 days')), $end_date), // NEU
                     'daily_data' => $this->get_daily_wc_events_for_days(30)
+                ],
+                
+                // Erweiterter Funnel
+                'funnel' => [
+                    'view_to_cart' => $this->get_funnel_rate('product_view', 'add_to_cart', $start_date, $end_date),
+                    'cart_to_checkout' => $this->get_funnel_rate('add_to_cart', 'checkout_start', $start_date, $end_date),
+                    'checkout_to_order' => $this->get_funnel_rate('checkout_start', 'order_complete', $start_date, $end_date),
+                    'cart_abandonment_rate' => $this->get_cart_abandonment_rate($start_date, $end_date),
+                    'contact_engagement' => $this->get_contact_engagement_rate($start_date, $end_date) // NEU
+                ],
+                
+                // Kunden Metriken
+                'customer_metrics' => [
+                    'repeat_customer_rate' => $this->get_repeat_customer_rate($start_date, $end_date),
+                    'new_vs_returning' => $this->get_new_vs_returning_customers($start_date, $end_date)
+                ],
+                
+                // Geräte Performance
+                'device_performance' => [
+                    'desktop' => $this->get_conversion_rate_by_device('desktop', $start_date, $end_date),
+                    'mobile' => $this->get_conversion_rate_by_device('mobile', $start_date, $end_date),
+                    'tablet' => $this->get_conversion_rate_by_device('tablet', $start_date, $end_date)
+                ],
+                
+                // Top Produkte
+                'top_products' => $this->get_top_products_by_revenue($start_date, $end_date, 10),
+                
+                // NEUE: Engagement Metriken
+                'engagement_metrics' => [
+                    'contact_events' => $this->get_contact_events_by_period($start_date, $end_date),
+                    'search_analytics' => $this->get_gsc_keywords_by_period($start_date, $end_date, 10),
+                    'category_engagement' => $this->get_category_engagement($start_date, $end_date),
+                    'wishlist_activity' => $this->get_wishlist_activity($start_date, $end_date)
+                ],
+                
+                // NEUE: Conversion Quellen
+                'conversion_sources' => [
+                    'online_orders' => $this->get_conversion_source_rate('order_complete', $start_date, $end_date),
+                    'contact_leads' => $this->get_conversion_source_rate('phone_click,email_click', $start_date, $end_date),
+                    'search_leads' => $this->get_conversion_source_rate('product_search', $start_date, $end_date)
                 ]
             ]
         ];
@@ -828,7 +884,7 @@ class VisitorAnalytics extends VisitorTracker
         return $this->get_gsc_keywords_by_period($start_date, $end_date);
     }
 
-    private function get_gsc_keywords_by_period($start_date, $end_date) {
+    private function get_gsc_keywords_by_period($start_date, $end_date, $limit = 30) {
         try {
             if (!$this->gsc->isAuthenticated() || !$this->gsc->getPrimaryDomain()) {
                 return [];
@@ -838,7 +894,7 @@ class VisitorAnalytics extends VisitorTracker
                 'startDate' => $start_date,
                 'endDate' => $end_date,
                 'dimensions' => ['query'],
-                'rowLimit' => 30,
+                'rowLimit' => $limit,
                 'orderBy' => [
                     [
                         'dimension' => 'CLICKS',
@@ -985,4 +1041,322 @@ class VisitorAnalytics extends VisitorTracker
 
         return $daily_data;
     }
+
+    /**
+     * Gibt Gesamtzahl der Bestellungen zurück
+     */
+    private function get_total_orders($start_date, $end_date) {
+        return $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'order_complete' 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+    }
+
+    /**
+     * Gibt Anzahl einmaliger Kunden zurück
+     */
+    private function get_unique_customers($start_date, $end_date) {
+        return $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT customer_id) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'order_complete' 
+            AND customer_id IS NOT NULL
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+    }
+
+    /**
+     * Berechnet durchschnittlichen Bestellwert
+     */
+    private function get_average_order_value($start_date, $end_date) {
+        $orders_table = $this->wpdb->prefix . 'wc_orders';
+        
+        $revenue = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT SUM(o.total_amount) 
+            FROM {$this->table_wc_events} e
+            LEFT JOIN {$orders_table} o ON e.order_id = o.id
+            WHERE e.event_type = 'order_complete' 
+            AND DATE(e.event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+        
+        $order_count = $this->get_total_orders($start_date, $end_date);
+        
+        return $order_count > 0 ? round($revenue / $order_count, 2) : 0;
+    }
+
+    /**
+     * Berechnet Funnel Conversion Rate zwischen zwei Events
+     */
+    private function get_funnel_rate($from_event, $to_event, $start_date, $end_date) {
+        $from_count = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT session_id) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = %s 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $from_event, $start_date, $end_date
+        ));
+        
+        $to_count = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT session_id) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = %s 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $to_event, $start_date, $end_date
+        ));
+        
+        return $from_count > 0 ? round(($to_count / $from_count) * 100, 2) : 0;
+    }
+
+    /**
+     * Berechnet Warenkorb-Abbrecherquote
+     */
+    private function get_cart_abandonment_rate($start_date, $end_date) {
+        $cart_sessions = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT session_id) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'add_to_cart' 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+        
+        $order_sessions = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT session_id) 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'order_complete' 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+        
+        return $cart_sessions > 0 ? round((($cart_sessions - $order_sessions) / $cart_sessions) * 100, 2) : 0;
+    }
+
+    /**
+     * Berechnet Wiederholungskunden-Rate
+     */
+    private function get_repeat_customer_rate($start_date, $end_date) {
+        $customer_orders = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT customer_id, COUNT(*) as order_count 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'order_complete' 
+            AND customer_id IS NOT NULL
+            AND DATE(event_time) BETWEEN %s AND %s 
+            GROUP BY customer_id",
+            $start_date, $end_date
+        ), ARRAY_A);
+        
+        $total_customers = count($customer_orders);
+        $repeat_customers = count(array_filter($customer_orders, function($customer) {
+            return $customer['order_count'] > 1;
+        }));
+        
+        return $total_customers > 0 ? round(($repeat_customers / $total_customers) * 100, 2) : 0;
+    }
+
+    /**
+     * Gibt Verhältnis von neuen zu wiederkehrenden Kunden zurück
+     */
+    private function get_new_vs_returning_customers($start_date, $end_date) {
+        $customer_orders = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT customer_id, COUNT(*) as order_count 
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'order_complete' 
+            AND customer_id IS NOT NULL
+            AND DATE(event_time) BETWEEN %s AND %s 
+            GROUP BY customer_id",
+            $start_date, $end_date
+        ), ARRAY_A);
+        
+        $new_customers = 0;
+        $returning_customers = 0;
+        
+        foreach ($customer_orders as $customer) {
+            if ($customer['order_count'] == 1) {
+                $new_customers++;
+            } else {
+                $returning_customers++;
+            }
+        }
+        
+        $total = $new_customers + $returning_customers;
+        
+        return [
+            'new_customers' => $new_customers,
+            'returning_customers' => $returning_customers,
+            'new_percentage' => $total > 0 ? round(($new_customers / $total) * 100, 2) : 0,
+            'returning_percentage' => $total > 0 ? round(($returning_customers / $total) * 100, 2) : 0
+        ];
+    }
+
+    /**
+     * Berechnet Conversion Rate nach Gerätetyp
+     */
+    private function get_conversion_rate_by_device($device_type, $start_date, $end_date) {
+        $product_views = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) 
+            FROM {$this->table_wc_events} e
+            INNER JOIN {$this->table_logs} l ON e.session_id = l.session_id
+            WHERE e.event_type = 'product_view' 
+            AND l.device_type = %s
+            AND DATE(e.event_time) BETWEEN %s AND %s",
+            $device_type, $start_date, $end_date
+        ));
+        
+        $orders = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) 
+            FROM {$this->table_wc_events} e
+            INNER JOIN {$this->table_logs} l ON e.session_id = l.session_id
+            WHERE e.event_type = 'order_complete' 
+            AND l.device_type = %s
+            AND DATE(e.event_time) BETWEEN %s AND %s",
+            $device_type, $start_date, $end_date
+        ));
+        
+        return $product_views > 0 ? round(($orders / $product_views) * 100, 2) : 0;
+    }
+
+    /**
+     * Gibt Top-Produkte nach Umsatz zurück
+     */
+    private function get_top_products_by_revenue($start_date, $end_date, $limit = 10) {
+        $orders_table = $this->wpdb->prefix . 'wc_orders';
+        $order_items_table = $this->wpdb->prefix . 'wc_order_items';
+        
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT oi.product_id, oi.product_name, 
+                    SUM(oi.quantity) as total_quantity,
+                    SUM(oi.total_price) as total_revenue,
+                    COUNT(DISTINCT oi.order_id) as order_count
+            FROM {$order_items_table} oi
+            INNER JOIN {$orders_table} o ON oi.order_id = o.id
+            INNER JOIN {$this->table_wc_events} e ON o.id = e.order_id
+            WHERE e.event_type = 'order_complete' 
+            AND DATE(e.event_time) BETWEEN %s AND %s
+            GROUP BY oi.product_id, oi.product_name
+            ORDER BY total_revenue DESC
+            LIMIT %d",
+            $start_date, $end_date, $limit
+        ), ARRAY_A);
+    }
+
+
+    /**
+     * Berechnet Kontakt-Conversions (Telefon/E-Mail)
+     */
+    private function get_contact_conversions($start_date, $end_date) {
+        $phone_clicks = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_wc_events} 
+            WHERE event_type = 'phone_click' 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+        
+        $email_clicks = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_wc_events} 
+            WHERE event_type = 'email_click' 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+        
+        return [
+            'phone_clicks' => $phone_clicks,
+            'email_clicks' => $email_clicks,
+            'total_contacts' => $phone_clicks + $email_clicks
+        ];
+    }
+
+    /**
+     * Berechnet Kontakt-Engagement Rate
+     */
+    private function get_contact_engagement_rate($start_date, $end_date) {
+        $product_views = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_wc_events} 
+            WHERE event_type = 'product_view' 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+        
+        $contact_events = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_wc_events} 
+            WHERE event_type IN ('phone_click', 'email_click') 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+        
+        return $product_views > 0 ? round(($contact_events / $product_views) * 100, 2) : 0;
+    }
+
+    /**
+     * Gibt Kontakt-Events zurück
+     */
+    private function get_contact_events_by_period($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT event_type, COUNT(*) as count,
+                    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
+            FROM {$this->table_wc_events} 
+            WHERE event_type IN ('phone_click', 'email_click')
+            AND DATE(event_time) BETWEEN %s AND %s 
+            GROUP BY event_type 
+            ORDER BY count DESC",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    /**
+     * Such-Analytics
+     */
+    private function get_search_analytics($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT extra_value as search_term, COUNT(*) as search_count
+            FROM {$this->table_wc_events} 
+            WHERE event_type = 'product_search'
+            AND DATE(event_time) BETWEEN %s AND %s 
+            GROUP BY extra_value 
+            ORDER BY search_count DESC 
+            LIMIT 10",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    /**
+     * Kategorie Engagement
+     */
+    private function get_category_engagement($start_date, $end_date) {
+        return $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_wc_events} 
+            WHERE event_type = 'category_view' 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+    }
+
+    /**
+     * Wunschliste Aktivität
+     */
+    private function get_wishlist_activity($start_date, $end_date) {
+        return $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_wc_events} 
+            WHERE event_type = 'add_to_wishlist' 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $start_date, $end_date
+        ));
+    }
+
+    /**
+     * Conversion nach Quelle
+     */
+    private function get_conversion_source_rate($event_types, $start_date, $end_date) {
+        return $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_wc_events} 
+            WHERE event_type IN (%s) 
+            AND DATE(event_time) BETWEEN %s AND %s",
+            $event_types, $start_date, $end_date
+        ));
+    }
+
+
 }
