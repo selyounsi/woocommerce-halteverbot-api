@@ -3,6 +3,14 @@
 }
 
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+
 /**
     * Headlines
     */
@@ -54,6 +62,8 @@
     padding: 0 4px;
     transform: translateY(0%);
     width: auto;
+    clip: initial;
+    clip-path: initial;
 }
 
 .woocommerce-checkout form.checkout #payment ul.payment_methods li .payment_box p label {
@@ -71,7 +81,8 @@
 .woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p input,
 .woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p textarea,
 .woocommerce-checkout form.checkout .woocommerce-additional-fields__field-wrapper p textarea,
-.woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select {
+.woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select,
+.woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select ~ span > .selection > span {
     width: 100%;
     padding: 11px 12px 7px 12px;
     font-size: 15px;
@@ -81,6 +92,16 @@
     margin: 0;
     line-height: 17px;
     height: auto;
+}
+
+.woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select ~ span {
+    width: 100% !important;
+}
+.woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select ~ span > .selection > span > span  {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    line-height: normal;
 }
 
 .woocommerce-checkout form.checkout .woocommerce-additional-fields__field-wrapper p textarea {
@@ -146,11 +167,39 @@
 /**
 * review Table
 */
+.woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table thead .product-name {
+
+}
+.woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table thead .product-total,
+.woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table tbody .actions {
+    display: none;
+}
+
 .woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table .wcpa_cart_meta {
     display: none;
 }
 .woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table .wcpa_cart_meta.show {
     display: block;
+}
+.woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table .cart_item .product-name {
+    padding: 0;
+    display: table-cell;
+}
+
+.woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table .cart_item .product-name .item-name-wrapper {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 0;
+}
+.woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table .cart_item .product-name .item-name-wrapper .product-name-text {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table .cart_item .product-name .wc-gzd-cart-item-name-wrapper {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
 }
 
 .woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table .toggle-details-btn {
@@ -163,6 +212,7 @@
     display: block;
     width: 100%;
     padding: 10px 16px;
+    background: #eeeeee;
 }
 
 .woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table .toggle-details-btn:hover {

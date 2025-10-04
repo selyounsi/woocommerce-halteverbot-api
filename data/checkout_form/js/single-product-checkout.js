@@ -42,42 +42,54 @@ jQuery( function($)
     }
 
     /**
-     * Aufklappmenü mit Icon
+     * Toggle-Button für Produktdetails
      */
-    function addToggleDetails() {
-        $('.woocommerce-checkout-review-order-table tr.cart_item').each(function() {
-            const $metaList = $(this).find('.wcpa_cart_meta');
+    function initToggleButtons() {
+        $('.woocommerce-checkout-review-order-table .toggle-details-btn').on('click', function() {
+            const $button = $(this);
+            const $metaList = $button.next('.wcpa_cart_meta');
             
-            if ($metaList.length > 0 && $(this).find('.toggle-details-btn').length === 0) {
-                // Toggle-Button mit Icon erstellen
-                const toggleBtn = $('<button>', {
-                    class: 'toggle-details-btn',
-                    html: '🔽 Details anzeigen',
-                    type: 'button'
+            $metaList.toggle();
+            $button.html($metaList.is(':visible') ? 
+                '🔼 Details ausblenden' : '🔽 Details anzeigen'
+            );
+        });
+    }
+
+    /**
+     * Füge alle Parameter der aktuellen URL zu WooCommerce AJAX Requests hinzu
+     */
+    function addAllUrlParameters() {
+        // Überwache alle AJAX Requests
+        $(document).ajaxSend(function(event, xhr, settings) {
+            if (settings.url && settings.url.includes('wc-ajax=')) {
+                const currentUrl = new URL(window.location.href);
+                const targetUrl = new URL(settings.url, window.location.origin);
+                
+                // Füge alle Parameter der aktuellen URL zum AJAX Request hinzu
+                currentUrl.searchParams.forEach((value, key) => {
+                    targetUrl.searchParams.set(key, value);
                 });
                 
-                // Button direkt vor der UL-Liste einfügen
-                toggleBtn.insertBefore($metaList);
-                
-                toggleBtn.on('click', function() {
-                    $metaList.toggleClass('show');
-                    $(this).html($metaList.hasClass('show') ? '🔼 Details ausblenden' : '🔽 Details anzeigen');
-                });
+                // Aktualisiere die URL
+                settings.url = targetUrl.toString();
             }
         });
     }
 
-
+    /**
+     * Rerender 
+     */
     function reRender() 
     {
         moveReviewOrderTable();
         movePaymentSection();
-        addToggleDetails();
+        initToggleButtons();
     }
-
 
     // Direkt nach DOM ready
     reRender()
+    addAllUrlParameters();
 
     // Jedes Mal, wenn WooCommerce den Checkout updated
     $(document.body).on('updated_checkout', reRender);
