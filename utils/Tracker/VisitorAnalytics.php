@@ -295,6 +295,16 @@ class VisitorAnalytics extends VisitorTracker
                 'bounce_rate' => $this->get_bounce_rate_by_period($start_date, $end_date),
                 'avg_time_on_page' => $this->get_avg_time_on_page_by_period($start_date, $end_date)
             ],
+            'chart_data' => [
+                'daily_visitors_30d' => $this->get_daily_visitors_chart_data(30),
+                'daily_visitors_7d' => $this->get_daily_visitors_chart_data(7),
+                'device_distribution' => $this->get_device_distribution_chart(),
+                'browser_distribution' => $this->get_browser_distribution_chart(),
+                'traffic_sources' => $this->get_traffic_sources_chart(),
+                'visit_heatmap' => $this->get_visit_heatmap_data(),
+                'german_cities' => $this->get_german_cities_chart(),
+                'page_performance' => $this->get_page_performance_chart()
+            ],            
             'entry_pages' => $this->entry_pages_by_period($start_date, $end_date, 10),
             'exit_pages' => $this->exit_pages_by_period($start_date, $end_date, 10),
             'exit_rates' => $this->exit_rates_by_period($start_date, $end_date, 10),
@@ -399,7 +409,7 @@ class VisitorAnalytics extends VisitorTracker
             ]
         ];
     }
-
+ 
     // --- Session KPIs ---
     private function get_avg_session_duration_by_period($start_date, $end_date) {
         // Diese Methode ist bereits korrekt (arbeitet auf Session-Ebene)
@@ -1376,5 +1386,172 @@ class VisitorAnalytics extends VisitorTracker
         ));
     }
 
+    /**
+     * Tägliche Besucher der letzten 30 Tage für Charts
+     */
+    public function get_daily_visitors_chart_data($days = 30) {
+        $end_date = date('Y-m-d');
+        $start_date = date('Y-m-d', strtotime('-'.($days-1).' days'));
+        
+        // Erstelle alle Tage
+        $daily_data = [];
+        for ($i = $days-1; $i >= 0; $i--) {
+            $day = date('Y-m-d', strtotime("-$i days"));
+            $daily_data[$day] = [
+                'visitors' => 0,
+                'sessions' => 0,
+                'page_views' => 0
+            ];
+        }
 
+        // Besucher pro Tag
+        $visitors_data = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT DATE(visit_time) as date, COUNT(DISTINCT session_id) as visitors
+            FROM {$this->table_logs} 
+            WHERE DATE(visit_time) BETWEEN %s AND %s
+            GROUP BY DATE(visit_time)",
+            $start_date, $end_date
+        ), ARRAY_A);
+
+        // Page Views pro Tag
+        $pageviews_data = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT DATE(visit_time) as date, COUNT(*) as page_views
+            FROM {$this->table_logs} 
+            WHERE DATE(visit_time) BETWEEN %s AND %s
+            GROUP BY DATE(visit_time)",
+            $start_date, $end_date
+        ), ARRAY_A);
+
+        // Fülle die Daten
+        foreach ($visitors_data as $row) {
+            if (isset($daily_data[$row['date']])) {
+                $daily_data[$row['date']]['visitors'] = (int)$row['visitors'];
+            }
+        }
+
+        foreach ($pageviews_data as $row) {
+            if (isset($daily_data[$row['date']])) {
+                $daily_data[$row['date']]['page_views'] = (int)$row['page_views'];
+            }
+        }
+
+        return $daily_data;
+    }
+
+    /**
+     * Geräteverteilung für Donut Chart
+     */
+    public function get_device_distribution_chart() {
+        return $this->wpdb->get_results(
+            "SELECT 
+                device_type,
+                COUNT(DISTINCT session_id) as count,
+                ROUND((COUNT(DISTINCT session_id) * 100.0 / 
+                    (SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs})), 1) as percentage
+            FROM {$this->table_logs} 
+            WHERE device_type != ''
+            GROUP BY device_type
+            ORDER BY count DESC",
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Browser-Verteilung für Pie Chart
+     */
+    public function get_browser_distribution_chart() {
+        return $this->wpdb->get_results(
+            "SELECT 
+                browser_name,
+                COUNT(DISTINCT session_id) as count,
+                ROUND((COUNT(DISTINCT session_id) * 100.0 / 
+                    (SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs})), 1) as percentage
+            FROM {$this->table_logs} 
+            WHERE browser_name != ''
+            GROUP BY browser_name
+            ORDER BY count DESC
+            LIMIT 8",
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Traffic-Quellen für Donut Chart
+     */
+    public function get_traffic_sources_chart() {
+        return $this->wpdb->get_results(
+            "SELECT 
+                CASE 
+                    WHEN source_channel = 'organic' THEN 'Organische Suche'
+                    WHEN source_channel = 'direct' THEN 'Direkt'
+                    WHEN source_channel = 'social' THEN 'Social Media'
+                    WHEN source_channel = 'campaign' THEN 'Kampagnen'
+                    WHEN source_channel = 'referral' THEN 'Referral'
+                    ELSE 'Andere'
+                END as source,
+                COUNT(DISTINCT session_id) as count,
+                ROUND((COUNT(DISTINCT session_id) * 100.0 / 
+                    (SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs})), 1) as percentage
+            FROM {$this->table_logs} 
+            WHERE source_channel != ''
+            GROUP BY source_channel
+            ORDER BY count DESC",
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Besuchszeiten Heatmap Daten
+     */
+    public function get_visit_heatmap_data() {
+        return $this->wpdb->get_results(
+            "SELECT 
+                HOUR(visit_time) as hour,
+                DAYNAME(visit_time) as day,
+                COUNT(DISTINCT session_id) as visits
+            FROM {$this->table_logs} 
+            WHERE visit_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY HOUR(visit_time), DAYNAME(visit_time)
+            ORDER BY FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), hour",
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Top Städte in Deutschland für Karte/Chart
+     */
+    public function get_german_cities_chart() {
+        return $this->wpdb->get_results(
+            "SELECT 
+                city,
+                country_name,
+                COUNT(DISTINCT session_id) as count
+            FROM {$this->table_logs} 
+            WHERE country_code = 'DE' AND city != ''
+            GROUP BY city, country_name
+            ORDER BY count DESC
+            LIMIT 15",
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Seiten-Performance (Aufrufe vs. Verweildauer)
+     */
+    public function get_page_performance_chart() {
+        return $this->wpdb->get_results(
+            "SELECT 
+                page_title,
+                url,
+                COUNT(*) as views,
+                AVG(time_on_page) as avg_time_on_page
+            FROM {$this->table_logs} 
+            WHERE page_title != '' AND time_on_page > 0
+            GROUP BY page_title, url
+            HAVING views > 10
+            ORDER BY views DESC
+            LIMIT 10",
+            ARRAY_A
+        );
+    }
 }

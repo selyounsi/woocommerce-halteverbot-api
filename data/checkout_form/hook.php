@@ -40,7 +40,7 @@ if ( ( isset($_GET['preview']) && $_GET['preview'] === '1' ) || HalteverbotOptio
             'single-product-checkout-css',
             $plugin_url . 'css/single-product-checkout.css',
             [],
-            '1.21'
+            '1.24'
         );
         wp_enqueue_script(
             'single-product-checkout-js',

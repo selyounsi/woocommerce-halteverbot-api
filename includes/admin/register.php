@@ -53,7 +53,7 @@ function halteverbot_app_add_menu() {
         'manage_options',
         'halteverbot-app-counter',
         function () {
-            include('pages/counter.php');
+            include('pages/counter/index.php');
         }
     );
 

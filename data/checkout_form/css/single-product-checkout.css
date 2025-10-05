@@ -97,6 +97,10 @@ input:-webkit-autofill:active {
     appearance: none;
 }
 
+.woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select {
+    
+}
+
 .woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select ~ span {
     width: 100% !important;
 }
