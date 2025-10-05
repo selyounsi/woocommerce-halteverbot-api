@@ -107,14 +107,14 @@ input:-webkit-autofill:active {
     line-height: normal;
 }
 
+.woocommerce-checkout form.checkout .woocommerce-additional-fields{
+    height: auto;
+}
 .woocommerce-checkout form.checkout .woocommerce-additional-fields__field-wrapper p textarea {
     height: 90px;
 }
 
-
-/**
-    * Grid
-    */
+/* Grid */
 .woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper {
     display: flex;
     flex-wrap: wrap;
@@ -188,6 +188,11 @@ input:-webkit-autofill:active {
     padding: 0;
     display: table-cell;
 }
+
+.woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table tfoot td {
+    text-align: right;
+    display: table-cell;
+} 
 
 .woocommerce-checkout form.checkout .woocommerce-checkout-review-order-table .cart_item .product-name .item-name-wrapper {
     display: flex;
