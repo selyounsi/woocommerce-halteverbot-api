@@ -92,6 +92,9 @@ input:-webkit-autofill:active {
     margin: 0;
     line-height: 17px;
     height: auto;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
 .woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select ~ span {
