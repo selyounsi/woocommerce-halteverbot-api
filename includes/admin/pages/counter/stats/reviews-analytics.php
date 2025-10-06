@@ -178,7 +178,8 @@
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-      
+
+    const chartData = <?php echo json_encode($report['chart_data'] ?? []); ?>;      
     
     // 1. Sterne-Verteilung Chart
     if (chartData.rating_distribution && chartData.rating_distribution.length > 0) {

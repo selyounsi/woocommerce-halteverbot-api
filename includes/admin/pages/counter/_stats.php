@@ -72,17 +72,14 @@
             </div>
         </div>
 
-        <!-- ORDER ANALYTICS SECTION -->                  
-        <?php require __DIR__ . "/stats/order-analytics.php"; ?>
-
-
         <!-- VISITOR ANALYTICS CHARTS -->
         <?php require __DIR__ . "/stats/visitor-analytics.php"; ?>
-
 
         <!-- WooCommerce Metrics -->
         <?php require __DIR__ . "/stats/woocommerce-analytics.php"; ?>
 
+        <!-- ORDER ANALYTICS SECTION -->                  
+        <?php require __DIR__ . "/stats/order-analytics.php"; ?>
 
         <!-- BEWERTUNGS ANALYTICS -->
         <?php require __DIR__ . "/stats/reviews-analytics.php"; ?>
