@@ -1,517 +1,445 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<?php
+use Utils\Tracker\VisitorAnalytics;
+
+$analyticsInstance = VisitorAnalytics::getAnalyticsInstance();
+
+// Zeitraum-Logik
+$timeframe = $_GET['timeframe'] ?? '7d';
+$today = date('Y-m-d');
+
+switch($timeframe) {
+    case 'today':
+        $start_date = $today;
+        $end_date = $today;
+        $period_label = 'Heute';
+        break;
+    case 'yesterday':
+        $start_date = date('Y-m-d', strtotime('-1 day'));
+        $end_date = $start_date;
+        $period_label = 'Gestern';
+        break;
+    case '30d':
+        $start_date = date('Y-m-d', strtotime('-29 days'));
+        $end_date = $today;
+        $period_label = 'Letzte 30 Tage';
+        break;
+    case '90d':
+        $start_date = date('Y-m-d', strtotime('-89 days'));
+        $end_date = $today;
+        $period_label = 'Letzte 90 Tage';
+        break;
+    case 'month':
+        $start_date = date('Y-m-01');
+        $end_date = $today;
+        $period_label = 'Dieser Monat';
+        break;
+    case 'last_month':
+        $start_date = date('Y-m-01', strtotime('-1 month'));
+        $end_date = date('Y-m-t', strtotime('-1 month'));
+        $period_label = 'Letzter Monat';
+        break;
+    case 'year':
+        $start_date = date('Y-01-01');
+        $end_date = $today;
+        $period_label = 'Dieses Jahr';
+        break;
+    case '7d':
+    default:
+        $start_date = date('Y-m-d', strtotime('-6 days'));
+        $end_date = $today;
+        $period_label = 'Letzte 7 Tage';
+        break;
+}
+
+// Report mit dynamischem Zeitraum laden
+$report = $analyticsInstance->get_report($start_date, $end_date);
+?>
+
 <div class="wp-list-table widefat fixed striped"> 
-    <h3>Grundlegende Daten (Diesen Monat)</h3>
+    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">Analytics Dashboard</h3>
+        <div style="font-size: 14px; color: #666; background: #f8f9fa; padding: 8px 15px; border-radius: 20px;">
+            📅 Zeigt Daten von <strong><?php echo date('d.m.Y', strtotime($start_date)); ?></strong> 
+            bis <strong><?php echo date('d.m.Y', strtotime($end_date)); ?></strong> 
+            (<?php echo $period_label; ?>)
+        </div>
+    </div>
 
-    <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+    <div style="display: flex; gap: 2rem; min-height: 800px;">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <div class="analytics-sidebar" style="width: 250px; background: #f8f9fa; border-radius: 8px; padding: 20px; height: fit-content;">
+            <h3 style="margin-top: 0; color: #2271b1;">📊 Berichte</h3>
+            
+            <nav class="analytics-nav" style="display: flex; flex-direction: column; gap: 5px;">
+                <button class="nav-tab active" data-tab="overview">
+                    <span class="nav-icon">📈</span>
+                    Übersicht
+                </button>
+                
+                <button class="nav-tab" data-tab="visitors">
+                    <span class="nav-icon">👥</span>
+                    Besucher Analytics
+                </button>
+                
+                <button class="nav-tab" data-tab="ecommerce">
+                    <span class="nav-icon">🛒</span>
+                    E-Commerce
+                </button>
+                
+                <button class="nav-tab" data-tab="orders">
+                    <span class="nav-icon">📦</span>
+                    Bestellungen
+                </button>
+                
+                <button class="nav-tab" data-tab="reviews">
+                    <span class="nav-icon">⭐</span>
+                    Bewertungen
+                </button>
+                
+                <button class="nav-tab" data-tab="pages">
+                    <span class="nav-icon">📄</span>
+                    Seiten Analytics
+                </button>
+                
+                <button class="nav-tab" data-tab="devices">
+                    <span class="nav-icon">📱</span>
+                    Geräte & Browser
+                </button>
+                
+                <button class="nav-tab" data-tab="geo">
+                    <span class="nav-icon">🌍</span>
+                    Geodaten
+                </button>
+                
+                <button class="nav-tab" data-tab="traffic">
+                    <span class="nav-icon">🚦</span>
+                    Traffic Quellen
+                </button>
+                
+                <button class="nav-tab" data-tab="technical">
+                    <span class="nav-icon">⚙️</span>
+                    Technische Daten
+                </button>
+            </nav>
 
-        <!-- Besucher im Überblick -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Besucher im Überblick</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <tr><td>Heute</td><td><strong><?php echo $analyticsInstance->visitors_today(); ?></strong></td></tr>
-                        <tr><td>Gestern</td><td><strong><?php echo $analyticsInstance->visitors_yesterday(); ?></strong></td></tr>
-                        <tr><td>Diese Woche</td><td><strong><?php echo $analyticsInstance->visitors_this_week(); ?></strong></td></tr>
-                        <tr><td>Dieser Monat</td><td><strong><?php echo $analyticsInstance->visitors_this_month(); ?></strong></td></tr>
-                        <tr><td>Letzter Monat</td><td><strong><?php echo $analyticsInstance->visitors_last_month(); ?></strong></td></tr>
-                        <tr><td>Dieses Jahr</td><td><strong><?php echo $analyticsInstance->visitors_this_year(); ?></strong></td></tr>
-                    </tbody>
-                </table>
+            <!-- Zeitraum Filter -->
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                <h4 style="margin-bottom: 10px; color: #666;">⏰ Zeitraum</h4>
+                <form method="GET" id="timeframe-form" style="margin-bottom: 15px;">
+                    <input type="hidden" name="page" value="<?php echo $_GET['page'] ?? ''; ?>">
+                    <select name="timeframe" id="timeframe-filter" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 10px;" onchange="this.form.submit()">
+                        <option value="today" <?php echo $timeframe === 'today' ? 'selected' : ''; ?>>Heute</option>
+                        <option value="yesterday" <?php echo $timeframe === 'yesterday' ? 'selected' : ''; ?>>Gestern</option>
+                        <option value="7d" <?php echo $timeframe === '7d' ? 'selected' : ''; ?>>Letzte 7 Tage</option>
+                        <option value="30d" <?php echo $timeframe === '30d' ? 'selected' : ''; ?>>Letzte 30 Tage</option>
+                        <option value="90d" <?php echo $timeframe === '90d' ? 'selected' : ''; ?>>Letzte 90 Tage</option>
+                        <option value="month" <?php echo $timeframe === 'month' ? 'selected' : ''; ?>>Dieser Monat</option>
+                        <option value="last_month" <?php echo $timeframe === 'last_month' ? 'selected' : ''; ?>>Letzter Monat</option>
+                        <option value="year" <?php echo $timeframe === 'year' ? 'selected' : ''; ?>>Dieses Jahr</option>
+                    </select>
+                </form>
+                
+                <!-- Custom Date Range (erweiterbar) -->
+                <details style="margin-top: 10px;">
+                    <summary style="font-size: 12px; cursor: pointer; color: #666;">Benutzerdefiniert</summary>
+                    <form method="GET" style="margin-top: 10px;">
+                        <input type="hidden" name="page" value="<?php echo $_GET['page'] ?? ''; ?>">
+                        <div style="margin-bottom: 8px;">
+                            <label style="font-size: 11px; display: block;">Von:</label>
+                            <input type="date" name="custom_start" style="width: 100%; padding: 4px; font-size: 11px;" 
+                                   value="<?php echo $start_date; ?>">
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <label style="font-size: 11px; display: block;">Bis:</label>
+                            <input type="date" name="custom_end" style="width: 100%; padding: 4px; font-size: 11px;"
+                                   value="<?php echo $end_date; ?>">
+                        </div>
+                        <button type="submit" style="width: 100%; padding: 6px; background: #2271b1; color: white; border: none; border-radius: 3px; font-size: 11px;">
+                            Anwenden
+                        </button>
+                    </form>
+                </details>
+            </div>
+
+            <!-- Quick Stats -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+                <h4 style="margin-bottom: 10px; color: #666;">📊 Quick Stats</h4>
+                <div style="font-size: 12px; line-height: 1.4;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Besucher:</span>
+                        <strong><?php echo $report['total_visitors'] ?? 0; ?></strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Pageviews:</span>
+                        <strong><?php echo $report['total_pageviews'] ?? 0; ?></strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Bestellungen:</span>
+                        <strong><?php echo $report['wc_metrics']['last_7_days']['total_orders'] ?? 0; ?></strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Conversion:</span>
+                        <strong><?php echo $report['wc_metrics']['last_7_days']['conversion_rate'] ?? 0; ?>%</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Umsatz:</span>
+                        <strong><?php echo number_format($report['wc_metrics']['last_7_days']['revenue'] ?? 0, 0, ',', '.'); ?> €</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Options -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+                <h4 style="margin-bottom: 10px; color: #666;">📤 Export</h4>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <button type="button" onclick="exportData('pdf')" style="padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                        📄 PDF Export
+                    </button>
+                    <button type="button" onclick="exportData('csv')" style="padding: 8px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                        📊 CSV Export
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Session Metriken -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Session Metriken</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <tr><td>Ø Session-Dauer</td><td><strong><?php echo $report['session_metrics']['avg_duration']; ?>s</strong></td></tr>
-                        <tr><td>Ø Seiten/Session</td><td><strong><?php echo $report['session_metrics']['avg_pages']; ?></strong></td></tr>
-                        <tr><td>Bounce Rate</td><td><strong><?php echo $report['session_metrics']['bounce_rate']; ?>%</strong></td></tr>
-                        <tr><td>Ø Zeit/Seite</td><td><strong><?php echo $report['session_metrics']['avg_time_on_page']; ?>s</strong></td></tr>
-                    </tbody>
-                </table>
+        <!-- MAIN CONTENT AREA -->
+        <div class="analytics-content" style="flex: 1;">
+            
+            <!-- Loading Indicator -->
+            <div id="loading-indicator" style="display: none; text-align: center; padding: 20px;">
+                <div style="font-size: 16px; color: #2271b1;">🔄 Lade Daten...</div>
             </div>
-        </div>
-
-        <!-- Visitor Types -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Besucher-Typen</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <?php foreach ($report["visitor_types"] as $visitor): ?>
-                            <tr>
-                                <td><?php echo esc_html($visitor["visitor_type"]); ?></td>
-                                <td><strong><?php echo $visitor["count"]; ?></strong></td>
-                                <td><?php echo $visitor["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            
+            <!-- OVERVIEW TAB -->
+            <div class="tab-content active" id="overview-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/globals-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- Traffic Channels -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Traffic-Kanäle</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <?php foreach ($report["traffic_channels"] as $channel): ?>
-                            <tr>
-                                <td><?php echo esc_html($channel["source_channel"]); ?></td>
-                                <td><strong><?php echo $channel["count"]; ?></strong></td>
-                                <td><?php echo $channel["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <!-- VISITORS TAB -->
+            <div class="tab-content" id="visitors-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/visitor-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- VISITOR ANALYTICS CHARTS -->
-        <?php require __DIR__ . "/stats/visitor-analytics.php"; ?>
-
-        <!-- WooCommerce Metrics -->
-        <?php require __DIR__ . "/stats/woocommerce-analytics.php"; ?>
-
-        <!-- ORDER ANALYTICS SECTION -->                  
-        <?php require __DIR__ . "/stats/order-analytics.php"; ?>
-
-        <!-- BEWERTUNGS ANALYTICS -->
-        <?php require __DIR__ . "/stats/reviews-analytics.php"; ?>
-
-        <!-- Meistbesuchte Seiten -->
-        <div class="postbox" style="width: 100%; flex-basis: 100%">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Meistbesuchte Seiten</span></h2>
-                <table class="widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 50%;">Seite</th>
-                            <th>Aufrufe</th>
-                            <th>Anteil</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($report["pages"])): ?>
-                            <?php foreach ($report["pages"] as $page): ?>
-                                <tr>
-                                    <td>
-                                        <div style="font-weight: 500;">
-                                            <?php echo esc_html($page["page_title"] ?: 'Ohne Titel'); ?>
-                                        </div>
-                                        <div style="font-size: 11px; color: #666; margin-top: 2px;">
-                                            <?php echo esc_html($page["url"]); ?>
-                                        </div>
-                                    </td>
-                                    <td><strong><?php echo $page["count"]; ?></strong></td>
-                                    <td><?php echo $page["percentage"]; ?>%</td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="3" style="text-align: center;">Keine Seitenaufrufe im gewählten Zeitraum</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+            <!-- E-COMMERCE TAB -->
+            <div class="tab-content" id="ecommerce-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/woocommerce-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- Einstiegsseiten -->
-        <div class="postbox" style="width: 100%; flex-basis: 100%">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Einstiegsseiten</span></h2>
-                <table class="widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 50%;">Seite</th>
-                            <th>Einstiege</th>
-                            <th>Anteil</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($report["entry_pages"])): ?>
-                            <?php foreach ($report["entry_pages"] as $page): ?>
-                                <tr>
-                                    <td>
-                                        <div style="font-weight: 500;">
-                                            <?php echo esc_html($page["page_title"] ?: 'Ohne Titel'); ?>
-                                        </div>
-                                        <div style="font-size: 11px; color: #666; margin-top: 2px;">
-                                            <?php echo esc_html($page["url"]); ?>
-                                        </div>
-                                    </td>
-                                    <td><strong><?php echo $page["entries"]; ?></strong></td>
-                                    <td><?php echo $page["percentage"]; ?>%</td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="3" style="text-align: center;">Keine Einstiegsseiten verfügbar</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+            <!-- ORDERS TAB -->
+            <div class="tab-content" id="orders-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/order-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- Ausstiegsseiten -->
-        <div class="postbox" style="width: 100%; flex-basis: 100%">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Ausstiegsseiten</span></h2>
-                <table class="widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 50%;">Seite</th>
-                            <th>Ausstiege</th>
-                            <th>Anteil</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($report["exit_pages"])): ?>
-                            <?php foreach ($report["exit_pages"] as $page): ?>
-                                <tr>
-                                    <td>
-                                        <div style="font-weight: 500;">
-                                            <?php echo esc_html($page["page_title"] ?: 'Ohne Titel'); ?>
-                                        </div>
-                                        <div style="font-size: 11px; color: #666; margin-top: 2px;">
-                                            <?php echo esc_html($page["url"]); ?>
-                                        </div>
-                                    </td>
-                                    <td><strong><?php echo $page["exits"]; ?></strong></td>
-                                    <td><?php echo $page["percentage"]; ?>%</td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="3" style="text-align: center;">Keine Ausstiegsseiten verfügbar</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+            <!-- REVIEWS TAB -->
+            <div class="tab-content" id="reviews-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/reviews-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- Exit-Raten -->
-        <div class="postbox" style="width: 100%; flex-basis: 100%">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Exit-Raten</span></h2>
-                <table class="widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 40%;">Seite</th>
-                            <th>Gesamtaufrufe</th>
-                            <th>Ausstiege</th>
-                            <th>Exit-Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($report["exit_rates"])): ?>
-                            <?php foreach ($report["exit_rates"] as $page): ?>
-                                <tr>
-                                    <td>
-                                        <div style="font-weight: 500;">
-                                            <?php echo esc_html($page["page_title"] ?: 'Ohne Titel'); ?>
-                                        </div>
-                                        <div style="font-size: 11px; color: #666; margin-top: 2px;">
-                                            <?php echo esc_html($page["url"]); ?>
-                                        </div>
-                                    </td>
-                                    <td><strong><?php echo $page["total_views"]; ?></strong></td>
-                                    <td><strong><?php echo $page["exit_views"]; ?></strong></td>
-                                    <td><strong><?php echo $page["exit_rate"]; ?>%</strong></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="4" style="text-align: center;">Keine Exit-Raten verfügbar</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+            <!-- PAGES TAB -->
+            <div class="tab-content" id="pages-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/pages-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- Gerätetypen -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle"><span>Gerätetypen</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <?php foreach ($report["device_types"] as $device): ?>
-                            <tr>
-                                <td><?php echo esc_html($device["device_type"]); ?></td>
-                                <td><strong><?php echo $device["count"]; ?></strong></td>
-                                <td><?php echo $device["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <!-- DEVICES TAB -->
+            <div class="tab-content" id="devices-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/devices-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- Geräte-Marken -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle"><span>Top Geräte-Marken</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <?php foreach ($report["device_brands"] as $brand): ?>
-                            <tr>
-                                <td><?php echo esc_html($brand["brand"]); ?></td>
-                                <td><strong><?php echo $brand["count"]; ?></strong></td>
-                                <td><?php echo $brand["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <!-- GEO TAB -->
+            <div class="tab-content" id="geo-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/geo-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- Betriebssysteme -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle"><span>Betriebssysteme</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <?php foreach ($report["operating_systems"] as $os): ?>
-                            <tr>
-                                <td><?php echo esc_html($os["platform"]); ?></td>
-                                <td><strong><?php echo $os["count"]; ?></strong></td>
-                                <td><?php echo $os["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <!-- TRAFFIC TAB -->
+            <div class="tab-content" id="traffic-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/traffic-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- Browsers -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Browsers</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <?php foreach ($report["browsers"] as $browser): ?>
-                            <tr>
-                                <td><?php echo esc_html($browser["browser_name"]); ?></td>
-                                <td><strong><?php echo $browser["count"]; ?></strong></td>
-                                <td><?php echo $browser["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <!-- TECHNICAL TAB -->
+            <div class="tab-content" id="technical-tab">
+                <div class="dashboard-widgets-wrap" style="display: flex; gap: 1rem; flex-wrap:wrap">
+                    <?php require __DIR__ . "/stats/misc-analytics.php"; ?>
+                </div>
             </div>
-        </div>
 
-        <!-- Bildschirmauflösungen -->
-        <div class="postbox" style="width: 100%; flex-basis: 100%">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Bildschirmauflösungen</span></h2>
-                <table class="widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th>Auflösung</th>
-                            <th>Sessions</th>
-                            <th>Anteil</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($report["screen_resolutions"])): ?>
-                            <?php foreach ($report["screen_resolutions"] as $resolution): ?>
-                                <tr>
-                                    <td><?php echo esc_html($resolution["screen_resolution"]); ?></td>
-                                    <td><strong><?php echo $resolution["count"]; ?></strong></td>
-                                    <td><?php echo $resolution["percentage"]; ?>%</td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="3" style="text-align: center;">Keine Auflösungsdaten verfügbar</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
         </div>
-
-        <!-- Sprachen -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Sprachen</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <?php foreach ($report["languages"] as $language): ?>
-                            <tr>
-                                <td><?php echo esc_html($language["language_clean"]); ?></td>
-                                <td><strong><?php echo $language["count"]; ?></strong></td>
-                                <td><?php echo $language["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Besuchszeiten -->
-        <div class="postbox" style="width: 100%; flex-basis: 100%">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Besuchszeiten (Tageszeit)</span></h2>
-                <table class="widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th>Uhrzeit</th>
-                            <th>Sessions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($report["visit_times"])): ?>
-                            <?php foreach ($report["visit_times"] as $time): ?>
-                                <tr>
-                                    <td><?php echo sprintf("%02d:00 - %02d:59", $time["hour"], $time["hour"]); ?></td>
-                                    <td><strong><?php echo $time["count"]; ?></strong></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="2" style="text-align: center;">Keine Zeitdaten verfügbar</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Länder -->
-        <div class="postbox" style="width: 100%; flex-basis: 100%">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Länder</span></h2>
-                <table class="widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th>Land</th>
-                            <th>Sessions</th>
-                            <th>Anteil</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($report["countries"] as $country): ?>
-                            <tr>
-                                <td><?php echo esc_html($country["country_name"]); ?></td>
-                                <td><strong><?php echo $country["count"]; ?></strong></td>
-                                <td><?php echo $country["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Top Städte -->
-        <div class="postbox" style="width: 100%; flex-basis: 100%">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Top Städte</span></h2>
-                <table class="widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th>Stadt</th>
-                            <th>Land</th>
-                            <th>Sessions</th>
-                            <th>Anteil</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($report["cities"])): ?>
-                            <?php foreach ($report["cities"] as $city): ?>
-                                <tr>
-                                    <td><?php echo esc_html($city["city"]); ?></td>
-                                    <td><?php echo esc_html($city["country_name"]); ?></td>
-                                    <td><strong><?php echo $city["count"]; ?></strong></td>
-                                    <td><?php echo $city["percentage"]; ?>%</td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="4" style="text-align: center;">Keine Städtedaten verfügbar</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Suchmaschinen -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Suchmaschinen</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <?php foreach ($report["search_engines"] as $engine): ?>
-                            <tr>
-                                <td><?php echo esc_html($engine["source_name"]); ?></td>
-                                <td><strong><?php echo $engine["count"]; ?></strong></td>
-                                <td><?php echo $engine["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Soziale Netzwerke -->
-        <div class="postbox" style="flex: 1;">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Soziale Netzwerke</span></h2>
-                <table class="widefat fixed striped">
-                    <tbody>
-                        <?php foreach ($report["social_networks"] as $social): ?>
-                            <tr>
-                                <td><?php echo esc_html($social["source_name"]); ?></td>
-                                <td><strong><?php echo $social["count"]; ?></strong></td>
-                                <td><?php echo $social["percentage"]; ?>%</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- GSC Keywords -->
-        <div class="postbox" style="width: 100%; flex-basis: 100%">
-            <div class="inside">
-                <h2 class="hndle" style="margin-bottom: 10px;"><span>Google Search Console Keywords (Letzen 16 Monate)</span></h2>
-                <table class="widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th>Keyword</th>
-                            <th>Clicks</th>
-                            <th>Anteil</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($report["gsc_keywords"])): ?>
-                            <?php foreach ($report["gsc_keywords"] as $keyword): ?>
-                                <tr>
-                                    <td><?php echo esc_html($keyword["keywords"]); ?></td>
-                                    <td><strong><?php echo $keyword["count"]; ?></strong></td>
-                                    <td><?php echo $keyword["percentage"]; ?>%</td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="3" style="text-align: center;">Keine GSC Daten verfügbar</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
     </div>
 </div>
+
+<style>
+.analytics-sidebar {
+    position: sticky;
+    top: 20px;
+}
+
+.analytics-nav {
+    margin-bottom: 20px;
+}
+
+.analytics-nav .nav-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    width: 100%;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.analytics-nav .nav-tab:hover {
+    background: #f1f1f1;
+    border-color: #2271b1;
+}
+
+.analytics-nav .nav-tab.active {
+    background: #2271b1;
+    color: white;
+    border-color: #2271b1;
+}
+
+.analytics-nav .nav-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block !important;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .analytics-sidebar {
+        width: 220px;
+    }
+}
+
+@media (max-width: 768px) {
+    .analytics-container {
+        flex-direction: column;
+    }
+    
+    .analytics-sidebar {
+        width: 100%;
+        position: static;
+    }
+    
+    .analytics-nav {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab Navigation
+    const navTabs = document.querySelectorAll('.nav-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    navTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            
+            // Remove active class from all tabs and contents
+            navTabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to current tab and content
+            this.classList.add('active');
+            document.getElementById(`${targetTab}-tab`).classList.add('active');
+            
+            // Refresh charts when switching tabs
+            setTimeout(() => {
+                if (typeof Chart !== 'undefined') {
+                    window.dispatchEvent(new Event('resize'));
+                }
+            }, 100);
+        });
+    });
+
+    // Show loading indicator on form submit
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function() {
+            document.getElementById('loading-indicator').style.display = 'block';
+        });
+    });
+});
+
+// Export functions
+function exportData(format) {
+    const timeframe = document.getElementById('timeframe-filter')?.value || '7d';
+    
+    let url = `<?php echo admin_url('admin-ajax.php'); ?>?action=export_analytics&format=${format}&timeframe=${timeframe}&nonce=<?php echo wp_create_nonce('analytics_export'); ?>`;
+    
+    if (format === 'pdf') {
+        // PDF Export
+        window.open(url, '_blank');
+    } else {
+        // CSV Download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `analytics-export-${timeframe}-${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+    }
+}
+
+// Auto-refresh functionality
+let autoRefreshInterval;
+function toggleAutoRefresh(enable) {
+    if (enable) {
+        autoRefreshInterval = setInterval(() => {
+            console.log('Auto-refreshing analytics...');
+            // Page reload for simple implementation
+            window.location.reload();
+        }, 300000); // 5 minutes
+    } else {
+        clearInterval(autoRefreshInterval);
+    }
+}
+
+// Initialize auto-refresh based on URL parameter
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('autorefresh') === '1') {
+    toggleAutoRefresh(true);
+}
+</script>

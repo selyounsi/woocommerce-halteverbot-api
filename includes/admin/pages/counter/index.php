@@ -4,11 +4,6 @@ if (!is_admin()) {
 }
 
 use Utils\Tracker\Google\GoogleSearchConsole;
-use Utils\Tracker\VisitorAnalytics;
-
-$analyticsInstance = VisitorAnalytics::getAnalyticsInstance();
-
-$report = $analyticsInstance->get_report_this_month();
 
 
 $gsc = GoogleSearchConsole::getInstance();
