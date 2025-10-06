@@ -3,6 +3,7 @@
 namespace Utils\Tracker;
 
 use Utils\Tracker\Traits\ChartDataTrait;
+use Utils\Tracker\Traits\ReviewsDataTrait;
 use Utils\Tracker\Traits\BasicAnalyticsTrait;
 use Utils\Tracker\Traits\GlobalAnalyticsTrait;
 use Utils\Tracker\Traits\PageAnalyticsTrait;
@@ -20,6 +21,7 @@ class VisitorAnalytics extends VisitorTracker
         VisitorAnalyticsTrait,
         WooCommerceDataTrait,
         GoogleSearchConsoleTrait,
+        ReviewsDataTrait,
         ChartDataTrait;
 
     private static $analytics_instance = null;
@@ -82,6 +84,16 @@ class VisitorAnalytics extends VisitorTracker
                 'bounce_rate' => $this->get_bounce_rate_by_period($start_date, $end_date),
                 'avg_time_on_page' => $this->get_avg_time_on_page_by_period($start_date, $end_date)
             ],
+            'reviews_metrics' => [
+                'stats' => $this->get_reviews_stats($start_date, $end_date),
+                'sources' => $this->get_reviews_by_source($start_date, $end_date),
+                'top_sources' => $this->get_top_review_sources($start_date, $end_date, 8),
+                'rating_distribution' => $this->get_rating_distribution_chart($start_date, $end_date),
+                'monthly_trends' => $this->get_monthly_reviews_chart_data($start_date, $end_date, 6),
+                'daily_data' => $this->get_daily_reviews_chart_data($start_date, $end_date, 30),
+                'top_reviews' => $this->get_top_reviews($start_date, $end_date, 5),
+                'rating_trends' => $this->get_rating_trends_chart($start_date, $end_date, 6)
+            ],
             'chart_data' => [
                 'daily_visitors_30d' => $this->get_daily_visitors_chart_data(30),
                 'daily_visitors_7d' => $this->get_daily_visitors_chart_data(7),
@@ -90,7 +102,12 @@ class VisitorAnalytics extends VisitorTracker
                 'traffic_sources' => $this->get_traffic_sources_chart($start_date, $end_date),
                 'visit_heatmap' => $this->get_visit_heatmap_data($start_date, $end_date),
                 'german_cities' => $this->get_german_cities_chart($start_date, $end_date),
-                'page_performance' => $this->get_page_performance_chart($start_date, $end_date)
+                'page_performance' => $this->get_page_performance_chart($start_date, $end_date),
+                'reviews_daily_30d' => $this->get_daily_reviews_30d(),
+                'reviews_daily_7d' => $this->get_daily_reviews_7d(),
+                'reviews_monthly_12m' => $this->get_monthly_reviews_12m(),
+                'rating_trends_6m' => $this->get_rating_trends_6m(),
+                'rating_distribution' => $this->get_rating_distribution_chart($start_date, $end_date)
             ],            
             'entry_pages' => $this->entry_pages_by_period($start_date, $end_date, 10),
             'exit_pages' => $this->exit_pages_by_period($start_date, $end_date, 10),
