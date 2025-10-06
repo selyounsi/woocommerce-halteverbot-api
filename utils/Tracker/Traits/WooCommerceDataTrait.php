@@ -366,26 +366,26 @@ trait WooCommerceDataTrait
     /**
      * Gibt Top-Produkte nach Umsatz zurück
      */
-    private function get_top_products_by_revenue($start_date, $end_date, $limit = 10) {
-        $orders_table = $this->wpdb->prefix . 'wc_orders';
-        $order_items_table = $this->wpdb->prefix . 'wc_order_items';
+    // private function get_top_products_by_revenue($start_date, $end_date, $limit = 10) {
+    //     $orders_table = $this->wpdb->prefix . 'wc_orders';
+    //     $order_items_table = $this->wpdb->prefix . 'wc_order_items';
         
-        return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT oi.product_id, oi.product_name, 
-                    SUM(oi.quantity) as total_quantity,
-                    SUM(oi.total_price) as total_revenue,
-                    COUNT(DISTINCT oi.order_id) as order_count
-            FROM {$order_items_table} oi
-            INNER JOIN {$orders_table} o ON oi.order_id = o.id
-            INNER JOIN {$this->table_wc_events} e ON o.id = e.order_id
-            WHERE e.event_type = 'order_complete' 
-            AND DATE(e.event_time) BETWEEN %s AND %s
-            GROUP BY oi.product_id, oi.product_name
-            ORDER BY total_revenue DESC
-            LIMIT %d",
-            $start_date, $end_date, $limit
-        ), ARRAY_A);
-    }
+    //     return $this->wpdb->get_results($this->wpdb->prepare(
+    //         "SELECT oi.product_id, oi.product_name, 
+    //                 SUM(oi.quantity) as total_quantity,
+    //                 SUM(oi.total_price) as total_revenue,
+    //                 COUNT(DISTINCT oi.order_id) as order_count
+    //         FROM {$order_items_table} oi
+    //         INNER JOIN {$orders_table} o ON oi.order_id = o.id
+    //         INNER JOIN {$this->table_wc_events} e ON o.id = e.order_id
+    //         WHERE e.event_type = 'order_complete' 
+    //         AND DATE(e.event_time) BETWEEN %s AND %s
+    //         GROUP BY oi.product_id, oi.product_name
+    //         ORDER BY total_revenue DESC
+    //         LIMIT %d",
+    //         $start_date, $end_date, $limit
+    //     ), ARRAY_A);
+    // }
 
     /**
      * Gibt Kontakt-Events zurück

@@ -11,6 +11,7 @@ use Utils\Tracker\Traits\DeviceAnalyticsTrait;
 use Utils\Tracker\Traits\VisitorAnalyticsTrait;
 use Utils\Tracker\Traits\WooCommerceDataTrait;
 use Utils\Tracker\Traits\GoogleSearchConsoleTrait;
+use Utils\Tracker\Traits\OrderAnalyticsTrait;
 
 class VisitorAnalytics extends VisitorTracker 
 {
@@ -22,6 +23,7 @@ class VisitorAnalytics extends VisitorTracker
         WooCommerceDataTrait,
         GoogleSearchConsoleTrait,
         ReviewsDataTrait,
+        OrderAnalyticsTrait,
         ChartDataTrait;
 
     private static $analytics_instance = null;
@@ -94,6 +96,33 @@ class VisitorAnalytics extends VisitorTracker
                 'top_reviews' => $this->get_top_reviews($start_date, $end_date, 5),
                 'rating_trends' => $this->get_rating_trends_chart($start_date, $end_date, 6)
             ],
+            'order_metrics' => [
+                // Aktueller Zeitraum
+                'current_period' => [
+                    'stats' => $this->get_order_stats($start_date, $end_date),
+                    'status_distribution' => $this->get_order_status_distribution($start_date, $end_date),
+                    'sources' => $this->get_order_sources($start_date, $end_date),
+                    'top_products' => $this->get_top_products_by_revenue($start_date, $end_date, 10),
+                    'customer_repeat' => $this->get_customer_repeat_rate($start_date, $end_date),
+                    'avg_values' => $this->get_avg_order_value_by_status($start_date, $end_date)
+                ],
+                
+                // Letzte 7 Tage
+                'last_7_days' => [
+                    'stats' => $this->get_order_stats_7d(),
+                    'status_distribution' => $this->get_order_status_distribution(
+                        date('Y-m-d', strtotime('-6 days')), date('Y-m-d')
+                    )
+                ],
+                
+                // Letzte 30 Tage
+                'last_30_days' => [
+                    'stats' => $this->get_order_stats_30d(),
+                    'status_distribution' => $this->get_order_status_distribution(
+                        date('Y-m-d', strtotime('-29 days')), date('Y-m-d')
+                    )
+                ]
+            ],
             'chart_data' => [
                 'daily_visitors_30d' => $this->get_daily_visitors_chart_data(30),
                 'daily_visitors_7d' => $this->get_daily_visitors_chart_data(7),
@@ -107,7 +136,14 @@ class VisitorAnalytics extends VisitorTracker
                 'reviews_daily_7d' => $this->get_daily_reviews_7d(),
                 'reviews_monthly_12m' => $this->get_monthly_reviews_12m(),
                 'rating_trends_6m' => $this->get_rating_trends_6m(),
-                'rating_distribution' => $this->get_rating_distribution_chart($start_date, $end_date)
+                'rating_distribution' => $this->get_rating_distribution_chart($start_date, $end_date),
+                'orders_daily_30d' => $this->get_daily_orders_30d(),
+                'orders_daily_7d' => $this->get_daily_orders_7d(),
+                'orders_monthly_12m' => $this->get_monthly_orders_12m(),
+                'order_status_distribution' => $this->get_order_status_distribution($start_date, $end_date),
+                'order_sources' => $this->get_order_sources($start_date, $end_date),
+                'order_time_heatmap' => $this->get_order_time_heatmap($start_date, $end_date),
+                'top_products' => $this->get_top_products_by_revenue($start_date, $end_date, 10)
             ],            
             'entry_pages' => $this->entry_pages_by_period($start_date, $end_date, 10),
             'exit_pages' => $this->exit_pages_by_period($start_date, $end_date, 10),
