@@ -39,6 +39,15 @@ input:-webkit-autofill:active {
     font-size: 14px;
 }
 
+.single-product .wcpa_wrap .wcpa_field_wrap.wcpa_inline.hideanzahltage {
+    display: block !important;
+    width: 100%;
+}
+
+.single-product .cart .single_add_to_cart_button  {
+    text-align: center;
+}
+
 .single-product .wcpa_wrap .wcpa_field_wrap,
 .woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p,
 .woocommerce-checkout form.checkout .woocommerce-additional-fields__field-wrapper p,
@@ -84,7 +93,7 @@ input:-webkit-autofill:active {
 .woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select,
 .woocommerce-checkout form.checkout .woocommerce-billing-fields__field-wrapper p select ~ span > .selection > span {
     width: 100%;
-    padding: 11px 12px 7px 12px;
+    padding: 12px 10px 8px;
     font-size: 15px;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -92,6 +101,7 @@ input:-webkit-autofill:active {
     margin: 0;
     line-height: 17px;
     height: auto;
+    min-height: 38px;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
