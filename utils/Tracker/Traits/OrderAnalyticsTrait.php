@@ -49,21 +49,34 @@ trait OrderAnalyticsTrait
             $params = [$start_date, $end_date];
         }
         
-        $status_cases = $this->get_status_case_statements();
-        
         $sql = $this->wpdb->prepare(
             "SELECT 
                 COUNT(*) as total_orders,
                 SUM(total_amount) as total_revenue,
                 AVG(total_amount) as avg_order_value,
-                COUNT(DISTINCT customer_id) as unique_customers,
-                {$status_cases}
-             FROM {$this->table_orders}
-             {$where_clause}",
+                COUNT(DISTINCT customer_id) as unique_customers
+            FROM {$this->table_orders}
+            {$where_clause}",
             $params
         );
         
-        return $this->wpdb->get_row($sql, ARRAY_A);
+        $result = $this->wpdb->get_row($sql, ARRAY_A);
+        
+        if (!$result) {
+            return [
+                'total_orders' => 0,
+                'total_revenue' => 0,
+                'avg_order_value' => 0,
+                'unique_customers' => 0
+            ];
+        }
+        
+        return [
+            'total_orders' => (int)$result['total_orders'],
+            'total_revenue' => round($result['total_revenue'], 2),
+            'avg_order_value' => round($result['avg_order_value'], 2),
+            'unique_customers' => (int)$result['unique_customers']
+        ];
     }
 
     /**
@@ -85,10 +98,11 @@ trait OrderAnalyticsTrait
     }
 
     /**
-     * Status-Verteilung für Zeitraum
+     * Status-Verteilung für Zeitraum mit Status-Namen
      */
     public function get_order_status_distribution($start_date = null, $end_date = null) {
         $this->init_order_tables();
+        $statuses = $this->get_wc_order_statuses();
         
         $where_clause = '';
         $params = [];
@@ -104,14 +118,22 @@ trait OrderAnalyticsTrait
                 COUNT(*) as count,
                 SUM(total_amount) as revenue,
                 ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
-             FROM {$this->table_orders}
-             {$where_clause}
-             GROUP BY status
-             ORDER BY count DESC",
+            FROM {$this->table_orders}
+            {$where_clause}
+            GROUP BY status
+            ORDER BY count DESC",
             $params
         );
         
-        return $this->wpdb->get_results($sql, ARRAY_A);
+        $results = $this->wpdb->get_results($sql, ARRAY_A);
+        
+        // Status-Namen hinzufügen
+        foreach ($results as &$result) {
+            $status_key = $result['status'];
+            $result['status_name'] = isset($statuses[$status_key]) ? $statuses[$status_key] : $status_key;
+        }
+        
+        return $results;
     }
 
     /**

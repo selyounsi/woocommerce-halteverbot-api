@@ -253,7 +253,7 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // Order Analytics Charts
-    const orderChartData = <?php echo json_encode($report['chart_data'] ?? []); ?>;
+    const orderChartData = <?php echo json_encode($report['order_metrics']['chart_data'] ?? []); ?>;
 
     // 1. Tägliche Bestellungen (30 Tage)
     if (orderChartData.orders_daily_30d && Object.keys(orderChartData.orders_daily_30d).length > 0) {
@@ -367,8 +367,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 3. Bestellstatus Verteilung
     if (orderChartData.order_status_distribution && orderChartData.order_status_distribution.length > 0) {
-        const statusLabels = orderChartData.order_status_distribution.map(s => s.status.replace('wc-', ''));
+        const statusLabels = orderChartData.order_status_distribution.map(s => s.status_name);
         const statusData = orderChartData.order_status_distribution.map(s => s.count);
+
+        console.log(orderChartData.order_status_distribution)
         
         new Chart(document.getElementById('orderStatusChart'), {
             type: 'doughnut',

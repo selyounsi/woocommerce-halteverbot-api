@@ -4,12 +4,12 @@
         <h2 class="hndle" style="margin-bottom: 10px;"><span>Besucher im Überblick</span></h2>
         <table class="widefat fixed striped">
             <tbody>
-                <tr><td>Heute</td><td><strong><?php echo $analyticsInstance->visitors_today(); ?></strong></td></tr>
-                <tr><td>Gestern</td><td><strong><?php echo $analyticsInstance->visitors_yesterday(); ?></strong></td></tr>
-                <tr><td>Diese Woche</td><td><strong><?php echo $analyticsInstance->visitors_this_week(); ?></strong></td></tr>
-                <tr><td>Dieser Monat</td><td><strong><?php echo $analyticsInstance->visitors_this_month(); ?></strong></td></tr>
-                <tr><td>Letzter Monat</td><td><strong><?php echo $analyticsInstance->visitors_last_month(); ?></strong></td></tr>
-                <tr><td>Dieses Jahr</td><td><strong><?php echo $analyticsInstance->visitors_this_year(); ?></strong></td></tr>
+                <tr><td>Heute</td><td><strong><?php echo $report['visitor_metrics']['today']; ?></strong></td></tr>
+                <tr><td>Gestern</td><td><strong><?php echo $report['visitor_metrics']['yesterday']; ?></strong></td></tr>
+                <tr><td>Diese Woche</td><td><strong><?php echo $report['visitor_metrics']['this_week']; ?></strong></td></tr>
+                <tr><td>Dieser Monat</td><td><strong><?php echo $report['visitor_metrics']['this_month']; ?></strong></td></tr>
+                <tr><td>Letzter Monat</td><td><strong><?php echo $report['visitor_metrics']['last_month']; ?></strong></td></tr>
+                <tr><td>Dieses Jahr</td><td><strong><?php echo $report['visitor_metrics']['this_year']; ?></strong></td></tr>
             </tbody>
         </table>
     </div>
@@ -36,7 +36,7 @@
         <h2 class="hndle" style="margin-bottom: 10px;"><span>Besucher-Typen</span></h2>
         <table class="widefat fixed striped">
             <tbody>
-                <?php foreach ($report["visitor_types"] as $visitor): ?>
+                <?php foreach ($report["visitor_metrics"]["visitor_types"] as $visitor): ?>
                     <tr>
                         <td><?php echo esc_html($visitor["visitor_type"]); ?></td>
                         <td><strong><?php echo $visitor["count"]; ?></strong></td>
@@ -54,7 +54,7 @@
         <h2 class="hndle" style="margin-bottom: 10px;"><span>Traffic-Kanäle</span></h2>
         <table class="widefat fixed striped">
             <tbody>
-                <?php foreach ($report["traffic_channels"] as $channel): ?>
+                <?php foreach ($report["visitor_metrics"]["traffic_channels"] as $channel): ?>
                     <tr>
                         <td><?php echo esc_html($channel["source_channel"]); ?></td>
                         <td><strong><?php echo $channel["count"]; ?></strong></td>

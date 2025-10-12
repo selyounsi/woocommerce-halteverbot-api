@@ -71,14 +71,26 @@ class VisitorAnalytics extends VisitorTracker
 
     public function get_report($start_date, $end_date): array {
         return [
-            'total_visits' => $this->visitors_by_period($start_date, $end_date),
-            'visitors' => [
+            'visitor_metrics' => [
                 'today' => $this->visitors_today(),
                 'yesterday' => $this->visitors_yesterday(),
                 'this_week' => $this->visitors_this_week(),
                 'this_month' => $this->visitors_this_month(),
                 'last_month' => $this->visitors_last_month(),
-                'this_year' => $this->visitors_this_year()
+                'this_year' => $this->visitors_this_year(),
+                'total_visits' => $this->visitors_by_period($start_date, $end_date),
+                'traffic_channels' => $this->get_traffic_channels_by_period($start_date, $end_date),
+                'visitor_types' => $this->get_visitor_types_by_period($start_date, $end_date),
+                'chart_data' => [
+                    'page_performance' => $this->get_page_performance_chart($start_date, $end_date),
+                    'german_cities' => $this->get_german_cities_chart($start_date, $end_date),
+                    'traffic_sources' => $this->get_traffic_sources_by_period($start_date, $end_date),
+                    'daily_visitors_30d' => $this->get_daily_visitors_chart_data(30),
+                    'daily_visitors_7d' => $this->get_daily_visitors_chart_data(7),
+                    'device_distribution' => $this->get_device_distribution_chart($start_date, $end_date),
+                    'browser_distribution' => $this->get_browser_distribution_chart($start_date, $end_date),
+                    'visit_heatmap' => $this->get_visit_heatmap_data($start_date, $end_date),
+                ]
             ],
             'session_metrics' => [
                 'avg_duration' => $this->get_avg_session_duration_by_period($start_date, $end_date),
@@ -94,10 +106,16 @@ class VisitorAnalytics extends VisitorTracker
                 'monthly_trends' => $this->get_monthly_reviews_chart_data($start_date, $end_date, 6),
                 'daily_data' => $this->get_daily_reviews_chart_data($start_date, $end_date, 30),
                 'top_reviews' => $this->get_top_reviews($start_date, $end_date, 5),
-                'rating_trends' => $this->get_rating_trends_chart($start_date, $end_date, 6)
+                'rating_trends' => $this->get_rating_trends_chart($start_date, $end_date, 6),
+                'chart_data' => [
+                    'reviews_daily_30d' => $this->get_daily_reviews_30d(),
+                    'reviews_daily_7d' => $this->get_daily_reviews_7d(),
+                    'reviews_monthly_12m' => $this->get_monthly_reviews_12m(),
+                    'rating_trends_6m' => $this->get_rating_trends_6m(),
+                    'rating_distribution' => $this->get_rating_distribution_chart($start_date, $end_date),
+                ]
             ],
             'order_metrics' => [
-                // Aktueller Zeitraum
                 'current_period' => [
                     'stats' => $this->get_order_stats($start_date, $end_date),
                     'status_distribution' => $this->get_order_status_distribution($start_date, $end_date),
@@ -106,66 +124,71 @@ class VisitorAnalytics extends VisitorTracker
                     'customer_repeat' => $this->get_customer_repeat_rate($start_date, $end_date),
                     'avg_values' => $this->get_avg_order_value_by_status($start_date, $end_date)
                 ],
-                
-                // Letzte 7 Tage
                 'last_7_days' => [
                     'stats' => $this->get_order_stats_7d(),
                     'status_distribution' => $this->get_order_status_distribution(
                         date('Y-m-d', strtotime('-6 days')), date('Y-m-d')
                     )
                 ],
-                
-                // Letzte 30 Tage
                 'last_30_days' => [
                     'stats' => $this->get_order_stats_30d(),
                     'status_distribution' => $this->get_order_status_distribution(
                         date('Y-m-d', strtotime('-29 days')), date('Y-m-d')
                     )
+                ],
+                'chart_data' => [
+                    'orders_daily_30d' => $this->get_daily_orders_30d(),
+                    'orders_daily_7d' => $this->get_daily_orders_7d(),
+                    'orders_monthly_12m' => $this->get_monthly_orders_12m(),
+                    'order_status_distribution' => $this->get_order_status_distribution($start_date, $end_date),
+                    'order_sources' => $this->get_order_sources($start_date, $end_date),
+                    'order_time_heatmap' => $this->get_order_time_heatmap($start_date, $end_date),
+                    'top_products' => $this->get_top_products_by_revenue($start_date, $end_date, 10)
                 ]
             ],
-            'chart_data' => [
-                'daily_visitors_30d' => $this->get_daily_visitors_chart_data(30),
-                'daily_visitors_7d' => $this->get_daily_visitors_chart_data(7),
-                'device_distribution' => $this->get_device_distribution_chart($start_date, $end_date),
-                'browser_distribution' => $this->get_browser_distribution_chart($start_date, $end_date),
-                'traffic_sources' => $this->get_traffic_sources_chart($start_date, $end_date),
-                'visit_heatmap' => $this->get_visit_heatmap_data($start_date, $end_date),
-                'german_cities' => $this->get_german_cities_chart($start_date, $end_date),
-                'page_performance' => $this->get_page_performance_chart($start_date, $end_date),
-                'reviews_daily_30d' => $this->get_daily_reviews_30d(),
-                'reviews_daily_7d' => $this->get_daily_reviews_7d(),
-                'reviews_monthly_12m' => $this->get_monthly_reviews_12m(),
-                'rating_trends_6m' => $this->get_rating_trends_6m(),
-                'rating_distribution' => $this->get_rating_distribution_chart($start_date, $end_date),
-                'orders_daily_30d' => $this->get_daily_orders_30d(),
-                'orders_daily_7d' => $this->get_daily_orders_7d(),
-                'orders_monthly_12m' => $this->get_monthly_orders_12m(),
-                'order_status_distribution' => $this->get_order_status_distribution($start_date, $end_date),
-                'order_sources' => $this->get_order_sources($start_date, $end_date),
-                'order_time_heatmap' => $this->get_order_time_heatmap($start_date, $end_date),
-                'top_products' => $this->get_top_products_by_revenue($start_date, $end_date, 10)
-            ],            
-            'entry_pages' => $this->entry_pages_by_period($start_date, $end_date, 10),
-            'exit_pages' => $this->exit_pages_by_period($start_date, $end_date, 10),
-            'exit_rates' => $this->exit_rates_by_period($start_date, $end_date, 10),
-            'devices' => $this->get_devices_by_period($start_date, $end_date),
-            'device_types' => $this->get_device_types_by_period($start_date, $end_date),
-            'device_brands' => $this->get_device_brands_by_period($start_date, $end_date),
-            'browsers' => $this->get_browsers_by_period($start_date, $end_date),
-            'countries' => $this->get_countries_by_period($start_date, $end_date),
-            'traffic_sources' => $this->get_traffic_sources_by_period($start_date, $end_date),
-            'pages' => $this->get_pages_by_period($start_date, $end_date),
-            'search_engines' => $this->get_search_engines_by_period($start_date, $end_date),
-            'social_networks' => $this->get_social_networks_by_period($start_date, $end_date),
-            'traffic_channels' => $this->get_traffic_channels_by_period($start_date, $end_date),
-            'operating_systems' => $this->get_operating_systems_by_period($start_date, $end_date),
-            'visitor_types' => $this->get_visitor_types_by_period($start_date, $end_date),
-            'visit_times' => $this->get_visit_times_by_period($start_date, $end_date),
-            'screen_resolutions' => $this->get_screen_resolutions_by_period($start_date, $end_date),
-            'languages' => $this->get_languages_by_period($start_date, $end_date),
-            'keywords' => $this->get_keywords_by_period($start_date, $end_date),
-            'cities' => $this->get_cities_by_period($start_date, $end_date),
-            'gsc_keywords' => $this->get_gsc_keywords_16_months(), 
+            'page_metrics' => [
+                'pages' => $this->get_pages_by_period($start_date, $end_date),
+                'entry_pages' => $this->entry_pages_by_period($start_date, $end_date, 10),
+                'exit_pages' => $this->exit_pages_by_period($start_date, $end_date, 10),
+                'exit_rates' => $this->exit_rates_by_period($start_date, $end_date, 10),
+                'page_categories' => $this->page_performance_by_category($start_date, $end_date),
+                'woo_commerce_pages' => $this->woo_commerce_pages_performance($start_date, $end_date),
+                'product_pages' => $this->product_pages_performance($start_date, $end_date),
+                'category_pages' => $this->category_pages_performance($start_date, $end_date),
+                'ecommerce_funnel' => $this->ecommerce_funnel_analysis($start_date, $end_date),
+                'detailed_performance' => $this->detailed_page_performance($start_date, $end_date, 15),
+                'page_flow' => $this->page_flow_analysis($start_date, $end_date, 8),
+                'engagement_metrics' => $this->page_engagement_metrics($start_date, $end_date),
+                'chart_data' => [
+                    'page_performance' => $this->get_page_performance_chart_data($start_date, $end_date),
+                    'engagement' => $this->get_engagement_chart_data($start_date, $end_date),
+                    'traffic_flow' => $this->get_traffic_flow_chart_data($start_date, $end_date),
+                    'exit_rates' => $this->get_exit_rates_chart_data($start_date, $end_date),
+                    'page_comparison' => $this->get_page_comparison_chart_data($start_date, $end_date),
+                    'ecommerce_funnel' => $this->get_ecommerce_funnel_chart_data($start_date, $end_date)
+                ]
+            ],
+            'misc_metrics' => [
+                'screen_resolutions' => $this->get_screen_resolutions_by_period($start_date, $end_date),
+                'languages' => $this->get_languages_by_period($start_date, $end_date),
+                'visit_times' => $this->get_visit_times_by_period($start_date, $end_date)
+            ],
+            'devices_metrics' => [
+                'devices' => $this->get_devices_by_period($start_date, $end_date),
+                'device_types' => $this->get_device_types_by_period($start_date, $end_date),
+                'device_brands' => $this->get_device_brands_by_period($start_date, $end_date)
+            ],
+            'geo_metrics' => [
+                'countries' => $this->get_countries_by_period($start_date, $end_date),
+                'cities' => $this->get_cities_by_period($start_date, $end_date),
+                'operating_systems' => $this->get_operating_systems_by_period($start_date, $end_date),
+                'browsers' => $this->get_browsers_by_period($start_date, $end_date),
+            ],
+            'traffic_metrics' => [
+                'gsc_keywords' => $this->get_gsc_keywords_by_period($start_date, $end_date, 30),
+                'social_networks' => $this->get_social_networks_by_period($start_date, $end_date),
+                'search_engines' => $this->get_search_engines_by_period($start_date, $end_date)
+            ],
             'wc_metrics' => [
                 'events' => $this->get_wc_events_by_period($start_date, $end_date),
                 

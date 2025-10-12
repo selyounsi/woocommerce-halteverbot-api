@@ -82,7 +82,7 @@
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const chartData = <?php echo json_encode($report['chart_data'] ?? []); ?>;
+    const chartData = <?php echo json_encode($report['visitor_metrics']['chart_data'] ?? []); ?>;
 
     // 1. Tägliche Besucher (7-30 Tage)
     function createDailyVisitorsChart(canvasId, data, title) {

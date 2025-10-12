@@ -2,51 +2,6 @@
 if (!is_admin()) {
     return;
 }
-
-use Utils\Tracker\Google\GoogleSearchConsole;
-
-
-$gsc = GoogleSearchConsole::getInstance();
-$status = $gsc->getStatus();
-
-// Formular verarbeiten
-if (isset($_POST['save_credentials'])) {
-    $clientId = sanitize_text_field($_POST['client_id'] ?? '');
-    $clientSecret = sanitize_text_field($_POST['client_secret'] ?? '');
-    
-    if ($gsc->saveCredentials($clientId, $clientSecret)) {
-        echo '<div class="notice notice-success"><p>✅ Client ID und Secret gespeichert!</p></div>';
-        $status = $gsc->getStatus();
-    }
-}
-
-// Primäre Domain setzen
-if (isset($_POST['set_primary_domain'])) {
-    $primaryDomain = sanitize_text_field($_POST['primary_domain'] ?? '');
-    if ($gsc->setPrimaryDomain($primaryDomain)) {
-        echo '<div class="notice notice-success"><p>✅ Primäre Domain gesetzt: ' . esc_html($primaryDomain) . '</p></div>';
-    }
-}
-
-// Reset
-if (isset($_POST['reset_all'])) {
-    if ($gsc->reset()) {
-        echo '<div class="notice notice-success"><p>✅ Alle Daten wurden zurückgesetzt!</p></div>';
-        $status = $gsc->getStatus();
-    }
-}
-
-// OAuth Callback
-if (isset($_GET['code'])) {
-    $result = $gsc->authenticate($_GET['code']);
-    
-    if ($result['success']) {
-        echo '<div class="notice notice-success"><p>✅ ' . $result['message'] . '</p></div>';
-    } else {
-        echo '<div class="notice notice-error"><p>❌ ' . $result['error'] . '</p></div>';
-    }
-    $status = $gsc->getStatus();
-}
 ?>
 <div class="wrap">
 
