@@ -40,13 +40,13 @@ if ( ( isset($_GET['preview']) && $_GET['preview'] === '1' ) || HalteverbotOptio
             'single-product-checkout-css',
             $plugin_url . 'css/single-product-checkout.css',
             [],
-            '1.95'
+            '1.0.1'
         );
         wp_enqueue_script(
             'single-product-checkout-js',
             $plugin_url . 'js/single-product-checkout.js',
             [],
-            '1.32'
+            '1.0.0'
         );
     });
 }

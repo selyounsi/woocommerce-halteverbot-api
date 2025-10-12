@@ -54,6 +54,7 @@ input:-webkit-autofill:active {
 .woocommerce-checkout form.checkout .woocommerce-additional-fields__field-wrapper p,
 .woocommerce-checkout form.checkout #payment ul.payment_methods li .payment_box p {
     position: relative;
+    line-height: normal;
 }
 
 .single-product .wcpa_wrap .wcpa_field_wrap label.wcpa_field_label,
@@ -91,9 +92,10 @@ input:-webkit-autofill:active {
     pointer-events: all;
 }
 
-.single-product .wcpa_field_wrap.wcpa_type_checkbox.wcpa_required_ast .wcpa_checkbox label::after {
+.single-product .wcpa_field_wrap.wcpa_type_checkbox.wcpa_required_ast .wcpa_checkbox label span:not([class])::after {
     content: "*";
     color: #f25a87;
+    margin-right: 2px;
 }
 
 .single-product .wcpa_wrap .wcpa_field_wrap .wcpa_field,
