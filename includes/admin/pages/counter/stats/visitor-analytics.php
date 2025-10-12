@@ -239,17 +239,19 @@ document.addEventListener('DOMContentLoaded', function() {
         new Chart(document.getElementById('trafficSourcesChart'), {
             type: 'doughnut',
             data: {
-                labels: chartData.traffic_sources.map(d => d.source),
+                labels: chartData.traffic_sources.map(d => d.source_label),
                 datasets: [{
                     data: chartData.traffic_sources.map(d => d.count),
-                    backgroundColor: ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#607D8B']
+                    backgroundColor: ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0']
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom' }
+                    legend: { 
+                        position: 'bottom'
+                    }
                 }
             }
         });

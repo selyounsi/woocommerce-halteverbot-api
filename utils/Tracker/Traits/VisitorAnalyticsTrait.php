@@ -37,20 +37,36 @@ trait VisitorAnalyticsTrait
         ), ARRAY_A);
     }
 
-    private function get_traffic_sources_by_period($start_date, $end_date) {
-        return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT source_channel, source_name, medium, COUNT(*) as count,
+    private function get_traffic_sources_by_period($start_date, $end_date) 
+    {
+        $results = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT source_channel, COUNT(*) as count,
                     ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
             FROM (
-                SELECT session_id, source_channel, source_name, medium
+                SELECT session_id, source_channel
                 FROM {$this->table_logs}
                 WHERE DATE(visit_time) BETWEEN %s AND %s
-                GROUP BY session_id, source_channel, source_name, medium
+                GROUP BY session_id, source_channel
             ) as sessions
-            GROUP BY source_channel, source_name, medium 
+            GROUP BY source_channel 
             ORDER BY count DESC",
             $start_date, $end_date
         ), ARRAY_A);
+
+        // Mapping für deutsche Labels
+        $channel_labels = [
+            'organic' => 'Suchmaschinen',
+            'social' => 'Soziale Medien', 
+            'referral' => 'Verweise',
+            'direct' => 'Direkt'
+        ];
+
+        // Labels ersetzen
+        foreach ($results as &$row) {
+            $row['source_label'] = $channel_labels[$row['source_channel']] ?? $row['source_channel'];
+        }
+
+        return $results;
     }
 
     private function get_search_engines_by_period($start_date, $end_date) {
