@@ -3,7 +3,40 @@
 namespace Utils\Tracker\Traits;
 
 trait ChartDataTrait {
-/**
+
+    private $browser_groups = [
+        'chrome' => 'Chrome',
+        'chrome mobile' => 'Chrome',
+        'chrome ios' => 'Chrome',
+        'chromium' => 'Chrome',
+        
+        'safari' => 'Safari',
+        'safari mobile' => 'Safari',
+        'mobile safari' => 'Safari',
+        
+        'firefox' => 'Firefox',
+        'firefox mobile' => 'Firefox',
+        'firefox ios' => 'Firefox',
+        
+        'edge' => 'Edge',
+        'microsoft edge' => 'Edge',
+        'edge mobile' => 'Edge',
+        
+        'opera' => 'Opera',
+        'opera mobile' => 'Opera',
+        'opera mini' => 'Opera',
+        
+        'samsung browser' => 'Samsung Browser',
+        'samsung internet' => 'Samsung Browser',
+        
+        'uc browser' => 'UC Browser',
+        'ucbrowser' => 'UC Browser',
+        
+        'brave' => 'Brave',
+        'vivaldi' => 'Vivaldi'
+    ];
+
+    /**
      * Geräteverteilung für Donut Chart mit Zeitraum
      */
     public function get_device_distribution_chart($start_date, $end_date) {
@@ -25,19 +58,59 @@ trait ChartDataTrait {
      * Browser-Verteilung für Pie Chart mit Zeitraum
      */
     public function get_browser_distribution_chart($start_date, $end_date) {
-        return $this->wpdb->get_results($this->wpdb->prepare(
+        $results = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 browser_name,
-                COUNT(DISTINCT session_id) as count,
-                ROUND((COUNT(DISTINCT session_id) * 100.0 / 
-                    (SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs} WHERE DATE(visit_time) BETWEEN %s AND %s)), 1) as percentage
+                COUNT(DISTINCT session_id) as count
             FROM {$this->table_logs} 
             WHERE browser_name != '' AND DATE(visit_time) BETWEEN %s AND %s
             GROUP BY browser_name
-            ORDER BY count DESC
-            LIMIT 8",
-            $start_date, $end_date, $start_date, $end_date
+            ORDER BY count DESC",
+            $start_date, $end_date
         ), ARRAY_A);
+
+        // Browser-Namen mit globaler Variable gruppieren
+        $consolidated = [];
+        foreach ($results as $row) {
+            $browser_name = strtolower($row['browser_name']);
+            $count = $row['count'];
+            
+            $grouped_name = $this->browser_name;
+            
+            // Durch alle Browser-Gruppen iterieren
+            foreach ($this->browser_groups as $pattern => $group) {
+                if (strpos($browser_name, $pattern) !== false) {
+                    $grouped_name = $group;
+                    break;
+                }
+            }
+            
+            // Falls kein Match, originalen Namen verwenden
+            if ($grouped_name === $this->browser_name) {
+                $grouped_name = $row['browser_name'];
+            }
+            
+            if (!isset($consolidated[$grouped_name])) {
+                $consolidated[$grouped_name] = 0;
+            }
+            $consolidated[$grouped_name] += $count;
+        }
+
+        // Zurück in Array-Format für Chart
+        $final_data = [];
+        foreach ($consolidated as $browser => $count) {
+            $final_data[] = [
+                'browser_name' => $browser,
+                'count' => $count
+            ];
+        }
+
+        // Nach Count sortieren und auf 8 limitieren
+        usort($final_data, function($a, $b) {
+            return $b['count'] - $a['count'];
+        });
+        
+        return array_slice($final_data, 0, 8);
     }
 
     /**
