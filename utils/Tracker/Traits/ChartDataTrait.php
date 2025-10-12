@@ -55,6 +55,23 @@ trait ChartDataTrait {
     }
 
     /**
+     * Suchmaschinen-Verteilung für Pie Chart mit Zeitraum
+     */
+    public function get_search_engine_distribution_chart($start_date, $end_date) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT 
+                source_name as search_engine,
+                COUNT(DISTINCT session_id) as count
+            FROM {$this->table_logs} 
+            WHERE source_channel = 'organic' AND source_name != '' AND DATE(visit_time) BETWEEN %s AND %s
+            GROUP BY source_name
+            ORDER BY count DESC
+            LIMIT 8",
+            $start_date, $end_date
+        ), ARRAY_A);
+    }
+
+    /**
      * Browser-Verteilung für Pie Chart mit Zeitraum
      */
     public function get_browser_distribution_chart($start_date, $end_date) {

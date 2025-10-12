@@ -47,6 +47,15 @@
                     <canvas id="trafficSourcesChart"></canvas>
                 </div>
             </div>
+
+            <!-- Suchmaschinen-Verteilung -->
+            <div style="flex: 1; min-width: 300px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                <h3 style="margin: 0 0 15px 0;">🔍 Suchmaschinen</h3>
+                <div style="height: 250px; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                    <canvas id="searchEngineDistributionChart"></canvas>
+                </div>
+            </div>
+
         </div>
         
         <!-- Heatmap und Karten -->
@@ -221,6 +230,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 labels: chartData.browser_distribution.map(d => d.browser_name),
                 datasets: [{
                     data: chartData.browser_distribution.map(d => d.count),
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    // Suchmaschinen-Verteilung
+    if (chartData.search_engine_distribution) {
+        new Chart(document.getElementById('searchEngineDistributionChart'), {
+            type: 'pie',
+            data: {
+                labels: chartData.search_engine_distribution.map(d => d.search_engine),
+                datasets: [{
+                    data: chartData.search_engine_distribution.map(d => d.count),
                     backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
                 }]
             },

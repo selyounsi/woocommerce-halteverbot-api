@@ -89,6 +89,7 @@ class VisitorAnalytics extends VisitorTracker
                     'daily_visitors_7d' => $this->get_daily_visitors_chart_data(7),
                     'device_distribution' => $this->get_device_distribution_chart($start_date, $end_date),
                     'browser_distribution' => $this->get_browser_distribution_chart($start_date, $end_date),
+                    'search_engine_distribution' => $this->get_search_engine_distribution_chart($start_date, $end_date),
                     'visit_heatmap' => $this->get_visit_heatmap_data($start_date, $end_date),
                 ]
             ],
