@@ -371,21 +371,48 @@ $report = $analyticsInstance->get_report($start_date, $end_date);
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Tab Navigation
+    // Tab Navigation with persistence
     const navTabs = document.querySelectorAll('.nav-tab');
     const tabContents = document.querySelectorAll('.tab-content');
     
+    // Function to activate a specific tab
+    function activateTab(tabName) {
+        // Remove active class from all tabs and contents
+        navTabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        // Add active class to current tab and content
+        const targetTab = document.querySelector(`[data-tab="${tabName}"]`);
+        const targetContent = document.getElementById(`${tabName}-tab`);
+        
+        if (targetTab && targetContent) {
+            targetTab.classList.add('active');
+            targetContent.classList.add('active');
+            
+            // Save to localStorage and URL
+            localStorage.setItem('analytics-active-tab', tabName);
+            updateUrlParameter('tab', tabName);
+        }
+    }
+    
+    // Function to update URL parameter without page reload
+    function updateUrlParameter(key, value) {
+        const url = new URL(window.location);
+        url.searchParams.set(key, value);
+        window.history.replaceState({}, '', url);
+    }
+    
+    // Function to get URL parameter
+    function getUrlParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+    
+    // Tab click event
     navTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             const targetTab = this.getAttribute('data-tab');
-            
-            // Remove active class from all tabs and contents
-            navTabs.forEach(t => t.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-            
-            // Add active class to current tab and content
-            this.classList.add('active');
-            document.getElementById(`${targetTab}-tab`).classList.add('active');
+            activateTab(targetTab);
             
             // Refresh charts when switching tabs
             setTimeout(() => {
@@ -395,7 +422,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100);
         });
     });
-
+    
+    // Determine which tab to show on page load
+    function initializeActiveTab() {
+        // Priority 1: URL parameter
+        const urlTab = getUrlParameter('tab');
+        
+        // Priority 2: localStorage
+        const savedTab = localStorage.getItem('analytics-active-tab');
+        
+        // Priority 3: Default tab
+        const defaultTab = 'overview';
+        
+        const tabToActivate = urlTab || savedTab || defaultTab;
+        activateTab(tabToActivate);
+    }
+    
+    // Initialize
+    initializeActiveTab();
+    
     // Show loading indicator on form submit
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
