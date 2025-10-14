@@ -200,26 +200,34 @@ trait WooCommerceDataTrait
     }
 
     /**
-     * Funnel Conversion Rate zwischen zwei Events
+     * Funnel Conversion Rate - KORRIGIERT für doppelte Events
      */
     private function get_funnel_rate($from_event, $to_event, $start_date, $end_date) {
+        // Zähle UNTERSCHIEDLICHE Sessions mit from_event
         $from_count = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(DISTINCT session_id) 
-            FROM {$this->table_wc_events} 
-            WHERE event_type = %s 
-            AND DATE(event_time) BETWEEN %s AND %s",
+            "SELECT COUNT(DISTINCT session_id) FROM {$this->table_wc_events} 
+            WHERE event_type = %s AND DATE(event_time) BETWEEN %s AND %s",
             $from_event, $start_date, $end_date
         ));
         
-        $to_count = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(DISTINCT session_id) 
-            FROM {$this->table_wc_events} 
-            WHERE event_type = %s 
-            AND DATE(event_time) BETWEEN %s AND %s",
-            $to_event, $start_date, $end_date
+        // Zähle UNTERSCHIEDLICHE Sessions die ZUERST from_event und DANN to_event hatten
+        $conversion_count = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT fe.session_id) 
+            FROM {$this->table_wc_events} fe
+            INNER JOIN {$this->table_wc_events} te ON fe.session_id = te.session_id
+            WHERE fe.event_type = %s 
+            AND te.event_type = %s
+            AND fe.event_time < te.event_time
+            AND DATE(fe.event_time) BETWEEN %s AND %s
+            AND DATE(te.event_time) BETWEEN %s AND %s",
+            $from_event, $to_event, $start_date, $end_date, $start_date, $end_date
         ));
         
-        return $from_count > 0 ? round(($to_count / $from_count) * 100, 2) : 0;
+        return [
+            'from_count' => $from_count,
+            'conversion_count' => $conversion_count,
+            'percentage' => $from_count > 0 ? round(($conversion_count / $from_count) * 100, 2) : 0
+        ];
     }
 
     /**

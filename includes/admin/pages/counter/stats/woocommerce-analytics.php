@@ -198,19 +198,19 @@
                     <tr>
                         <td>View → Cart:</td>
                         <td style="text-align: right; font-weight: bold;">
-                            <?php echo $report['wc_metrics']['funnel']['view_to_cart']; ?>%
+                            <?php echo $report['wc_metrics']['funnel']['view_to_cart']['percentage']; ?>%
                         </td>
                     </tr>
                     <tr>
                         <td>Cart → Checkout:</td>
                         <td style="text-align: right; font-weight: bold;">
-                            <?php echo $report['wc_metrics']['funnel']['cart_to_checkout']; ?>%
+                            <?php echo $report['wc_metrics']['funnel']['cart_to_checkout']['percentage']; ?>%
                         </td>
                     </tr>
                     <tr>
                         <td>Checkout → Order:</td>
                         <td style="text-align: right; font-weight: bold;">
-                            <?php echo $report['wc_metrics']['funnel']['checkout_to_order']; ?>%
+                            <?php echo $report['wc_metrics']['funnel']['checkout_to_order']['percentage']; ?>%
                         </td>
                     </tr>
                     <tr style="border-top: 1px solid #ddd;">
@@ -310,6 +310,9 @@
             <!-- Funnel Diagramm -->
             <div style="flex: 1; min-width: 400px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
                 <h3 style="margin: 0 0 15px 0;">📊 Funnel Conversion</h3>
+                <div style="font-size: 12px; color: #666; margin-bottom: 10px; background: white; padding: 8px; border-radius: 4px; border-left: 3px solid #2196F3;">
+                    <strong>Verlauf der Kaufabschlüsse:</strong> Zeigt, wie viele Besucher jede Stufe des Bestellprozesses erreichen
+                </div>
                 <div style="height: 250px; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
                     <canvas id="funnelChart"></canvas>
                 </div>
@@ -620,9 +623,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: 'Conversion Rate (%)',
                     data: [
-                        <?php echo $report['wc_metrics']['funnel']['view_to_cart']; ?>,
-                        <?php echo $report['wc_metrics']['funnel']['cart_to_checkout']; ?>,
-                        <?php echo $report['wc_metrics']['funnel']['checkout_to_order']; ?>
+                        <?php echo $report['wc_metrics']['funnel']['view_to_cart']['percentage']; ?>,
+                        <?php echo $report['wc_metrics']['funnel']['cart_to_checkout']['percentage']; ?>,
+                        <?php echo $report['wc_metrics']['funnel']['checkout_to_order']['percentage']; ?>
                     ],
                     backgroundColor: ['#4CAF50', '#2196F3', '#FF9800'],
                     borderWidth: 1
@@ -631,6 +634,35 @@ document.addEventListener('DOMContentLoaded', function() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const percentages = [
+                                    <?php echo $report['wc_metrics']['funnel']['view_to_cart']['percentage']; ?>,
+                                    <?php echo $report['wc_metrics']['funnel']['cart_to_checkout']['percentage']; ?>,
+                                    <?php echo $report['wc_metrics']['funnel']['checkout_to_order']['percentage']; ?>
+                                ];
+                                const fromCounts = [
+                                    <?php echo $report['wc_metrics']['funnel']['view_to_cart']['from_count']; ?>,
+                                    <?php echo $report['wc_metrics']['funnel']['cart_to_checkout']['from_count']; ?>,
+                                    <?php echo $report['wc_metrics']['funnel']['checkout_to_order']['from_count']; ?>
+                                ];
+                                const conversionCounts = [
+                                    <?php echo $report['wc_metrics']['funnel']['view_to_cart']['conversion_count']; ?>,
+                                    <?php echo $report['wc_metrics']['funnel']['cart_to_checkout']['conversion_count']; ?>,
+                                    <?php echo $report['wc_metrics']['funnel']['checkout_to_order']['conversion_count']; ?>
+                                ];
+                                
+                                const index = context.dataIndex;
+                                return [
+                                    `Conversion Rate: ${percentages[index]}%`,
+                                    `Absolute Zahlen: ${conversionCounts[index]} von ${fromCounts[index]}`
+                                ];
+                            }
+                        }
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
