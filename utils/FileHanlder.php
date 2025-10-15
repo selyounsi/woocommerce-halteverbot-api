@@ -41,6 +41,28 @@ class FileHanlder {
             return new \WP_Error('upload_error', 'File could not be moved.');
         }
 
+        // === BILDKOMPRIMIERUNG UND AUTOMATISCHE DREHUNG ===
+        $ext_lower = strtolower($extension);
+        if (in_array($ext_lower, ['jpg', 'jpeg', 'png'])) {
+            if (extension_loaded('imagick')) {
+                try {
+                    $imagick = new \Imagick($target_path);
+                    $imagick->autoOrient(); // iPhone-Bilder korrekt drehen
+                    $imagick->resizeImage(800, 0, \Imagick::FILTER_LANCZOS, 1);
+                    if ($ext_lower === 'jpg' || $ext_lower === 'jpeg') {
+                        $imagick->setImageCompressionQuality(75);
+                    } elseif ($ext_lower === 'png') {
+                        $imagick->setImageCompression(\Imagick::COMPRESSION_ZIP);
+                    }
+                    $imagick->writeImage($target_path);
+                    $imagick->clear();
+                    $imagick->destroy();
+                } catch (\Exception $e) {
+                    // Optional: Fehler ignorieren oder loggen
+                }
+            }
+        }
+
         return [
             'url'  => esc_url_raw($file_url),
             'path' => $target_path,
