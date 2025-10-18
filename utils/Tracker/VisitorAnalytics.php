@@ -187,6 +187,12 @@ class VisitorAnalytics extends VisitorTracker
             ],
             'traffic_metrics' => [
                 'gsc_keywords' => $this->get_gsc_keywords_by_period($start_date, $end_date, 30),
+                'gsc_top_keywords' => $this->get_gsc_top_keywords($start_date, $end_date),
+                'gsc_winner_keywords' => $this->get_gsc_winner_keywords($start_date, $end_date),
+                'gsc_loser_keywords' => $this->get_gsc_loser_keywords($start_date, $end_date),
+                'gsc_new_keywords' => $this->get_gsc_new_keywords($start_date, $end_date),
+
+
                 'social_networks' => $this->get_social_networks_by_period($start_date, $end_date),
                 'search_engines' => $this->get_search_engines_by_period($start_date, $end_date)
             ],

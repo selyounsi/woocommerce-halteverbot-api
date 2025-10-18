@@ -9,54 +9,60 @@ $analyticsInstance = VisitorAnalytics::getAnalyticsInstance();
 $timeframe = $_GET['timeframe'] ?? '7d';
 $today = date('Y-m-d');
 
-switch($timeframe) {
-    case 'today':
-        $start_date = $today;
-        $end_date = $today;
-        $period_label = 'Heute';
-        break;
-    case 'yesterday':
-        $start_date = date('Y-m-d', strtotime('-1 day'));
-        $end_date = $start_date;
-        $period_label = 'Gestern';
-        break;
-    case '30d':
-        $start_date = date('Y-m-d', strtotime('-29 days'));
-        $end_date = $today;
-        $period_label = 'Letzte 30 Tage';
-        break;
-    case '90d':
-        $start_date = date('Y-m-d', strtotime('-89 days'));
-        $end_date = $today;
-        $period_label = 'Letzte 90 Tage';
-        break;
-    case 'month':
-        $start_date = date('Y-m-01');
-        $end_date = $today;
-        $period_label = 'Dieser Monat';
-        break;
-    case 'last_month':
-        $start_date = date('Y-m-01', strtotime('-1 month'));
-        $end_date = date('Y-m-t', strtotime('-1 month'));
-        $period_label = 'Letzter Monat';
-        break;
-    case 'year':
-        $start_date = date('Y-01-01');
-        $end_date = $today;
-        $period_label = 'Dieses Jahr';
-        break;
-    case '7d':
-    default:
-        $start_date = date('Y-m-d', strtotime('-6 days'));
-        $end_date = $today;
-        $period_label = 'Letzte 7 Tage';
-        break;
+// Prüfe auf custom_start und custom_end
+if (!empty($_GET['custom_start']) && !empty($_GET['custom_end'])) {
+    $start_date = date('Y-m-d', strtotime($_GET['custom_start']));
+    $end_date = date('Y-m-d', strtotime($_GET['custom_end']));
+    $period_label = "Benutzerdefinierter Zeitraum: {$start_date} bis {$end_date}";
+} else {
+    switch($timeframe) {
+        case 'today':
+            $start_date = $today;
+            $end_date = $today;
+            $period_label = 'Heute';
+            break;
+        case 'yesterday':
+            $start_date = date('Y-m-d', strtotime('-1 day'));
+            $end_date = $start_date;
+            $period_label = 'Gestern';
+            break;
+        case '30d':
+            $start_date = date('Y-m-d', strtotime('-29 days'));
+            $end_date = $today;
+            $period_label = 'Letzte 30 Tage';
+            break;
+        case '90d':
+            $start_date = date('Y-m-d', strtotime('-89 days'));
+            $end_date = $today;
+            $period_label = 'Letzte 90 Tage';
+            break;
+        case 'month':
+            $start_date = date('Y-m-01');
+            $end_date = $today;
+            $period_label = 'Dieser Monat';
+            break;
+        case 'last_month':
+            $start_date = date('Y-m-01', strtotime('-1 month'));
+            $end_date = date('Y-m-t', strtotime('-1 month'));
+            $period_label = 'Letzter Monat';
+            break;
+        case 'year':
+            $start_date = date('Y-01-01');
+            $end_date = $today;
+            $period_label = 'Dieses Jahr';
+            break;
+        case '7d':
+        default:
+            $start_date = date('Y-m-d', strtotime('-6 days'));
+            $end_date = $today;
+            $period_label = 'Letzte 7 Tage';
+            break;
+    }
 }
 
 // Report mit dynamischem Zeitraum laden
 $report = $analyticsInstance->get_report($start_date, $end_date);
 ?>
-
 <div class="wp-list-table widefat fixed striped"> 
     <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
         <h3 style="margin: 0;">Analytics Dashboard</h3>
