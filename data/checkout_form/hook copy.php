@@ -182,7 +182,6 @@ if (isset($_GET['nowprocket']) && isset($_GET['test']))  {
                     })
                     .finally(() => {
                         removeLoading(500, () => {
-                            console.log("lol")
                             scrollToCheckout()
                         })
                     });

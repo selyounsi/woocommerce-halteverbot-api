@@ -7,7 +7,7 @@ trait GoogleSearchConsoleTrait
     /**
      * Basisfunktion: Holt Keyword-Daten aus der Search Console
      */
-    private function get_gsc_keywords_by_period($start_date, $end_date, $limit = 30) {
+    private function get_gsc_keywords_by_period($start_date, $end_date, $limit = 30, $device = null) {
         try {
             if (!$this->gsc->isAuthenticated() || !$this->gsc->getPrimaryDomain()) {
                 return [];
@@ -26,6 +26,30 @@ trait GoogleSearchConsoleTrait
                     ]
                 ]
             ];
+
+            // Device-Filter hinzufügen falls angegeben
+            if ($device) {
+                $device_mapping = [
+                    'mobile' => 'MOBILE',
+                    'desktop' => 'DESKTOP', 
+                    'tablet' => 'TABLET'
+                ];
+                
+                $device_lower = strtolower($device);
+                if (isset($device_mapping[$device_lower])) {
+                    $payload['dimensionFilterGroups'] = [
+                        [
+                            'filters' => [
+                                [
+                                    'dimension' => 'device',
+                                    'operator' => 'equals',
+                                    'expression' => $device_mapping[$device_lower]
+                                ]
+                            ]
+                        ]
+                    ];
+                }
+            }
 
             $result = $this->gsc->getSearchAnalyticsData($payload);
 
@@ -51,13 +75,13 @@ trait GoogleSearchConsoleTrait
     /**
      * Hilfsfunktion: Holt Daten für aktuellen & vorherigen Zeitraum
      */
-    private function get_gsc_comparison_data($start_date, $end_date) {
+    private function get_gsc_comparison_data($start_date, $end_date, $device = null) {
         $days = (strtotime($end_date) - strtotime($start_date)) / 86400;
         $prev_end = date('Y-m-d', strtotime($start_date . ' -1 day'));
         $prev_start = date('Y-m-d', strtotime($prev_end . " -{$days} days"));
 
-        $current = $this->get_gsc_keywords_by_period($start_date, $end_date, 250);
-        $previous = $this->get_gsc_keywords_by_period($prev_start, $prev_end, 250);
+        $current = $this->get_gsc_keywords_by_period($start_date, $end_date, 250, $device);
+        $previous = $this->get_gsc_keywords_by_period($prev_start, $prev_end, 250, $device);
 
         $prev_index = [];
         foreach ($previous as $row) {
@@ -118,8 +142,8 @@ trait GoogleSearchConsoleTrait
     /**
      * Gibt alle Keyword-Kategorien mit Vergleichsdaten zurück
      */
-    public function get_gsc_keywords_with_comparison($start_date, $end_date) {
-        $comparison_data = $this->get_gsc_comparison_data($start_date, $end_date);
+    public function get_gsc_keywords_with_comparison($start_date, $end_date, $device = null) {
+        $comparison_data = $this->get_gsc_comparison_data($start_date, $end_date, $device);
         $current_data = $comparison_data['current'];
         $new_data = $comparison_data['new'];
         
@@ -150,27 +174,28 @@ trait GoogleSearchConsoleTrait
             'period' => [
                 'start_date' => $start_date,
                 'end_date' => $end_date
-            ]
+            ],
+            'device' => $device
         ];
     }
 
-    public function get_gsc_top_keywords($start_date, $end_date) {
-        $data = $this->get_gsc_keywords_with_comparison($start_date, $end_date);
+    public function get_gsc_top_keywords($start_date, $end_date, $device = null) {
+        $data = $this->get_gsc_keywords_with_comparison($start_date, $end_date, $device);
         return $data['top_keywords'];
     }
 
-    public function get_gsc_winner_keywords($start_date, $end_date) {
-        $data = $this->get_gsc_keywords_with_comparison($start_date, $end_date);
+    public function get_gsc_winner_keywords($start_date, $end_date, $device = null) {
+        $data = $this->get_gsc_keywords_with_comparison($start_date, $end_date, $device);
         return $data['winner_keywords'];
     }
 
-    public function get_gsc_loser_keywords($start_date, $end_date) {
-        $data = $this->get_gsc_keywords_with_comparison($start_date, $end_date);
+    public function get_gsc_loser_keywords($start_date, $end_date, $device = null) {
+        $data = $this->get_gsc_keywords_with_comparison($start_date, $end_date, $device);
         return $data['loser_keywords'];
     }
 
-    public function get_gsc_new_keywords($start_date, $end_date) {
-        $data = $this->get_gsc_keywords_with_comparison($start_date, $end_date);
+    public function get_gsc_new_keywords($start_date, $end_date, $device = null) {
+        $data = $this->get_gsc_keywords_with_comparison($start_date, $end_date, $device);
         return $data['new_keywords'];
     }
 }

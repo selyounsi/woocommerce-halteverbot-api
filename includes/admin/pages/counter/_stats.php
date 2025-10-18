@@ -60,8 +60,14 @@ if (!empty($_GET['custom_start']) && !empty($_GET['custom_end'])) {
     }
 }
 
+if(!empty($_GET['device_type'])) {
+    $device_type = $_GET["device_type"];
+} else {
+    $device_type = null;
+}
+
 // Report mit dynamischem Zeitraum laden
-$report = $analyticsInstance->get_report($start_date, $end_date);
+$report = $analyticsInstance->get_report($start_date, $end_date, $device_type);
 ?>
 <div class="wp-list-table widefat fixed striped"> 
     <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
@@ -78,7 +84,47 @@ $report = $analyticsInstance->get_report($start_date, $end_date);
         <!-- SIDEBAR NAVIGATION -->
         <div class="analytics-sidebar" style="width: 250px; background: #f8f9fa; border-radius: 8px; padding: 20px; height: fit-content;">
             <h3 style="margin-top: 0; color: #2271b1;">📊 Berichte</h3>
+
+            <!-- Zeitraum Filter -->
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                <h4 style="margin-bottom: 10px; color: #666;">⏰ Zeitraum</h4>
+                <form method="GET" id="timeframe-form" style="margin-bottom: 15px;">
+                    <input type="hidden" name="page" value="<?php echo $_GET['page'] ?? ''; ?>">
+                    <select name="timeframe" id="timeframe-filter" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 10px;" onchange="this.form.submit()">
+                        <option value="today" <?php echo $timeframe === 'today' ? 'selected' : ''; ?>>Heute</option>
+                        <option value="yesterday" <?php echo $timeframe === 'yesterday' ? 'selected' : ''; ?>>Gestern</option>
+                        <option value="7d" <?php echo $timeframe === '7d' ? 'selected' : ''; ?>>Letzte 7 Tage</option>
+                        <option value="30d" <?php echo $timeframe === '30d' ? 'selected' : ''; ?>>Letzte 30 Tage</option>
+                        <option value="90d" <?php echo $timeframe === '90d' ? 'selected' : ''; ?>>Letzte 90 Tage</option>
+                        <option value="month" <?php echo $timeframe === 'month' ? 'selected' : ''; ?>>Dieser Monat</option>
+                        <option value="last_month" <?php echo $timeframe === 'last_month' ? 'selected' : ''; ?>>Letzter Monat</option>
+                        <option value="year" <?php echo $timeframe === 'year' ? 'selected' : ''; ?>>Dieses Jahr</option>
+                    </select>
+                </form>
+                
+                <!-- Custom Date Range (erweiterbar) -->
+                <details style="margin-top: 10px;">
+                    <summary style="font-size: 12px; cursor: pointer; color: #666;">Benutzerdefiniert</summary>
+                    <form method="GET" style="margin-top: 10px;">
+                        <input type="hidden" name="page" value="<?php echo $_GET['page'] ?? ''; ?>">
+                        <div style="margin-bottom: 8px;">
+                            <label style="font-size: 11px; display: block;">Von:</label>
+                            <input type="date" name="custom_start" style="width: 100%; padding: 4px; font-size: 11px;" 
+                                   value="<?php echo $start_date; ?>">
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <label style="font-size: 11px; display: block;">Bis:</label>
+                            <input type="date" name="custom_end" style="width: 100%; padding: 4px; font-size: 11px;"
+                                   value="<?php echo $end_date; ?>">
+                        </div>
+                        <button type="submit" style="width: 100%; padding: 6px; background: #2271b1; color: white; border: none; border-radius: 3px; font-size: 11px;">
+                            Anwenden
+                        </button>
+                    </form>
+                </details>
+            </div>
             
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
             <nav class="analytics-nav" style="display: flex; flex-direction: column; gap: 5px;">
                 <button class="nav-tab active" data-tab="overview">
                     <span class="nav-icon">📈</span>
@@ -130,44 +176,6 @@ $report = $analyticsInstance->get_report($start_date, $end_date);
                     Technische Daten
                 </button>
             </nav>
-
-            <!-- Zeitraum Filter -->
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-                <h4 style="margin-bottom: 10px; color: #666;">⏰ Zeitraum</h4>
-                <form method="GET" id="timeframe-form" style="margin-bottom: 15px;">
-                    <input type="hidden" name="page" value="<?php echo $_GET['page'] ?? ''; ?>">
-                    <select name="timeframe" id="timeframe-filter" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 10px;" onchange="this.form.submit()">
-                        <option value="today" <?php echo $timeframe === 'today' ? 'selected' : ''; ?>>Heute</option>
-                        <option value="yesterday" <?php echo $timeframe === 'yesterday' ? 'selected' : ''; ?>>Gestern</option>
-                        <option value="7d" <?php echo $timeframe === '7d' ? 'selected' : ''; ?>>Letzte 7 Tage</option>
-                        <option value="30d" <?php echo $timeframe === '30d' ? 'selected' : ''; ?>>Letzte 30 Tage</option>
-                        <option value="90d" <?php echo $timeframe === '90d' ? 'selected' : ''; ?>>Letzte 90 Tage</option>
-                        <option value="month" <?php echo $timeframe === 'month' ? 'selected' : ''; ?>>Dieser Monat</option>
-                        <option value="last_month" <?php echo $timeframe === 'last_month' ? 'selected' : ''; ?>>Letzter Monat</option>
-                        <option value="year" <?php echo $timeframe === 'year' ? 'selected' : ''; ?>>Dieses Jahr</option>
-                    </select>
-                </form>
-                
-                <!-- Custom Date Range (erweiterbar) -->
-                <details style="margin-top: 10px;">
-                    <summary style="font-size: 12px; cursor: pointer; color: #666;">Benutzerdefiniert</summary>
-                    <form method="GET" style="margin-top: 10px;">
-                        <input type="hidden" name="page" value="<?php echo $_GET['page'] ?? ''; ?>">
-                        <div style="margin-bottom: 8px;">
-                            <label style="font-size: 11px; display: block;">Von:</label>
-                            <input type="date" name="custom_start" style="width: 100%; padding: 4px; font-size: 11px;" 
-                                   value="<?php echo $start_date; ?>">
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                            <label style="font-size: 11px; display: block;">Bis:</label>
-                            <input type="date" name="custom_end" style="width: 100%; padding: 4px; font-size: 11px;"
-                                   value="<?php echo $end_date; ?>">
-                        </div>
-                        <button type="submit" style="width: 100%; padding: 6px; background: #2271b1; color: white; border: none; border-radius: 3px; font-size: 11px;">
-                            Anwenden
-                        </button>
-                    </form>
-                </details>
             </div>
 
             <!-- Quick Stats -->

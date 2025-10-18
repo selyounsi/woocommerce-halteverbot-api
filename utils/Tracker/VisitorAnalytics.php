@@ -69,35 +69,35 @@ class VisitorAnalytics extends VisitorTracker
         return $this->get_report($firstDay, $lastDay);
     }
 
-    public function get_report($start_date, $end_date): array {
+    public function get_report($start_date, $end_date, $device = null): array {
         return [
             'visitor_metrics' => [
-                'today' => $this->visitors_today(),
-                'yesterday' => $this->visitors_yesterday(),
-                'this_week' => $this->visitors_this_week(),
-                'this_month' => $this->visitors_this_month(),
-                'last_month' => $this->visitors_last_month(),
-                'this_year' => $this->visitors_this_year(),
-                'total_visits' => $this->visitors_by_period($start_date, $end_date),
-                'traffic_channels' => $this->get_traffic_channels_by_period($start_date, $end_date),
-                'visitor_types' => $this->get_visitor_types_by_period($start_date, $end_date),
+                'today' => $this->visitors_today($device),
+                'yesterday' => $this->visitors_yesterday($device),
+                'this_week' => $this->visitors_this_week($device),
+                'this_month' => $this->visitors_this_month($device),
+                'last_month' => $this->visitors_last_month($device),
+                'this_year' => $this->visitors_this_year($device),
+                'total_visits' => $this->visitors_by_period($start_date, $end_date, $device),
+                'traffic_channels' => $this->get_traffic_channels_by_period($start_date, $end_date, $device),
+                'visitor_types' => $this->get_visitor_types_by_period($start_date, $end_date, $device),
                 'chart_data' => [
-                    'page_performance' => $this->get_page_performance_chart($start_date, $end_date),
-                    'german_cities' => $this->get_german_cities_chart($start_date, $end_date),
-                    'traffic_sources' => $this->get_traffic_sources_by_period($start_date, $end_date),
-                    'daily_visitors_30d' => $this->get_daily_visitors_chart_data(30),
-                    'daily_visitors_7d' => $this->get_daily_visitors_chart_data(7),
-                    'device_distribution' => $this->get_device_distribution_chart($start_date, $end_date),
-                    'browser_distribution' => $this->get_browser_distribution_chart($start_date, $end_date),
-                    'search_engine_distribution' => $this->get_search_engine_distribution_chart($start_date, $end_date),
-                    'visit_heatmap' => $this->get_visit_heatmap_data($start_date, $end_date),
+                    'page_performance' => $this->get_page_performance_chart($start_date, $end_date, $device),
+                    'german_cities' => $this->get_german_cities_chart($start_date, $end_date, $device),
+                    'traffic_sources' => $this->get_traffic_sources_by_period($start_date, $end_date, $device),
+                    'daily_visitors_30d' => $this->get_daily_visitors_chart_data(30, $device),
+                    'daily_visitors_7d' => $this->get_daily_visitors_chart_data(7, $device),
+                    'device_distribution' => $this->get_device_distribution_chart($start_date, $end_date, $device),
+                    'browser_distribution' => $this->get_browser_distribution_chart($start_date, $end_date, $device),
+                    'search_engine_distribution' => $this->get_search_engine_distribution_chart($start_date, $end_date, $device),
+                    'visit_heatmap' => $this->get_visit_heatmap_data($start_date, $end_date, $device),
                 ]
             ],
             'session_metrics' => [
-                'avg_duration' => $this->get_avg_session_duration_by_period($start_date, $end_date),
-                'avg_pages' => $this->get_avg_pages_per_session_by_period($start_date, $end_date),
-                'bounce_rate' => $this->get_bounce_rate_by_period($start_date, $end_date),
-                'avg_time_on_page' => $this->get_avg_time_on_page_by_period($start_date, $end_date)
+                'avg_duration' => $this->get_avg_session_duration_by_period($start_date, $end_date, $device),
+                'avg_pages' => $this->get_avg_pages_per_session_by_period($start_date, $end_date, $device),
+                'bounce_rate' => $this->get_bounce_rate_by_period($start_date, $end_date, $device),
+                'avg_time_on_page' => $this->get_avg_time_on_page_by_period($start_date, $end_date, $device)
             ],
             'reviews_metrics' => [
                 'stats' => $this->get_reviews_stats($start_date, $end_date),
@@ -148,53 +148,52 @@ class VisitorAnalytics extends VisitorTracker
                 ]
             ],
             'page_metrics' => [
-                'pages' => $this->get_pages_by_period($start_date, $end_date),
-                'entry_pages' => $this->entry_pages_by_period($start_date, $end_date, 10),
-                'exit_pages' => $this->exit_pages_by_period($start_date, $end_date, 10),
-                'exit_rates' => $this->exit_rates_by_period($start_date, $end_date, 10),
+                'pages' => $this->get_pages_by_period($start_date, $end_date, $device),
+                'entry_pages' => $this->entry_pages_by_period($start_date, $end_date, 10, $device),
+                'exit_pages' => $this->exit_pages_by_period($start_date, $end_date, 10, $device),
+                'exit_rates' => $this->exit_rates_by_period($start_date, $end_date, 10, $device),
                 'page_categories' => $this->page_performance_by_category($start_date, $end_date),
-                'woo_commerce_pages' => $this->woo_commerce_pages_performance($start_date, $end_date),
-                'product_pages' => $this->product_pages_performance($start_date, $end_date),
-                'category_pages' => $this->category_pages_performance($start_date, $end_date),
-                'ecommerce_funnel' => $this->ecommerce_funnel_analysis($start_date, $end_date),
-                'detailed_performance' => $this->detailed_page_performance($start_date, $end_date, 15),
-                'page_flow' => $this->page_flow_analysis($start_date, $end_date, 8),
-                'engagement_metrics' => $this->page_engagement_metrics($start_date, $end_date),
+                'woo_commerce_pages' => $this->woo_commerce_pages_performance($start_date, $end_date, $device),
+                'product_pages' => $this->product_pages_performance($start_date, $end_date, $device),
+                'category_pages' => $this->category_pages_performance($start_date, $end_date, $device),
+                'ecommerce_funnel' => $this->ecommerce_funnel_analysis($start_date, $end_date, $device),
+                'detailed_performance' => $this->detailed_page_performance($start_date, $end_date, 15, $device),
+                'page_flow' => $this->page_flow_analysis($start_date, $end_date, 8, $device),
+                'engagement_metrics' => $this->page_engagement_metrics($start_date, $end_date, $device),
                 'chart_data' => [
-                    'page_performance' => $this->get_page_performance_chart_data($start_date, $end_date),
-                    'engagement' => $this->get_engagement_chart_data($start_date, $end_date),
-                    'traffic_flow' => $this->get_traffic_flow_chart_data($start_date, $end_date),
-                    'exit_rates' => $this->get_exit_rates_chart_data($start_date, $end_date),
-                    'page_comparison' => $this->get_page_comparison_chart_data($start_date, $end_date),
-                    'ecommerce_funnel' => $this->get_ecommerce_funnel_chart_data($start_date, $end_date)
+                    'page_performance' => $this->get_page_performance_chart_data($start_date, $end_date, $device),
+                    'engagement' => $this->get_engagement_chart_data($start_date, $end_date, $device),
+                    'traffic_flow' => $this->get_traffic_flow_chart_data($start_date, $end_date, $device),
+                    'exit_rates' => $this->get_exit_rates_chart_data($start_date, $end_date, $device),
+                    'page_comparison' => $this->get_page_comparison_chart_data($start_date, $end_date, $device),
+                    'ecommerce_funnel' => $this->get_ecommerce_funnel_chart_data($start_date, $end_date, $device)
                 ]
             ],
             'misc_metrics' => [
-                'screen_resolutions' => $this->get_screen_resolutions_by_period($start_date, $end_date),
-                'languages' => $this->get_languages_by_period($start_date, $end_date),
-                'visit_times' => $this->get_visit_times_by_period($start_date, $end_date)
+                'screen_resolutions' => $this->get_screen_resolutions_by_period($start_date, $end_date, $device),
+                'languages' => $this->get_languages_by_period($start_date, $end_date, $device),
+                'visit_times' => $this->get_visit_times_by_period($start_date, $end_date, $device)
             ],
             'devices_metrics' => [
-                'devices' => $this->get_devices_by_period($start_date, $end_date),
-                'device_types' => $this->get_device_types_by_period($start_date, $end_date),
-                'device_brands' => $this->get_device_brands_by_period($start_date, $end_date)
+                'devices' => $this->get_devices_by_period($start_date, $end_date, $device),
+                'device_types' => $this->get_device_types_by_period($start_date, $end_date, $device),
+                'device_brands' => $this->get_device_brands_by_period($start_date, $end_date, $device)
             ],
             'geo_metrics' => [
-                'countries' => $this->get_countries_by_period($start_date, $end_date),
-                'cities' => $this->get_cities_by_period($start_date, $end_date),
-                'operating_systems' => $this->get_operating_systems_by_period($start_date, $end_date),
-                'browsers' => $this->get_browsers_by_period($start_date, $end_date),
+                'countries' => $this->get_countries_by_period($start_date, $end_date, $device),
+                'cities' => $this->get_cities_by_period($start_date, $end_date, $device),
+                'operating_systems' => $this->get_operating_systems_by_period($start_date, $end_date, $device),
+                'browsers' => $this->get_browsers_by_period($start_date, $end_date, $device),
             ],
             'traffic_metrics' => [
-                'gsc_keywords' => $this->get_gsc_keywords_by_period($start_date, $end_date, 30),
-                'gsc_top_keywords' => $this->get_gsc_top_keywords($start_date, $end_date),
-                'gsc_winner_keywords' => $this->get_gsc_winner_keywords($start_date, $end_date),
-                'gsc_loser_keywords' => $this->get_gsc_loser_keywords($start_date, $end_date),
-                'gsc_new_keywords' => $this->get_gsc_new_keywords($start_date, $end_date),
+                'gsc_keywords' => $this->get_gsc_keywords_by_period($start_date, $end_date, 30, $device),
+                'gsc_top_keywords' => $this->get_gsc_top_keywords($start_date, $end_date, $device),
+                'gsc_winner_keywords' => $this->get_gsc_winner_keywords($start_date, $end_date, $device),
+                'gsc_loser_keywords' => $this->get_gsc_loser_keywords($start_date, $end_date, $device),
+                'gsc_new_keywords' => $this->get_gsc_new_keywords($start_date, $end_date, $device),
 
-
-                'social_networks' => $this->get_social_networks_by_period($start_date, $end_date),
-                'search_engines' => $this->get_search_engines_by_period($start_date, $end_date)
+                'social_networks' => $this->get_social_networks_by_period($start_date, $end_date, $device),
+                'search_engines' => $this->get_search_engines_by_period($start_date, $end_date, $device)
             ],
             'wc_metrics' => [
                 'events' => $this->get_wc_events_by_period($start_date, $end_date),

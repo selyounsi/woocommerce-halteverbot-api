@@ -369,8 +369,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (orderChartData.order_status_distribution && orderChartData.order_status_distribution.length > 0) {
         const statusLabels = orderChartData.order_status_distribution.map(s => s.status_name);
         const statusData = orderChartData.order_status_distribution.map(s => s.count);
-
-        console.log(orderChartData.order_status_distribution)
         
         new Chart(document.getElementById('orderStatusChart'), {
             type: 'doughnut',

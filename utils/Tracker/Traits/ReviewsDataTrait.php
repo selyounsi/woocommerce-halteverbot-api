@@ -2,7 +2,8 @@
 
 namespace Utils\Tracker\Traits;
 
-trait ReviewsDataTrait {
+trait ReviewsDataTrait 
+{
     private $table_reviews;
 
     public function init_reviews_table() {

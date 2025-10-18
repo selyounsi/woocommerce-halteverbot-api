@@ -4,14 +4,6 @@ namespace Utils\Tracker\Traits;
 
 trait OrderAnalyticsTrait 
 {
-    private $table_orders;
-    private $table_order_items;
-
-    public function init_order_tables() {
-        $this->table_orders = $this->wpdb->prefix . 'wc_orders';
-        $this->table_order_items = $this->wpdb->prefix . 'wc_order_items';
-    }
-
     /**
      * Holt alle verfügbaren WooCommerce Bestellstatus
      */
@@ -20,62 +12,49 @@ trait OrderAnalyticsTrait
     }
 
     /**
-     * Erstellt dynamische CASE-Statements für alle Status
-     */
-    private function get_status_case_statements() {
-        $statuses = $this->get_wc_order_statuses();
-        $cases = [];
-        
-        foreach ($statuses as $status_key => $status_label) {
-            $clean_status = str_replace('wc-', '', $status_key);
-            $cases[] = "COUNT(CASE WHEN status = '{$status_key}' THEN 1 END) as {$clean_status}_orders";
-            $cases[] = "SUM(CASE WHEN status = '{$status_key}' THEN total_amount ELSE 0 END) as {$clean_status}_revenue";
-        }
-        
-        return implode(",\n                ", $cases);
-    }
-
-    /**
      * Bestell-Statistiken für Zeitraum
      */
     public function get_order_stats($start_date = null, $end_date = null) {
-        $this->init_order_tables();
+        $args = [
+            'limit' => -1,
+            'return' => 'objects',
+        ];
         
-        $where_clause = '';
-        $params = [];
-        
+        // Datumsfilter hinzufügen
         if ($start_date && $end_date) {
-            $where_clause = ' WHERE DATE(date_created_gmt) BETWEEN %s AND %s';
-            $params = [$start_date, $end_date];
+            $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $sql = $this->wpdb->prepare(
-            "SELECT 
-                COUNT(*) as total_orders,
-                SUM(total_amount) as total_revenue,
-                AVG(total_amount) as avg_order_value,
-                COUNT(DISTINCT customer_id) as unique_customers
-            FROM {$this->table_orders}
-            {$where_clause}",
-            $params
-        );
+        $orders = wc_get_orders($args);
         
-        $result = $this->wpdb->get_row($sql, ARRAY_A);
+        $total_orders = 0;
+        $total_revenue = 0;
+        $customer_ids = [];
         
-        if (!$result) {
-            return [
-                'total_orders' => 0,
-                'total_revenue' => 0,
-                'avg_order_value' => 0,
-                'unique_customers' => 0
-            ];
+        foreach ($orders as $order) {
+            // Refunds ausschließen
+            if ($order instanceof \WC_Order_Refund) {
+                continue;
+            }
+            
+            $total_orders++;
+            $total_revenue += $order->get_total();
+            
+            // Verwende get_user_id() statt get_customer_id() für Kompatibilität
+            $customer_id = $order->get_user_id();
+            if ($customer_id) {
+                $customer_ids[$customer_id] = true;
+            }
         }
+        
+        $avg_order_value = $total_orders > 0 ? $total_revenue / $total_orders : 0;
+        $unique_customers = count($customer_ids);
         
         return [
-            'total_orders' => (int)$result['total_orders'],
-            'total_revenue' => round($result['total_revenue'], 2),
-            'avg_order_value' => round($result['avg_order_value'], 2),
-            'unique_customers' => (int)$result['unique_customers']
+            'total_orders' => $total_orders,
+            'total_revenue' => round($total_revenue, 2),
+            'avg_order_value' => round($avg_order_value, 2),
+            'unique_customers' => $unique_customers
         ];
     }
 
@@ -101,37 +80,52 @@ trait OrderAnalyticsTrait
      * Status-Verteilung für Zeitraum mit Status-Namen
      */
     public function get_order_status_distribution($start_date = null, $end_date = null) {
-        $this->init_order_tables();
         $statuses = $this->get_wc_order_statuses();
         
-        $where_clause = '';
-        $params = [];
+        $args = [
+            'limit' => -1,
+            'return' => 'objects',
+        ];
         
+        // Datumsfilter hinzufügen
         if ($start_date && $end_date) {
-            $where_clause = ' WHERE DATE(date_created_gmt) BETWEEN %s AND %s';
-            $params = [$start_date, $end_date];
+            $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $sql = $this->wpdb->prepare(
-            "SELECT 
-                status,
-                COUNT(*) as count,
-                SUM(total_amount) as revenue,
-                ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
-            FROM {$this->table_orders}
-            {$where_clause}
-            GROUP BY status
-            ORDER BY count DESC",
-            $params
-        );
+        $orders = wc_get_orders($args);
         
-        $results = $this->wpdb->get_results($sql, ARRAY_A);
+        $status_distribution = [];
+        $total_orders = count($orders);
         
-        // Status-Namen hinzufügen
-        foreach ($results as &$result) {
-            $status_key = $result['status'];
-            $result['status_name'] = isset($statuses[$status_key]) ? $statuses[$status_key] : $status_key;
+        foreach ($orders as $order) {
+            $status = $order->get_status();
+            $status_key = 'wc-' . $status;
+            
+            if (!isset($status_distribution[$status_key])) {
+                $status_distribution[$status_key] = [
+                    'status' => $status_key,
+                    'count' => 0,
+                    'revenue' => 0,
+                    'status_name' => isset($statuses[$status_key]) ? $statuses[$status_key] : $status
+                ];
+            }
+            
+            $status_distribution[$status_key]['count']++;
+            $status_distribution[$status_key]['revenue'] += $order->get_total();
         }
+        
+        // Prozente berechnen und in Array umwandeln
+        $results = [];
+        foreach ($status_distribution as $status_data) {
+            $status_data['percentage'] = $total_orders > 0 ? round(($status_data['count'] / $total_orders) * 100, 1) : 0;
+            $status_data['revenue'] = round($status_data['revenue'], 2);
+            $results[] = $status_data;
+        }
+        
+        // Nach Anzahl sortieren
+        usort($results, function($a, $b) {
+            return $b['count'] - $a['count'];
+        });
         
         return $results;
     }
@@ -142,9 +136,6 @@ trait OrderAnalyticsTrait
     public function get_daily_orders_30d() {
         $end_date = date('Y-m-d');
         $start_date = date('Y-m-d', strtotime('-29 days'));
-        
-        // Holen des korrekten completed Status
-        $completed_status = 'wc-completed';
         
         $daily_data = [];
         for ($i = 29; $i >= 0; $i--) {
@@ -157,32 +148,36 @@ trait OrderAnalyticsTrait
             ];
         }
 
-        $results = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT 
-                DATE(date_created_gmt) as date,
-                COUNT(*) as orders,
-                SUM(total_amount) as revenue,
-                COUNT(CASE WHEN status = %s THEN 1 END) as completed_orders,
-                SUM(CASE WHEN status = %s THEN total_amount ELSE 0 END) as completed_revenue
-             FROM {$this->table_orders}
-             WHERE DATE(date_created_gmt) BETWEEN %s AND %s
-             GROUP BY DATE(date_created_gmt)
-             ORDER BY date ASC",
-            $completed_status, $completed_status, $start_date, $end_date
-        ), ARRAY_A);
-
-        foreach ($results as $row) {
-            $date = $row['date'];
-            if (isset($daily_data[$date])) {
-                $daily_data[$date] = [
-                    'orders' => (int)$row['orders'],
-                    'revenue' => round($row['revenue'], 2),
-                    'completed_orders' => (int)$row['completed_orders'],
-                    'completed_revenue' => round($row['completed_revenue'], 2)
-                ];
+        $args = [
+            'limit' => -1,
+            'date_created' => $start_date . '...' . $end_date,
+            'return' => 'objects',
+        ];
+        
+        $orders = wc_get_orders($args);
+        
+        foreach ($orders as $order) {
+            $order_date = $order->get_date_created()->format('Y-m-d');
+            $status = $order->get_status();
+            $total = $order->get_total();
+            
+            if (isset($daily_data[$order_date])) {
+                $daily_data[$order_date]['orders']++;
+                $daily_data[$order_date]['revenue'] += $total;
+                
+                if ($status === 'completed') {
+                    $daily_data[$order_date]['completed_orders']++;
+                    $daily_data[$order_date]['completed_revenue'] += $total;
+                }
             }
         }
-
+        
+        // Werte runden
+        foreach ($daily_data as &$day_data) {
+            $day_data['revenue'] = round($day_data['revenue'], 2);
+            $day_data['completed_revenue'] = round($day_data['completed_revenue'], 2);
+        }
+        
         return $daily_data;
     }
 
@@ -192,9 +187,6 @@ trait OrderAnalyticsTrait
     public function get_daily_orders_7d() {
         $end_date = date('Y-m-d');
         $start_date = date('Y-m-d', strtotime('-6 days'));
-        
-        // Holen des korrekten completed Status
-        $completed_status = 'wc-completed';
         
         $daily_data = [];
         for ($i = 6; $i >= 0; $i--) {
@@ -207,32 +199,36 @@ trait OrderAnalyticsTrait
             ];
         }
 
-        $results = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT 
-                DATE(date_created_gmt) as date,
-                COUNT(*) as orders,
-                SUM(total_amount) as revenue,
-                COUNT(CASE WHEN status = %s THEN 1 END) as completed_orders,
-                SUM(CASE WHEN status = %s THEN total_amount ELSE 0 END) as completed_revenue
-             FROM {$this->table_orders}
-             WHERE DATE(date_created_gmt) BETWEEN %s AND %s
-             GROUP BY DATE(date_created_gmt)
-             ORDER BY date ASC",
-            $completed_status, $completed_status, $start_date, $end_date
-        ), ARRAY_A);
-
-        foreach ($results as $row) {
-            $date = $row['date'];
-            if (isset($daily_data[$date])) {
-                $daily_data[$date] = [
-                    'orders' => (int)$row['orders'],
-                    'revenue' => round($row['revenue'], 2),
-                    'completed_orders' => (int)$row['completed_orders'],
-                    'completed_revenue' => round($row['completed_revenue'], 2)
-                ];
+        $args = [
+            'limit' => -1,
+            'date_created' => $start_date . '...' . $end_date,
+            'return' => 'objects',
+        ];
+        
+        $orders = wc_get_orders($args);
+        
+        foreach ($orders as $order) {
+            $order_date = $order->get_date_created()->format('Y-m-d');
+            $status = $order->get_status();
+            $total = $order->get_total();
+            
+            if (isset($daily_data[$order_date])) {
+                $daily_data[$order_date]['orders']++;
+                $daily_data[$order_date]['revenue'] += $total;
+                
+                if ($status === 'completed') {
+                    $daily_data[$order_date]['completed_orders']++;
+                    $daily_data[$order_date]['completed_revenue'] += $total;
+                }
             }
         }
-
+        
+        // Werte runden
+        foreach ($daily_data as &$day_data) {
+            $day_data['revenue'] = round($day_data['revenue'], 2);
+            $day_data['completed_revenue'] = round($day_data['completed_revenue'], 2);
+        }
+        
         return $daily_data;
     }
 
@@ -243,190 +239,350 @@ trait OrderAnalyticsTrait
         $end_date = date('Y-m-d');
         $start_date = date('Y-m-d', strtotime('-11 months'));
         
-        // Holen des korrekten completed Status
-        $completed_status = 'wc-completed';
+        $args = [
+            'limit' => -1,
+            'date_created' => $start_date . '...' . $end_date,
+            'return' => 'objects',
+        ];
         
-        $sql = $this->wpdb->prepare(
-            "SELECT 
-                DATE_FORMAT(date_created_gmt, '%Y-%m') as month,
-                COUNT(*) as total_orders,
-                SUM(total_amount) as total_revenue,
-                AVG(total_amount) as avg_order_value,
-                COUNT(CASE WHEN status = %s THEN 1 END) as completed_orders,
-                SUM(CASE WHEN status = %s THEN total_amount ELSE 0 END) as completed_revenue
-             FROM {$this->table_orders}
-             WHERE DATE(date_created_gmt) BETWEEN %s AND %s
-             GROUP BY DATE_FORMAT(date_created_gmt, '%Y-%m')
-             ORDER BY month ASC",
-            $completed_status, $completed_status, $start_date, $end_date
-        );
+        $orders = wc_get_orders($args);
         
-        return $this->wpdb->get_results($sql, ARRAY_A);
+        $monthly_data = [];
+        
+        foreach ($orders as $order) {
+            $month = $order->get_date_created()->format('Y-m');
+            $status = $order->get_status();
+            $total = $order->get_total();
+            
+            if (!isset($monthly_data[$month])) {
+                $monthly_data[$month] = [
+                    'month' => $month,
+                    'total_orders' => 0,
+                    'total_revenue' => 0,
+                    'completed_orders' => 0,
+                    'completed_revenue' => 0
+                ];
+            }
+            
+            $monthly_data[$month]['total_orders']++;
+            $monthly_data[$month]['total_revenue'] += $total;
+            
+            if ($status === 'completed') {
+                $monthly_data[$month]['completed_orders']++;
+                $monthly_data[$month]['completed_revenue'] += $total;
+            }
+        }
+        
+        // Durchschnitt berechnen und Werte runden
+        $results = [];
+        foreach ($monthly_data as $month_data) {
+            $month_data['avg_order_value'] = $month_data['total_orders'] > 0 ? 
+                round($month_data['total_revenue'] / $month_data['total_orders'], 2) : 0;
+            $month_data['total_revenue'] = round($month_data['total_revenue'], 2);
+            $month_data['completed_revenue'] = round($month_data['completed_revenue'], 2);
+            $results[] = $month_data;
+        }
+        
+        // Nach Monat sortieren
+        usort($results, function($a, $b) {
+            return strcmp($a['month'], $b['month']);
+        });
+        
+        return $results;
     }
 
     /**
      * Top Produkte nach Umsatz für Zeitraum
      */
     public function get_top_products_by_revenue($start_date = null, $end_date = null, $limit = 10) {
-        $this->init_order_tables();
+        $args = [
+            'limit' => -1,
+            'status' => ['completed'],
+            'return' => 'objects',
+        ];
         
-        $where_clause = '';
-        $params = [];
-        $completed_status = 'wc-completed';
-        
+        // Datumsfilter hinzufügen
         if ($start_date && $end_date) {
-            $where_clause = ' WHERE o.status = %s AND DATE(o.date_created_gmt) BETWEEN %s AND %s';
-            $params = [$completed_status, $start_date, $end_date];
-        } else {
-            $where_clause = ' WHERE o.status = %s';
-            $params = [$completed_status];
+            $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $params[] = $limit;
+        $orders = wc_get_orders($args);
         
-        $sql = $this->wpdb->prepare(
-            "SELECT 
-                oi.product_id,
-                oi.product_name,
-                SUM(oi.quantity) as total_quantity,
-                SUM(oi.total_price) as total_revenue,
-                COUNT(DISTINCT oi.order_id) as order_count,
-                ROUND(AVG(oi.total_price / oi.quantity), 2) as avg_product_price
-             FROM {$this->table_order_items} oi
-             INNER JOIN {$this->table_orders} o ON oi.order_id = o.id
-             {$where_clause}
-             GROUP BY oi.product_id, oi.product_name
-             ORDER BY total_revenue DESC
-             LIMIT %d",
-            $params
-        );
+        $products_data = [];
         
-        return $this->wpdb->get_results($sql, ARRAY_A);
+        foreach ($orders as $order) {
+            foreach ($order->get_items() as $item) {
+                $product = $item->get_product();
+                $product_id = $item->get_product_id();
+                $product_name = $item->get_name();
+                $quantity = $item->get_quantity();
+                $total = $item->get_total();
+                
+                if (!isset($products_data[$product_id])) {
+                    $products_data[$product_id] = [
+                        'product_id' => $product_id,
+                        'product_name' => $product_name,
+                        'total_quantity' => 0,
+                        'total_revenue' => 0,
+                        'order_count' => 0,
+                        'order_ids' => []
+                    ];
+                }
+                
+                $products_data[$product_id]['total_quantity'] += $quantity;
+                $products_data[$product_id]['total_revenue'] += $total;
+                
+                if (!in_array($order->get_id(), $products_data[$product_id]['order_ids'])) {
+                    $products_data[$product_id]['order_ids'][] = $order->get_id();
+                    $products_data[$product_id]['order_count']++;
+                }
+            }
+        }
+        
+        // Durchschnittspreis berechnen und in Array umwandeln
+        $results = [];
+        foreach ($products_data as $product_data) {
+            $product_data['avg_product_price'] = $product_data['total_quantity'] > 0 ? 
+                round($product_data['total_revenue'] / $product_data['total_quantity'], 2) : 0;
+            $product_data['total_revenue'] = round($product_data['total_revenue'], 2);
+            unset($product_data['order_ids']); // Nicht benötigte Daten entfernen
+            $results[] = $product_data;
+        }
+        
+        // Nach Umsatz sortieren und limitieren
+        usort($results, function($a, $b) {
+            return $b['total_revenue'] - $a['total_revenue'];
+        });
+        
+        return array_slice($results, 0, $limit);
     }
 
     /**
      * Herkunft der Bestellungen (Payment Methoden)
      */
     public function get_order_sources($start_date = null, $end_date = null) {
-        $this->init_order_tables();
+        $args = [
+            'limit' => -1,
+            'return' => 'objects',
+        ];
         
-        $where_clause = '';
-        $params = [];
-        
+        // Datumsfilter hinzufügen
         if ($start_date && $end_date) {
-            $where_clause = ' WHERE DATE(date_created_gmt) BETWEEN %s AND %s';
-            $params = [$start_date, $end_date];
+            $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $sql = $this->wpdb->prepare(
-            "SELECT 
-                payment_method,
-                COUNT(*) as count,
-                SUM(total_amount) as revenue,
-                AVG(total_amount) as avg_order_value,
-                ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
-             FROM {$this->table_orders}
-             {$where_clause}
-             GROUP BY payment_method
-             ORDER BY count DESC",
-            $params
-        );
+        $orders = wc_get_orders($args);
         
-        return $this->wpdb->get_results($sql, ARRAY_A);
+        $payment_methods = [];
+        $total_orders = 0;
+        
+        foreach ($orders as $order) {
+            // Refunds ausschließen
+            if ($order instanceof \WC_Order_Refund) {
+                continue;
+            }
+            
+            // Payment Method mit Fallback
+            $payment_method = method_exists($order, 'get_payment_method') ? $order->get_payment_method() : 'unknown';
+            $total = $order->get_total();
+            
+            if (!isset($payment_methods[$payment_method])) {
+                $payment_methods[$payment_method] = [
+                    'payment_method' => $payment_method,
+                    'count' => 0,
+                    'revenue' => 0,
+                    'order_totals' => []
+                ];
+            }
+            
+            $payment_methods[$payment_method]['count']++;
+            $payment_methods[$payment_method]['revenue'] += $total;
+            $payment_methods[$payment_method]['order_totals'][] = $total;
+            $total_orders++;
+        }
+        
+        // Prozente und Durchschnitt berechnen
+        $results = [];
+        foreach ($payment_methods as $method_data) {
+            $method_data['percentage'] = $total_orders > 0 ? 
+                round(($method_data['count'] / $total_orders) * 100, 1) : 0;
+            $method_data['avg_order_value'] = $method_data['count'] > 0 ? 
+                round($method_data['revenue'] / $method_data['count'], 2) : 0;
+            $method_data['revenue'] = round($method_data['revenue'], 2);
+            unset($method_data['order_totals']); // Nicht benötigte Daten entfernen
+            $results[] = $method_data;
+        }
+        
+        // Nach Anzahl sortieren
+        usort($results, function($a, $b) {
+            return $b['count'] - $a['count'];
+        });
+        
+        return $results;
     }
 
     /**
      * Kunden-Wiederholungsrate
      */
     public function get_customer_repeat_rate($start_date = null, $end_date = null) {
-        $this->init_order_tables();
+        $args = [
+            'limit' => -1,
+            'return' => 'objects',
+        ];
         
-        $where_clause = '';
-        $params = [];
-        
+        // Datumsfilter hinzufügen
         if ($start_date && $end_date) {
-            $where_clause = ' WHERE DATE(date_created_gmt) BETWEEN %s AND %s';
-            $params = [$start_date, $end_date];
+            $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $sql = $this->wpdb->prepare(
-            "SELECT 
-                COUNT(DISTINCT customer_id) as total_customers,
-                COUNT(CASE WHEN order_count > 1 THEN 1 END) as repeat_customers,
-                ROUND((COUNT(CASE WHEN order_count > 1 THEN 1 END) * 100.0 / COUNT(DISTINCT customer_id)), 1) as repeat_rate
-             FROM (
-                 SELECT 
-                     customer_id,
-                     COUNT(*) as order_count
-                 FROM {$this->table_orders}
-                 {$where_clause}
-                 AND customer_id IS NOT NULL
-                 GROUP BY customer_id
-             ) as customer_orders",
-            $params
-        );
+        $orders = wc_get_orders($args);
         
-        return $this->wpdb->get_row($sql, ARRAY_A);
+        $customers = [];
+        
+        foreach ($orders as $order) {
+            // Refunds ausschließen
+            if ($order instanceof \WC_Order_Refund) {
+                continue;
+            }
+            
+            // Verwende get_user_id() statt get_customer_id() für Kompatibilität
+            $customer_id = $order->get_user_id();
+            if ($customer_id) {
+                if (!isset($customers[$customer_id])) {
+                    $customers[$customer_id] = 0;
+                }
+                $customers[$customer_id]++;
+            }
+        }
+        
+        $total_customers = count($customers);
+        $repeat_customers = 0;
+        
+        foreach ($customers as $order_count) {
+            if ($order_count > 1) {
+                $repeat_customers++;
+            }
+        }
+        
+        $repeat_rate = $total_customers > 0 ? round(($repeat_customers / $total_customers) * 100, 1) : 0;
+        
+        return [
+            'total_customers' => $total_customers,
+            'repeat_customers' => $repeat_customers,
+            'repeat_rate' => $repeat_rate
+        ];
     }
 
     /**
      * Durchschnittliche Bestellwerte nach Status
      */
     public function get_avg_order_value_by_status($start_date = null, $end_date = null) {
-        $this->init_order_tables();
+        $args = [
+            'limit' => -1,
+            'return' => 'objects',
+        ];
         
-        $where_clause = '';
-        $params = [];
-        
+        // Datumsfilter hinzufügen
         if ($start_date && $end_date) {
-            $where_clause = ' WHERE DATE(date_created_gmt) BETWEEN %s AND %s';
-            $params = [$start_date, $end_date];
+            $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $sql = $this->wpdb->prepare(
-            "SELECT 
-                status,
-                COUNT(*) as order_count,
-                AVG(total_amount) as avg_order_value,
-                MIN(total_amount) as min_order_value,
-                MAX(total_amount) as max_order_value
-             FROM {$this->table_orders}
-             {$where_clause}
-             GROUP BY status
-             ORDER BY avg_order_value DESC",
-            $params
-        );
+        $orders = wc_get_orders($args);
         
-        return $this->wpdb->get_results($sql, ARRAY_A);
+        $status_data = [];
+        
+        foreach ($orders as $order) {
+            $status = $order->get_status();
+            $total = $order->get_total();
+            
+            if (!isset($status_data[$status])) {
+                $status_data[$status] = [
+                    'status' => $status,
+                    'order_count' => 0,
+                    'total_revenue' => 0,
+                    'min_order_value' => PHP_FLOAT_MAX,
+                    'max_order_value' => 0
+                ];
+            }
+            
+            $status_data[$status]['order_count']++;
+            $status_data[$status]['total_revenue'] += $total;
+            $status_data[$status]['min_order_value'] = min($status_data[$status]['min_order_value'], $total);
+            $status_data[$status]['max_order_value'] = max($status_data[$status]['max_order_value'], $total);
+        }
+        
+        // Durchschnitt berechnen und in Array umwandeln
+        $results = [];
+        foreach ($status_data as $data) {
+            $data['avg_order_value'] = $data['order_count'] > 0 ? 
+                round($data['total_revenue'] / $data['order_count'], 2) : 0;
+            $data['min_order_value'] = $data['min_order_value'] === PHP_FLOAT_MAX ? 0 : round($data['min_order_value'], 2);
+            $data['max_order_value'] = round($data['max_order_value'], 2);
+            $results[] = $data;
+        }
+        
+        // Nach Durchschnittswert sortieren
+        usort($results, function($a, $b) {
+            return $b['avg_order_value'] - $a['avg_order_value'];
+        });
+        
+        return $results;
     }
 
     /**
      * Stündliche Bestellungs-Verteilung für Heatmap
      */
     public function get_order_time_heatmap($start_date = null, $end_date = null) {
-        $this->init_order_tables();
+        $args = [
+            'limit' => -1,
+            'return' => 'objects',
+        ];
         
-        $where_clause = '';
-        $params = [];
-        
+        // Datumsfilter hinzufügen
         if ($start_date && $end_date) {
-            $where_clause = ' WHERE DATE(date_created_gmt) BETWEEN %s AND %s';
-            $params = [$start_date, $end_date];
+            $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $sql = $this->wpdb->prepare(
-            "SELECT 
-                HOUR(date_created_gmt) as hour,
-                DAYNAME(date_created_gmt) as day,
-                COUNT(*) as orders,
-                AVG(total_amount) as avg_order_value
-             FROM {$this->table_orders}
-             {$where_clause}
-             GROUP BY HOUR(date_created_gmt), DAYNAME(date_created_gmt)
-             ORDER BY FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), hour",
-            $params
-        );
+        $orders = wc_get_orders($args);
         
-        return $this->wpdb->get_results($sql, ARRAY_A);
+        $heatmap_data = [];
+        
+        foreach ($orders as $order) {
+            $hour = (int)$order->get_date_created()->format('H');
+            $day = $order->get_date_created()->format('l'); // Monday, Tuesday, etc.
+            $total = $order->get_total();
+            
+            $key = $hour . '_' . $day;
+            
+            if (!isset($heatmap_data[$key])) {
+                $heatmap_data[$key] = [
+                    'hour' => $hour,
+                    'day' => $day,
+                    'orders' => 0,
+                    'total_revenue' => 0
+                ];
+            }
+            
+            $heatmap_data[$key]['orders']++;
+            $heatmap_data[$key]['total_revenue'] += $total;
+        }
+        
+        // Durchschnitt berechnen und in Array umwandeln
+        $results = [];
+        foreach ($heatmap_data as $data) {
+            $data['avg_order_value'] = $data['orders'] > 0 ? 
+                round($data['total_revenue'] / $data['orders'], 2) : 0;
+            $results[] = $data;
+        }
+        
+        // Nach Wochentag und Stunde sortieren
+        $day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        usort($results, function($a, $b) use ($day_order) {
+            $day_cmp = array_search($a['day'], $day_order) - array_search($b['day'], $day_order);
+            if ($day_cmp !== 0) return $day_cmp;
+            return $a['hour'] - $b['hour'];
+        });
+        
+        return $results;
     }
 }

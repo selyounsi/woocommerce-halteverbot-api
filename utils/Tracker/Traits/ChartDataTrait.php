@@ -39,51 +39,81 @@ trait ChartDataTrait {
     /**
      * Geräteverteilung für Donut Chart mit Zeitraum
      */
-    public function get_device_distribution_chart($start_date, $end_date) {
-        return $this->wpdb->get_results($this->wpdb->prepare(
+    public function get_device_distribution_chart($start_date, $end_date, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
+        $results = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 device_type,
-                COUNT(DISTINCT session_id) as count,
-                ROUND((COUNT(DISTINCT session_id) * 100.0 / 
-                    (SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs} WHERE DATE(visit_time) BETWEEN %s AND %s)), 1) as percentage
+                COUNT(DISTINCT session_id) as count
             FROM {$this->table_logs} 
-            WHERE device_type != '' AND DATE(visit_time) BETWEEN %s AND %s
+            WHERE device_type != '' AND DATE(visit_time) BETWEEN %s AND %s $where_device
             GROUP BY device_type
             ORDER BY count DESC",
-            $start_date, $end_date, $start_date, $end_date
+            $params
         ), ARRAY_A);
+        
+        // Prozente manuell berechnen
+        $total = array_sum(array_column($results, 'count'));
+        foreach ($results as &$result) {
+            $result['percentage'] = $total > 0 ? round(($result['count'] / $total) * 100, 1) : 0;
+        }
+        
+        return $results;
     }
 
     /**
      * Suchmaschinen-Verteilung für Pie Chart mit Zeitraum
      */
-    public function get_search_engine_distribution_chart($start_date, $end_date) {
+    public function get_search_engine_distribution_chart($start_date, $end_date, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 source_name as search_engine,
                 COUNT(DISTINCT session_id) as count
             FROM {$this->table_logs} 
-            WHERE source_channel = 'organic' AND source_name != '' AND DATE(visit_time) BETWEEN %s AND %s
+            WHERE source_channel = 'organic' AND source_name != '' AND DATE(visit_time) BETWEEN %s AND %s $where_device
             GROUP BY source_name
             ORDER BY count DESC
             LIMIT 8",
-            $start_date, $end_date
+            $params
         ), ARRAY_A);
     }
 
     /**
      * Browser-Verteilung für Pie Chart mit Zeitraum
      */
-    public function get_browser_distribution_chart($start_date, $end_date) {
+    public function get_browser_distribution_chart($start_date, $end_date, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         $results = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 browser_name,
                 COUNT(DISTINCT session_id) as count
             FROM {$this->table_logs} 
-            WHERE browser_name != '' AND DATE(visit_time) BETWEEN %s AND %s
+            WHERE browser_name != '' AND DATE(visit_time) BETWEEN %s AND %s $where_device
             GROUP BY browser_name
             ORDER BY count DESC",
-            $start_date, $end_date
+            $params
         ), ARRAY_A);
 
         // Browser-Namen mit globaler Variable gruppieren
@@ -92,7 +122,7 @@ trait ChartDataTrait {
             $browser_name = strtolower($row['browser_name']);
             $count = $row['count'];
             
-            $grouped_name = $this->browser_name;
+            $grouped_name = $row['browser_name'];
             
             // Durch alle Browser-Gruppen iterieren
             foreach ($this->browser_groups as $pattern => $group) {
@@ -100,11 +130,6 @@ trait ChartDataTrait {
                     $grouped_name = $group;
                     break;
                 }
-            }
-            
-            // Falls kein Match, originalen Namen verwenden
-            if ($grouped_name === $this->browser_name) {
-                $grouped_name = $row['browser_name'];
             }
             
             if (!isset($consolidated[$grouped_name])) {
@@ -133,7 +158,15 @@ trait ChartDataTrait {
     /**
      * Traffic-Quellen für Donut Chart mit Zeitraum
      */
-    public function get_traffic_sources_chart($start_date, $end_date) {
+    public function get_traffic_sources_chart($start_date, $end_date, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date, $start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 CASE 
@@ -146,54 +179,78 @@ trait ChartDataTrait {
                 END as source,
                 COUNT(DISTINCT session_id) as count,
                 ROUND((COUNT(DISTINCT session_id) * 100.0 / 
-                    (SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs} WHERE DATE(visit_time) BETWEEN %s AND %s)), 1) as percentage
+                    (SELECT COUNT(DISTINCT session_id) FROM {$this->table_logs} WHERE DATE(visit_time) BETWEEN %s AND %s $where_device)), 1) as percentage
             FROM {$this->table_logs} 
-            WHERE source_channel != '' AND DATE(visit_time) BETWEEN %s AND %s
+            WHERE source_channel != '' AND DATE(visit_time) BETWEEN %s AND %s $where_device
             GROUP BY source_channel
             ORDER BY count DESC",
-            $start_date, $end_date, $start_date, $end_date
+            $params
         ), ARRAY_A);
     }
 
     /**
      * Besuchszeiten Heatmap Daten mit Zeitraum
      */
-    public function get_visit_heatmap_data($start_date, $end_date) {
+    public function get_visit_heatmap_data($start_date, $end_date, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 HOUR(visit_time) as hour,
                 DAYNAME(visit_time) as day,
                 COUNT(DISTINCT session_id) as visits
             FROM {$this->table_logs} 
-            WHERE DATE(visit_time) BETWEEN %s AND %s
+            WHERE DATE(visit_time) BETWEEN %s AND %s $where_device
             GROUP BY HOUR(visit_time), DAYNAME(visit_time)
             ORDER BY FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), hour",
-            $start_date, $end_date
+            $params
         ), ARRAY_A);
     }
 
     /**
      * Top Städte in Deutschland für Karte/Chart mit Zeitraum
      */
-    public function get_german_cities_chart($start_date, $end_date) {
+    public function get_german_cities_chart($start_date, $end_date, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 city,
                 country_name,
                 COUNT(DISTINCT session_id) as count
             FROM {$this->table_logs} 
-            WHERE country_code = 'DE' AND city != '' AND DATE(visit_time) BETWEEN %s AND %s
+            WHERE country_code = 'DE' AND city != '' AND DATE(visit_time) BETWEEN %s AND %s $where_device
             GROUP BY city, country_name
             ORDER BY count DESC
             LIMIT 15",
-            $start_date, $end_date
+            $params
         ), ARRAY_A);
     }
 
     /**
      * Seiten-Performance (Aufrufe vs. Verweildauer) mit Zeitraum
      */
-    public function get_page_performance_chart($start_date, $end_date) {
+    public function get_page_performance_chart($start_date, $end_date, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 page_title,
@@ -201,19 +258,19 @@ trait ChartDataTrait {
                 COUNT(*) as views,
                 AVG(time_on_page) as avg_time_on_page
             FROM {$this->table_logs} 
-            WHERE page_title != '' AND time_on_page > 0 AND DATE(visit_time) BETWEEN %s AND %s
+            WHERE page_title != '' AND time_on_page > 0 AND DATE(visit_time) BETWEEN %s AND %s $where_device
             GROUP BY page_title, url
             HAVING views > 10
             ORDER BY views DESC
             LIMIT 10",
-            $start_date, $end_date
+            $params
         ), ARRAY_A);
     }
 
     /**
      * Tägliche Besucher der letzten 30 Tage für Charts
      */
-    public function get_daily_visitors_chart_data($days = 30) {
+    public function get_daily_visitors_chart_data($days = 30, $device_type = null) {
         $end_date = date('Y-m-d');
         $start_date = date('Y-m-d', strtotime('-'.($days-1).' days'));
         
@@ -228,22 +285,30 @@ trait ChartDataTrait {
             ];
         }
 
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+
         // Besucher pro Tag
         $visitors_data = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT DATE(visit_time) as date, COUNT(DISTINCT session_id) as visitors
             FROM {$this->table_logs} 
-            WHERE DATE(visit_time) BETWEEN %s AND %s
+            WHERE DATE(visit_time) BETWEEN %s AND %s $where_device
             GROUP BY DATE(visit_time)",
-            $start_date, $end_date
+            $params
         ), ARRAY_A);
 
         // Page Views pro Tag
         $pageviews_data = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT DATE(visit_time) as date, COUNT(*) as page_views
             FROM {$this->table_logs} 
-            WHERE DATE(visit_time) BETWEEN %s AND %s
+            WHERE DATE(visit_time) BETWEEN %s AND %s $where_device
             GROUP BY DATE(visit_time)",
-            $start_date, $end_date
+            $params
         ), ARRAY_A);
 
         // Fülle die Daten

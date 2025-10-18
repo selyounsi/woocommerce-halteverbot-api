@@ -198,9 +198,6 @@ document.addEventListener('DOMContentLoaded', function() {
         'Tägliche Besucher (7 Tage)'
     );
     
-
-
-    
     // 2. Geräteverteilung
     if (chartData.device_distribution) {
         new Chart(document.getElementById('deviceDistributionChart'), {

@@ -55,7 +55,7 @@ trait PageAnalyticsTrait {
     }
 
     // Automatisierte Seiten-Kategorisierung (MIT KORREKTEN PRODUKT-URLs)
-    public function page_performance_by_category($start_date, $end_date) {
+    public function page_performance_by_category($start_date, $end_date, $device_type = null) {
         $home_url = $this->get_home_url();
         $woo_urls = $this->get_woocommerce_page_urls();
         $product_urls = $this->get_product_urls(); // Jetzt mit korrekten URLs
@@ -150,6 +150,14 @@ trait PageAnalyticsTrait {
         
         $case_sql = implode("\n                    ", $case_conditions);
         
+        $where_device = '';
+        $params = [$start_date, $end_date, $start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         $sql = $this->wpdb->prepare(
             "SELECT 
                 CASE 
@@ -168,10 +176,10 @@ trait PageAnalyticsTrait {
             FROM {$this->table_logs} 
             WHERE DATE(visit_time) BETWEEN %s AND %s
             AND time_on_page > 0
+            {$where_device}
             GROUP BY page_category
             ORDER BY pageviews DESC",
-            $start_date, $end_date,
-            $start_date, $end_date
+            ...$params
         );
         
         return $this->wpdb->get_results($sql, ARRAY_A);
@@ -255,7 +263,7 @@ trait PageAnalyticsTrait {
     }
 
     // Produktseiten Performance (DYNAMISCH)
-    public function product_pages_performance($start_date, $end_date) {
+    public function product_pages_performance($start_date, $end_date, $device_type = null) {
         $product_urls = $this->get_product_urls();
         
         if (empty($product_urls)) {
@@ -263,6 +271,16 @@ trait PageAnalyticsTrait {
         }
         
         $placeholders = implode(',', array_fill(0, count($product_urls), '%s'));
+        
+        $where_device = '';
+        $params = [$start_date, $end_date, $start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
+        $params = array_merge($params, $product_urls);
         
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
@@ -283,18 +301,17 @@ trait PageAnalyticsTrait {
             FROM {$this->table_logs} 
             WHERE DATE(visit_time) BETWEEN %s AND %s
             AND url IN ({$placeholders})
+            {$where_device}
             GROUP BY url, page_title
             HAVING pageviews > 1
             ORDER BY pageviews DESC 
             LIMIT 20",
-            $start_date, $end_date,
-            $start_date, $end_date,
-            ...$product_urls
+            ...$params
         ), ARRAY_A);
     }
 
     // E-Commerce Funnel Analyse (DYNAMISCH)
-    public function ecommerce_funnel_analysis($start_date, $end_date) {
+    public function ecommerce_funnel_analysis($start_date, $end_date, $device_type = null) {
         $woo_urls = $this->get_woocommerce_page_urls();
         $product_urls = $this->get_product_urls();
         
@@ -305,7 +322,9 @@ trait PageAnalyticsTrait {
             $product_condition = "url IN ({$product_placeholders})";
         }
         
+        $where_device = '';
         $params = [];
+        
         if (!empty($product_urls)) {
             $params = array_merge($params, $product_urls);
         }
@@ -317,6 +336,11 @@ trait PageAnalyticsTrait {
             $start_date, $end_date
         ]);
         
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         $sql = "SELECT 
                 COUNT(DISTINCT session_id) as total_sessions,
                 SUM(CASE WHEN {$product_condition} OR url = %s THEN 1 ELSE 0 END) as product_views,
@@ -324,13 +348,14 @@ trait PageAnalyticsTrait {
                 SUM(CASE WHEN url = %s THEN 1 ELSE 0 END) as checkout_views,
                 SUM(CASE WHEN url LIKE '%/order-received/%' OR url LIKE '%/bestellbestaetigung/%' THEN 1 ELSE 0 END) as order_confirmations
             FROM {$this->table_logs} 
-            WHERE DATE(visit_time) BETWEEN %s AND %s";
+            WHERE DATE(visit_time) BETWEEN %s AND %s
+            {$where_device}";
         
         return $this->wpdb->get_results($this->wpdb->prepare($sql, ...$params), ARRAY_A);
     }
 
     // Kategorieseiten Performance (DYNAMISCH)
-    public function category_pages_performance($start_date, $end_date) 
+    public function category_pages_performance($start_date, $end_date, $device_type = null) 
     {
         $category_slugs = $this->get_category_urls();
         
@@ -344,6 +369,14 @@ trait PageAnalyticsTrait {
         }
         
         $where_condition = "(" . implode(' OR ', $category_conditions) . ")";
+        
+        $where_device = '';
+        $params = [$start_date, $end_date, $start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
         
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
@@ -362,19 +395,17 @@ trait PageAnalyticsTrait {
             FROM {$this->table_logs} 
             WHERE DATE(visit_time) BETWEEN %s AND %s
             AND {$where_condition}
+            {$where_device}
             GROUP BY url, page_title
             HAVING pageviews > 1
             ORDER BY pageviews DESC 
             LIMIT 15",
-            $start_date, $end_date,
-            $start_date, $end_date
+            ...$params
         ), ARRAY_A);
     }
 
-
-
     // Detaillierte WooCommerce Seiten-Performance
-    public function woo_commerce_pages_performance($start_date, $end_date) {
+    public function woo_commerce_pages_performance($start_date, $end_date, $device_type = null) {
         $woo_urls = $this->get_woocommerce_page_urls();
         
         // Basis-URLs für die Abfrage vorbereiten
@@ -388,6 +419,12 @@ trait PageAnalyticsTrait {
             [$start_date, $end_date], // Für die Hauptquery
             $url_list  // Für die IN clause
         );
+        
+        $where_device = '';
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
         
         $sql = $this->wpdb->prepare(
             "SELECT 
@@ -416,6 +453,7 @@ trait PageAnalyticsTrait {
             FROM {$this->table_logs} 
             WHERE DATE(visit_time) BETWEEN %s AND %s
             AND url IN (" . implode(',', $placeholders) . ")
+            {$where_device}
             GROUP BY page_type, url, page_title
             ORDER BY pageviews DESC",
             ...$params
@@ -424,11 +462,17 @@ trait PageAnalyticsTrait {
         return $this->wpdb->get_results($sql, ARRAY_A);
     }
 
-
     // Detaillierte Seiten-Performance
-    public function detailed_page_performance($start_date, $end_date, $limit = 15) {
-        $results = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT 
+    public function detailed_page_performance($start_date, $end_date, $limit = 15, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date, $start_date, $end_date, $limit];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            array_splice($params, 4, 0, [$device_type]); // Device vor Limit einfügen
+        }
+        
+        $sql = "SELECT 
                 url,
                 page_title,
                 COUNT(*) as pageviews,
@@ -445,20 +489,27 @@ trait PageAnalyticsTrait {
                 ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as traffic_share
             FROM {$this->table_logs} 
             WHERE DATE(visit_time) BETWEEN %s AND %s
+            {$where_device}
             GROUP BY url, page_title
             HAVING pageviews > 1
             ORDER BY pageviews DESC 
-            LIMIT %d",
-            $start_date, $end_date, $start_date, $end_date, $limit
-        ), ARRAY_A);
+            LIMIT %d";
+            
+        $results = $this->wpdb->get_results($this->wpdb->prepare($sql, ...$params), ARRAY_A);
         return $this->enhance_page_titles($results);
     }
 
     // Seitenfluss-Analyse für Top-Seiten
-    public function page_flow_analysis($start_date, $end_date, $limit = 10) {
-        // Vereinfachte Version ohne Subquery
-        return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT 
+    public function page_flow_analysis($start_date, $end_date, $limit = 10, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date, $limit];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND t1.device_type = %s';
+            array_splice($params, 1, 0, [$device_type]); // Device vor Limit einfügen
+        }
+        
+        $sql = "SELECT 
                 t1.url as current_page,
                 COALESCE(t2.url, 'Ausstieg') as next_page,
                 COUNT(*) as transitions
@@ -471,16 +522,25 @@ trait PageAnalyticsTrait {
                     AND visit_time > t1.visit_time
                 )
             WHERE DATE(t1.visit_time) BETWEEN %s AND %s
+            {$where_device}
             GROUP BY t1.url, COALESCE(t2.url, 'Ausstieg')
             ORDER BY transitions DESC 
-            LIMIT %d",
-            $start_date, $end_date, $limit
-        ), ARRAY_A);
+            LIMIT %d";
+            
+        return $this->wpdb->get_results($this->wpdb->prepare($sql, ...$params), ARRAY_A);
     }
 
     // Engagement-Metriken nach Seite
-    public function page_engagement_metrics($start_date, $end_date) 
+    public function page_engagement_metrics($start_date, $end_date, $device_type = null) 
     {
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         $results = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 url,
@@ -494,19 +554,20 @@ trait PageAnalyticsTrait {
             FROM {$this->table_logs} 
             WHERE DATE(visit_time) BETWEEN %s AND %s
             AND time_on_page > 0
+            {$where_device}
             GROUP BY url, page_title
             HAVING total_views > 5
             ORDER BY engagement_rate DESC 
             LIMIT 15",
-            $start_date, $end_date
+            ...$params
         ), ARRAY_A);
         return $this->enhance_page_titles($results);
     }
 
     // Chart-Daten: Seiten-Performance
-    private function get_page_performance_chart_data($start_date, $end_date) {
-        $categories = $this->page_performance_by_category($start_date, $end_date);
-        $detailed = $this->detailed_page_performance($start_date, $end_date, 8);
+    private function get_page_performance_chart_data($start_date, $end_date, $device_type = null) {
+        $categories = $this->page_performance_by_category($start_date, $end_date, $device_type);
+        $detailed = $this->detailed_page_performance($start_date, $end_date, 8, $device_type);
         
         return [
             'categories' => [
@@ -530,8 +591,8 @@ trait PageAnalyticsTrait {
     }
 
     // Chart-Daten: Engagement
-    private function get_engagement_chart_data($start_date, $end_date) {
-        $engagement = $this->page_engagement_metrics($start_date, $end_date);
+    private function get_engagement_chart_data($start_date, $end_date, $device_type = null) {
+        $engagement = $this->page_engagement_metrics($start_date, $end_date, $device_type);
         
         return [
             'labels' => array_map(function($page) {
@@ -545,9 +606,9 @@ trait PageAnalyticsTrait {
     }
 
     // Chart-Daten: Traffic-Flow
-    private function get_traffic_flow_chart_data($start_date, $end_date) {
-        $entry_pages = $this->entry_pages_by_period($start_date, $end_date, 8);
-        $exit_pages = $this->exit_pages_by_period($start_date, $end_date, 8);
+    private function get_traffic_flow_chart_data($start_date, $end_date, $device_type = null) {
+        $entry_pages = $this->entry_pages_by_period($start_date, $end_date, 8, $device_type);
+        $exit_pages = $this->exit_pages_by_period($start_date, $end_date, 8, $device_type);
         
         return [
             'entry_pages' => [
@@ -568,8 +629,8 @@ trait PageAnalyticsTrait {
     }
 
     // Chart-Daten: Exit-Rates
-    private function get_exit_rates_chart_data($start_date, $end_date) {
-        $exit_rates = $this->exit_rates_by_period($start_date, $end_date, 10);
+    private function get_exit_rates_chart_data($start_date, $end_date, $device_type = null) {
+        $exit_rates = $this->exit_rates_by_period($start_date, $end_date, 10, $device_type);
         
         return [
             'labels' => array_map(function($page) {
@@ -582,9 +643,9 @@ trait PageAnalyticsTrait {
     }
 
     // Chart-Daten: Seiten-Vergleich
-    private function get_page_comparison_chart_data($start_date, $end_date) {
-        $pages = $this->get_pages_by_period($start_date, $end_date);
-        $detailed = $this->detailed_page_performance($start_date, $end_date, 12);
+    private function get_page_comparison_chart_data($start_date, $end_date, $device_type = null) {
+        $pages = $this->get_pages_by_period($start_date, $end_date, $device_type);
+        $detailed = $this->detailed_page_performance($start_date, $end_date, 12, $device_type);
         
         return [
             'traffic' => [
@@ -608,8 +669,8 @@ trait PageAnalyticsTrait {
     }
 
     // Chart-Daten: E-Commerce Funnel
-    private function get_ecommerce_funnel_chart_data($start_date, $end_date) {
-        $funnel = $this->ecommerce_funnel_analysis($start_date, $end_date);
+    private function get_ecommerce_funnel_chart_data($start_date, $end_date, $device_type = null) {
+        $funnel = $this->ecommerce_funnel_analysis($start_date, $end_date, $device_type);
         
         if (!empty($funnel)) {
             $funnel_data = $funnel[0];
@@ -635,20 +696,37 @@ trait PageAnalyticsTrait {
         return [];
     }
 
-    private function get_pages_by_period($start_date, $end_date) {
+    private function get_pages_by_period($start_date, $end_date, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT url, page_title, COUNT(*) as count,
                     ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
             FROM {$this->table_logs} 
             WHERE DATE(visit_time) BETWEEN %s AND %s 
+            {$where_device}
             GROUP BY url, page_title 
             ORDER BY count DESC 
             LIMIT 20",
-            $start_date, $end_date
+            ...$params
         ), ARRAY_A);
     }
     
-    private function get_keywords_by_period($start_date, $end_date) {
+    private function get_keywords_by_period($start_date, $end_date, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+        
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT keywords, COUNT(*) as count,
                     ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
@@ -656,15 +734,15 @@ trait PageAnalyticsTrait {
                 SELECT session_id, keywords
                 FROM {$this->table_logs}
                 WHERE keywords != '' AND DATE(visit_time) BETWEEN %s AND %s
+                {$where_device}
                 GROUP BY session_id, keywords
             ) as sessions
             GROUP BY keywords 
             ORDER BY count DESC 
             LIMIT 20",
-            $start_date, $end_date
+            ...$params
         ), ARRAY_A);
     }
-
 
     // Universelle Methode um richtigen Seiten-Titel zu holen
     private function get_proper_page_title($url, $current_title = '') 
@@ -706,9 +784,16 @@ trait PageAnalyticsTrait {
     }
 
 
-    public function entry_pages_by_period($start_date, $end_date, $limit = 20) {
-        $sql = $this->wpdb->prepare(
-            "SELECT url, page_title, COUNT(*) as entries,
+public function entry_pages_by_period($start_date, $end_date, $limit = 20, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date, $start_date, $end_date, $limit];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            array_splice($params, 4, 0, [$device_type]); // Device vor Limit einfügen
+        }
+        
+        $sql = "SELECT url, page_title, COUNT(*) as entries,
                     ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
              FROM (
                 SELECT session_id, url, page_title 
@@ -720,19 +805,26 @@ trait PageAnalyticsTrait {
                     WHERE sub.session_id = {$this->table_logs}.session_id
                     AND DATE(sub.visit_time) BETWEEN %s AND %s
                 )
+                {$where_device}
             ) as entry_pages 
             GROUP BY url, page_title 
             ORDER BY entries DESC 
-            LIMIT %d",
-            $start_date, $end_date, $start_date, $end_date, $limit
-        );
-        $results = $this->wpdb->get_results($sql, ARRAY_A);
+            LIMIT %d";
+            
+        $results = $this->wpdb->get_results($this->wpdb->prepare($sql, ...$params), ARRAY_A);
         return $this->enhance_page_titles($results);
     }
 
-    public function exit_pages_by_period($start_date, $end_date, $limit = 20) {
-        $sql = $this->wpdb->prepare(
-            "SELECT url, page_title, COUNT(*) as exits,
+    public function exit_pages_by_period($start_date, $end_date, $limit = 20, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date, $start_date, $end_date, $limit];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            array_splice($params, 4, 0, [$device_type]); // Device vor Limit einfügen
+        }
+        
+        $sql = "SELECT url, page_title, COUNT(*) as exits,
                     ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER()), 1) as percentage
              FROM (
                 SELECT session_id, url, page_title 
@@ -744,19 +836,26 @@ trait PageAnalyticsTrait {
                     WHERE sub.session_id = {$this->table_logs}.session_id
                     AND DATE(sub.visit_time) BETWEEN %s AND %s
                 )
+                {$where_device}
             ) as exit_pages 
             GROUP BY url, page_title 
             ORDER BY exits DESC 
-            LIMIT %d",
-            $start_date, $end_date, $start_date, $end_date, $limit
-        );
-        $results = $this->wpdb->get_results($sql, ARRAY_A);
+            LIMIT %d";
+            
+        $results = $this->wpdb->get_results($this->wpdb->prepare($sql, ...$params), ARRAY_A);
         return $this->enhance_page_titles($results);
     }
     
-    public function exit_rates_by_period($start_date, $end_date, $limit = 20) {
-        $sql = $this->wpdb->prepare(
-            "SELECT url, page_title,
+    public function exit_rates_by_period($start_date, $end_date, $limit = 20, $device_type = null) {
+        $where_device = '';
+        $params = [$start_date, $end_date, $start_date, $end_date, $limit];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            array_splice($params, 4, 0, [$device_type]); // Device vor Limit einfügen
+        }
+        
+        $sql = "SELECT url, page_title,
                     COUNT(*) as total_views,
                     SUM(is_exit) as exit_views,
                     ROUND((SUM(is_exit) / COUNT(*)) * 100, 1) as exit_rate,
@@ -771,14 +870,14 @@ trait PageAnalyticsTrait {
                        ) THEN 1 ELSE 0 END as is_exit
                 FROM {$this->table_logs}
                 WHERE DATE(visit_time) BETWEEN %s AND %s
+                {$where_device}
              ) as page_analysis
              GROUP BY url, page_title
              HAVING total_views > 2
              ORDER BY exit_rate DESC 
-             LIMIT %d",
-            $start_date, $end_date, $start_date, $end_date, $limit
-        );
-        $results = $this->wpdb->get_results($sql, ARRAY_A);
+             LIMIT %d";
+             
+        $results = $this->wpdb->get_results($this->wpdb->prepare($sql, ...$params), ARRAY_A);
         return $this->enhance_page_titles($results);
     }
 }
