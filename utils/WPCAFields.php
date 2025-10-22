@@ -149,6 +149,21 @@ class WPCAFields
             }
         }
 
+        if (empty($meta_fields)) {
+            foreach ($this->order->get_items() as $item_id => $item) {
+                // Alle Metadaten für die Position abrufen
+                foreach ($item->get_meta_data() as $meta) {
+                    // Nur Werte mit Inhalt, außer WCPA_ORDER_META_KEY
+                    if (!empty($meta->value) && $meta->key !== WCPA_ORDER_META_KEY) {
+                        $meta_fields[$count_field][$meta->key] = $meta->value;
+                    }
+                }
+
+                $meta_fields[$count_field]["line_item_id"] = $item_id;
+                $count_field++;
+            }
+        }
+
         return $meta_fields;
     }
 
