@@ -377,68 +377,62 @@ function filter_orders_by_postcodes($request)
             }
         }
 
-        foreach ($order->get_items() as $item_id => $item) 
-        {
-            $sections = $item->get_meta('_WCPA_order_meta_data', true);
-            
+        $WPCAFields = new \Utils\WPCAFields($order);
+        $getFields = $WPCAFields->getMetaFields();
 
+        foreach ($getFields as $field) {
 
-            $postalcode = $item->get_meta('Postleitzahl', true);;
+            $postalcode = $field['Postleitzahl'] ?? null;
 
-            // Check if the line item contains one of the specified postcodes
-            if ($postalcode && in_array($postalcode, $postcodes)) 
-            {
-                // Get the "Startdatum" and "Enddatum" metadata
-                $item_start_date = $item->get_meta('Startdatum', true);
-                $item_end_date = $item->get_meta('Enddatum', true);
+            // Prüfen, ob die Postleitzahl im Filter-Array enthalten ist
+            if ($postalcode && in_array($postalcode, $postcodes)) {
+
+                $item_start_date = $field['Startdatum'] ?? '';
+                $item_end_date   = $field['Enddatum'] ?? '';
 
                 $item_start_timestamp = strtotime($item_start_date);
-                $item_end_timestamp = strtotime($item_end_date);
-                
-                // Filter for start date and end date range
+                $item_end_timestamp   = strtotime($item_end_date);
+
+                // Standardmäßig auf true setzen
                 $date_range_condition = true;
 
-                // Check for start date range filtering
+                // Filter nach Startdatum / Enddatum (kompletter Range)
                 if ($start_date && $end_date) {
                     if ($item_start_timestamp < strtotime($start_date) || $item_start_timestamp > strtotime($end_date)) {
-                        $date_range_condition = false; // Skip if not within start date range
+                        $date_range_condition = false;
                     }
                 }
 
-                // Check for start date from/to filtering
-                if ($start_date_from || $start_date_to) {
-                    if ($start_date_from && $item_start_timestamp < strtotime($start_date_from)) {
-                        $date_range_condition = false; // Skip if start date is before the range
-                    }
-                    if ($start_date_to && $item_start_timestamp > strtotime($start_date_to)) {
-                        $date_range_condition = false; // Skip if start date is after the range
-                    }
+                // Filter nach Startdatum von / bis
+                if ($start_date_from && $item_start_timestamp < strtotime($start_date_from)) {
+                    $date_range_condition = false;
+                }
+                if ($start_date_to && $item_start_timestamp > strtotime($start_date_to)) {
+                    $date_range_condition = false;
                 }
 
-                // Check for end date from/to filtering
-                if ($end_date_from || $end_date_to) {
-                    if ($end_date_from && $item_end_timestamp < strtotime($end_date_from)) {
-                        $date_range_condition = false; // Skip if end date is before the range
-                    }
-                    if ($end_date_to && $item_end_timestamp > strtotime($end_date_to)) {
-                        $date_range_condition = false; // Skip if end date is after the range
-                    }
+                // Filter nach Enddatum von / bis
+                if ($end_date_from && $item_end_timestamp < strtotime($end_date_from)) {
+                    $date_range_condition = false;
+                }
+                if ($end_date_to && $item_end_timestamp > strtotime($end_date_to)) {
+                    $date_range_condition = false;
                 }
 
-                // If the date conditions are met, add the order to the filtered array
+                // Wenn alle Bedingungen passen, zum Ergebnis hinzufügen
                 if ($date_range_condition) {
                     $filtered_orders[] = [
-                        "id" => $order->get_id(),
-                        "status" => $order->get_status(),
-                        "startdate" => $item_start_date ?? "",
-                        "starttime" => $item->get_meta('Anfangszeit', true) ?? "",
-                        "enddate" => $item_end_date ?? "",
-                        "endtime" => $item->get_meta('Endzeit', true) ?? "",
-                        "days" => ($item->get_meta('Anzahl der Tage', true) ?: $item->get_meta('_Anzahl der Tage', true)) ?? "",
-                        "address" => $item->get_meta('Straße + Hausnummer', true) ?? "",
-                        "postalcode" => $postalcode ?? "",
-                        "place" => $item->get_meta('Ort', true) ?? "",
-                        "addresses" => $count_wpca_fieldsets
+                        "id"         => $order->get_id(),
+                        "status"     => $order->get_status(),
+                        "startdate"  => $item_start_date,
+                        "starttime"  => $field['Anfangszeit'] ?? '',
+                        "enddate"    => $item_end_date,
+                        "endtime"    => $field['Endzeit'] ?? '',
+                        "days"       => $field['Anzahl der Tage'] ?? '',
+                        "address"    => $field['Straße + Hausnummer'] ?? '',
+                        "postalcode" => $postalcode,
+                        "place"      => $field['Ort'] ?? '',
+                        "addresses"  => count($getFields)
                     ];
                 }
             }
