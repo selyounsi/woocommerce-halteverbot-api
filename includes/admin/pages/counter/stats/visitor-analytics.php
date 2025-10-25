@@ -5,6 +5,19 @@
         
         <!-- Zeitleiste Charts -->
         <div style="display: flex; gap: 1rem; margin-bottom: 20px; flex-wrap: wrap;">
+
+
+
+            <!-- Tägliche Besucher (7 Tage) -->
+            <div style="flex: 1; flex-basis: 100%; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                <h3 style="margin: 0 0 15px 0;">📈 Tägliche Besucher (Zeitraum)</h3>
+                <div style="height: 300px; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                    <canvas id="dailyVisitorsRange"></canvas>
+                </div>
+            </div>
+
+
+
             <!-- Tägliche Besucher (30 Tage) -->
             <div style="flex: 1; min-width: 400px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
                 <h3 style="margin: 0 0 15px 0;">📈 Tägliche Besucher (30 Tage)</h3>
@@ -195,6 +208,13 @@ document.addEventListener('DOMContentLoaded', function() {
     createDailyVisitorsChart(
         'dailyVisitorsChart7d', 
         chartData.daily_visitors_7d,
+        'Tägliche Besucher (7 Tage)'
+    );
+
+    // 2. Tägliche Besucher (7 Tage)
+    createDailyVisitorsChart(
+        'dailyVisitorsRange', 
+        chartData.daily_visitors_range,
         'Tägliche Besucher (7 Tage)'
     );
     

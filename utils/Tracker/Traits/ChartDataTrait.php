@@ -326,4 +326,68 @@ trait ChartDataTrait {
 
         return $daily_data;
     }
+
+    /**
+     * Tägliche Besucher für Charts
+     */
+    public function get_daily_visitors_chart_data_range($start_date, $end_date, $device_type = null) {
+
+        // Alle Tage im Bereich erstellen
+        $period = new \DatePeriod(
+            new \DateTime($start_date),
+            new \DateInterval('P1D'),
+            (new \DateTime($end_date))->modify('+1 day')
+        );
+
+        $daily_data = [];
+        foreach ($period as $date) {
+            $day = $date->format('Y-m-d');
+            $daily_data[$day] = [
+                'visitors' => 0,
+                'sessions' => 0,
+                'page_views' => 0
+            ];
+        }
+
+        $where_device = '';
+        $params = [$start_date, $end_date];
+        
+        if ($device_type !== null) {
+            $where_device = ' AND device_type = %s';
+            $params[] = $device_type;
+        }
+
+        // Besucher pro Tag
+        $visitors_data = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT DATE(visit_time) as date, COUNT(DISTINCT session_id) as visitors
+            FROM {$this->table_logs} 
+            WHERE DATE(visit_time) BETWEEN %s AND %s $where_device
+            GROUP BY DATE(visit_time)",
+            $params
+        ), ARRAY_A);
+
+        // Page Views pro Tag
+        $pageviews_data = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT DATE(visit_time) as date, COUNT(*) as page_views
+            FROM {$this->table_logs} 
+            WHERE DATE(visit_time) BETWEEN %s AND %s $where_device
+            GROUP BY DATE(visit_time)",
+            $params
+        ), ARRAY_A);
+
+        // Fülle die Daten
+        foreach ($visitors_data as $row) {
+            if (isset($daily_data[$row['date']])) {
+                $daily_data[$row['date']]['visitors'] = (int)$row['visitors'];
+            }
+        }
+
+        foreach ($pageviews_data as $row) {
+            if (isset($daily_data[$row['date']])) {
+                $daily_data[$row['date']]['page_views'] = (int)$row['page_views'];
+            }
+        }
+
+        return $daily_data;
+    }
 }
