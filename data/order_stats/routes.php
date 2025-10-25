@@ -1,25 +1,27 @@
 <?php
 
-use Utils\Stats\OrderStats;
-use Utils\Stats\WPStats;
+use Utils\Tracker\VisitorAnalytics;
+
 
 add_action('rest_api_init', function () {
-    register_rest_route('wc/v3', '/orders/stats', [
-        'methods'  => 'GET',
-        'callback' => 'get_orders_count',
+    register_rest_route('wc/v3', '/stats/all', [
+        'methods'  => 'POST',
+        'callback' => 'get_report',
         'permission_callback' => function () {
             return current_user_can('manage_woocommerce');
         }
     ]);
 });
 
-function get_orders_count() 
+function get_report(WP_REST_Request $request) 
 {
-    $wp_stats = new WPStats(); 
-    $orderStats = new OrderStats();
+    $analyticsInstance = VisitorAnalytics::getAnalyticsInstance();
 
-    return new WP_REST_Response([
-        "orders" => $orderStats->getOrderStats() ?? null,
-        "visitors" => $wp_stats->getStats() ?? null 
-    ], 200);
+    // POST DATA
+    $start_date = $request->get_param('start_date') ?? date('Y-m-d'); 
+    $end_date = $request->get_param('end_date') ?? date('Y-m-d', strtotime('-29 days'));     
+    $device_type = $request->get_param('device_type') ?? null;
+
+    // RETURN DATA
+    return new WP_REST_Response($analyticsInstance->get_report($start_date, $end_date, $device_type), 200);
 }
