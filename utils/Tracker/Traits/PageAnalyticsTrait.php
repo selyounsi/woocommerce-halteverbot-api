@@ -509,25 +509,38 @@ trait PageAnalyticsTrait {
             array_splice($params, 1, 0, [$device_type]); // Device vor Limit einfügen
         }
         
-        $sql = "SELECT 
-                t1.url as current_page,
-                COALESCE(t2.url, 'Ausstieg') as next_page,
-                COUNT(*) as transitions
-            FROM {$this->table_logs} t1
-            LEFT JOIN {$this->table_logs} t2 ON t1.session_id = t2.session_id 
-                AND t2.visit_time = (
-                    SELECT MIN(visit_time) 
-                    FROM {$this->table_logs} 
-                    WHERE session_id = t1.session_id 
-                    AND visit_time > t1.visit_time
-                )
-            WHERE DATE(t1.visit_time) BETWEEN %s AND %s
-            {$where_device}
-            GROUP BY t1.url, COALESCE(t2.url, 'Ausstieg')
-            ORDER BY transitions DESC 
-            LIMIT %d";
-            
-        return $this->wpdb->get_results($this->wpdb->prepare($sql, ...$params), ARRAY_A);
+        $sql = "SELECT  
+                    t1.url as current_page,
+                    COALESCE(t2.url, 'Ausstieg') as next_page,
+                    COUNT(*) as transitions
+                FROM {$this->table_logs} t1
+                LEFT JOIN {$this->table_logs} t2 ON t1.session_id = t2.session_id 
+                    AND t2.visit_time = (
+                        SELECT MIN(visit_time) 
+                        FROM {$this->table_logs} 
+                        WHERE session_id = t1.session_id 
+                        AND visit_time > t1.visit_time
+                    )
+                WHERE DATE(t1.visit_time) BETWEEN %s AND %s
+                {$where_device}
+                GROUP BY t1.url, COALESCE(t2.url, 'Ausstieg')
+                ORDER BY transitions DESC 
+                LIMIT %d";
+                
+        $results = $this->wpdb->get_results($this->wpdb->prepare($sql, ...$params), ARRAY_A);
+        $total_transitions = array_sum(array_column($results, 'transitions'));
+
+        foreach ($results as &$flow) {
+            $flow['page_name'] = basename($flow['current_page']);
+            $flow['next_page_name'] = $flow['next_page'] !== 'Ausstieg' ? basename($flow['next_page']) : 'Ausstieg';
+
+            $flow['percentage'] = $total_transitions > 0 
+                ? round(($flow['transitions'] / $total_transitions) * 100, 1) 
+                : 0;
+
+            }
+
+        return $results;
     }
 
     // Engagement-Metriken nach Seite
