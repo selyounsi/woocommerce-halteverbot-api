@@ -118,6 +118,14 @@ class VisitorAnalytics extends VisitorTracker
                 ]
             ],
             'order_metrics' => [
+                'range' => $this->total_orders_range($start_date, $end_date, $device),
+                'today' => $this->total_orders_today($device),
+                'yesterday' => $this->total_orders_yesterday($device),
+                'this_week' => $this->total_orders_this_week($device),
+                'this_month' => $this->total_orders_this_month($device),
+                'last_month' => $this->total_orders_last_month($device),
+                'this_year' => $this->total_orders_this_year($device),
+
                 'current_period' => [
                     'stats' => $this->get_order_stats($start_date, $end_date),
                     'status_distribution' => $this->get_order_status_distribution($start_date, $end_date),
@@ -125,18 +133,6 @@ class VisitorAnalytics extends VisitorTracker
                     'top_products' => $this->get_top_products_by_revenue($start_date, $end_date, 10),
                     'customer_repeat' => $this->get_customer_repeat_rate($start_date, $end_date),
                     'avg_values' => $this->get_avg_order_value_by_status($start_date, $end_date)
-                ],
-                'last_7_days' => [
-                    'stats' => $this->get_order_stats_7d(),
-                    'status_distribution' => $this->get_order_status_distribution(
-                        date('Y-m-d', strtotime('-6 days')), date('Y-m-d')
-                    )
-                ],
-                'last_30_days' => [
-                    'stats' => $this->get_order_stats_30d(),
-                    'status_distribution' => $this->get_order_status_distribution(
-                        date('Y-m-d', strtotime('-29 days')), date('Y-m-d')
-                    )
                 ],
                 'chart_data' => [
                     'orders_daily_30d' => $this->get_daily_orders_30d(),

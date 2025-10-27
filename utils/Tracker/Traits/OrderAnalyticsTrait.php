@@ -585,4 +585,180 @@ trait OrderAnalyticsTrait
         
         return $results;
     }
+
+
+    /**
+     * Bestellungen für beliebigen Zeitraum
+     */
+    public function total_orders_range($start_date, $end_date, $device = null) {
+        // Sicherheits-Check: Falls Datumsangaben leer oder ungültig sind
+        if (!$start_date || !$end_date) {
+            return [
+                'total_orders' => 0,
+                'completed_orders' => 0,
+                'pending_orders' => 0,
+                'cancelled_orders' => 0,
+                'refunded_orders' => 0,
+                'total_revenue' => 0,
+                'completed_revenue' => 0,
+                'avg_order_value' => 0,
+                'completed_percentage' => 0,
+                'unique_customers' => 0,
+                'avg_processing_time' => 0,
+            ];
+        }
+
+        // Standardisiere Datumsformat auf Y-m-d H:i:s
+        $start_date = date('Y-m-d 00:00:00', strtotime($start_date));
+        $end_date = date('Y-m-d 23:59:59', strtotime($end_date));
+
+        // Verwende die zentrale Helper-Methode
+        return $this->get_total_orders_for_period($start_date, $end_date, $device);
+    }
+
+
+    /**
+     * Heutige Bestellungen
+     */
+    public function total_orders_today($device = null) {
+        $start_date = date('Y-m-d 00:00:00');
+        $end_date = date('Y-m-d 23:59:59');
+        return $this->get_total_orders_for_period($start_date, $end_date, $device);
+    }
+
+    /**
+     * Gestern
+     */
+    public function total_orders_yesterday($device = null) {
+        $start_date = date('Y-m-d 00:00:00', strtotime('-1 day'));
+        $end_date = date('Y-m-d 23:59:59', strtotime('-1 day'));
+        return $this->get_total_orders_for_period($start_date, $end_date, $device);
+    }
+
+    /**
+     * Diese Woche (Montag–heute)
+     */
+    public function total_orders_this_week($device = null) {
+        $start_date = date('Y-m-d 00:00:00', strtotime('monday this week'));
+        $end_date = date('Y-m-d 23:59:59');
+        return $this->get_total_orders_for_period($start_date, $end_date, $device);
+    }
+
+    /**
+     * Diesen Monat
+     */
+    public function total_orders_this_month($device = null) {
+        $start_date = date('Y-m-01 00:00:00');
+        $end_date = date('Y-m-t 23:59:59');
+        return $this->get_total_orders_for_period($start_date, $end_date, $device);
+    }
+
+    /**
+     * Letzten Monat
+     */
+    public function total_orders_last_month($device = null) {
+        $start_date = date('Y-m-01 00:00:00', strtotime('first day of last month'));
+        $end_date = date('Y-m-t 23:59:59', strtotime('last day of last month'));
+        return $this->get_total_orders_for_period($start_date, $end_date, $device);
+    }
+
+    /**
+     * Dieses Jahr
+     */
+    public function total_orders_this_year($device = null) {
+        $start_date = date('Y-01-01 00:00:00');
+        $end_date = date('Y-12-31 23:59:59');
+        return $this->get_total_orders_for_period($start_date, $end_date, $device);
+    }
+
+    /**
+     * Zentrale Auswertung für beliebige Zeiträume
+     */
+    private function get_total_orders_for_period($start_date, $end_date, $device = null) {
+        $args = [
+            'limit' => -1,
+            'return' => 'objects',
+            'date_created' => $start_date . '...' . $end_date,
+        ];
+
+        // Optionaler Gerätefilter (wenn z. B. als Order Meta gespeichert)
+        if ($device) {
+            $args['meta_query'] = [
+                [
+                    'key' => 'device',
+                    'value' => $device,
+                    'compare' => '='
+                ]
+            ];
+        }
+
+        $orders = wc_get_orders($args);
+
+        $stats = [
+            'total_orders' => 0,           // Gesamtanzahl aller Bestellungen im Zeitraum (unabhängig vom Status)
+            'completed_orders' => 0,       // Anzahl der abgeschlossenen / erfolgreich bezahlten Bestellungen
+            'pending_orders' => 0,         // Anzahl der offenen / noch nicht abgeschlossenen Bestellungen
+            'cancelled_orders' => 0,       // Anzahl der vom Kunden oder System stornierten Bestellungen
+            'refunded_orders' => 0,        // Anzahl der erstatteten Bestellungen (nach Abschluss oder Storno)
+            'total_revenue' => 0,          // Gesamtumsatz aller Bestellungen im Zeitraum (inkl. offener)
+            'completed_revenue' => 0,      // Umsatz ausschließlich aus abgeschlossenen Bestellungen
+            'unique_customers' => [],      // Liste oder Anzahl der eindeutigen Kunden, die im Zeitraum bestellt haben
+            'avg_processing_time' => 0,    // Durchschnittliche Bearbeitungszeit pro Bestellung (in Stunden, z. B. von Bestellung bis Abschluss)
+            'order_status_distribution' => $this->get_order_status_distribution($start_date, $end_date),
+            'order_sources' => $this->get_order_sources($start_date, $end_date),
+            'order_time_heatmap' => $this->get_order_time_heatmap($start_date, $end_date),
+        ];
+
+        foreach ($orders as $order) {
+            if ($order instanceof \WC_Order_Refund) continue;
+
+            $stats['total_orders']++;
+            $stats['total_revenue'] += $order->get_total();
+
+            $status = $order->get_status();
+
+            if ($status === 'completed') {
+                $stats['completed_orders']++;
+                $stats['completed_revenue'] += $order->get_total();
+
+                // Bearbeitungszeit berechnen
+                $created = $order->get_date_created();
+                $completed = $order->get_date_completed();
+                if ($created && $completed) {
+                    $diff = $completed->getTimestamp() - $created->getTimestamp();
+                    $stats['avg_processing_time'] += $diff / 3600; // Stunden
+                }
+            } elseif ($status === 'pending') {
+                $stats['pending_orders']++;
+            } elseif (in_array($status, ['cancelled', 'failed'])) {
+                $stats['cancelled_orders']++;
+            } elseif ($status === 'refunded') {
+                $stats['refunded_orders']++;
+            }
+
+            // Kunden zählen
+            $customer_id = $order->get_user_id();
+            if ($customer_id) {
+                $stats['unique_customers'][$customer_id] = true;
+            }
+        }
+
+        // Berechnete Felder ergänzen
+        $completed_percentage = $stats['total_orders'] > 0
+            ? round(($stats['completed_orders'] / $stats['total_orders']) * 100, 1)
+            : 0;
+
+        $stats['avg_order_value'] = $stats['total_orders'] > 0
+            ? round($stats['total_revenue'] / $stats['total_orders'], 2)
+            : 0;
+
+        $stats['completed_percentage'] = $completed_percentage;
+        $stats['unique_customers'] = count($stats['unique_customers']);
+        $stats['avg_processing_time'] = $stats['completed_orders'] > 0
+            ? round($stats['avg_processing_time'] / $stats['completed_orders'], 2)
+            : 0;
+
+        return $stats;
+    }
+
 }
