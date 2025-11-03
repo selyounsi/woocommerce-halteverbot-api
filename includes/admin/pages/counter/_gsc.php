@@ -2,7 +2,6 @@
 
 use Utils\Tracker\Google\GoogleSearchConsole;
 
-
 $gsc = GoogleSearchConsole::getInstance();
 $status = $gsc->getStatus();
 
@@ -108,6 +107,49 @@ if (isset($_GET['code'])) {
             </table>
         </div>
     </div>
+
+    <!-- Erweiterte Token-Informationen -->
+    <?php if ($status['authenticated']): ?>
+    <div class="postbox">
+        <div class="inside">
+            <h2>🔐 Token-Status</h2>
+            <?php 
+            $tokenStatus = $gsc->getTokenStatus();
+            ?>
+            <table class="widefat">
+                <tr>
+                    <td><strong>Token Status:</strong></td>
+                    <td><?php echo $tokenStatus['valid'] ? '✅ Gültig' : '❌ Ungültig'; ?></td>
+                </tr>
+                <tr>
+                    <td><strong>Läuft ab:</strong></td>
+                    <td><?php echo esc_html($tokenStatus['expires_at']); ?></td>
+                </tr>
+                <tr>
+                    <td><strong>Verbleibende Zeit:</strong></td>
+                    <td><?php echo esc_html($tokenStatus['time_to_expiry']); ?></td>
+                </tr>
+                <tr>
+                    <td><strong>Refresh Token:</strong></td>
+                    <td><?php echo $tokenStatus['has_refresh_token'] ? '✅ Vorhanden' : '❌ Fehlt'; ?></td>
+                </tr>
+                <tr>
+                    <td><strong>Letzte Verwendung:</strong></td>
+                    <td><?php echo esc_html($tokenStatus['last_used']); ?></td>
+                </tr>
+            </table>
+            
+            <?php if (!$tokenStatus['valid']): ?>
+                <div style="margin-top: 15px; padding: 10px; background: #fff6f6; border-left: 4px solid #dc3232;">
+                    <p><strong>⚠️ Aktion erforderlich:</strong> Das Token ist ungültig oder läuft bald ab.</p>
+                    <p><a href="<?php echo esc_url($gsc->getAuthUrl()); ?>" class="button button-primary">
+                        Mit Google neu verbinden
+                    </a></p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Client ID/Secret Konfiguration -->
     <div class="postbox">
@@ -217,7 +259,6 @@ if (isset($_GET['code'])) {
                     </table>
                     <p><strong>Gesamt:</strong> <?php echo count($sites); ?> Websites</p>
 
-
                     <?php if (!empty($primaryDomain)): ?>
                         <div style="margin-top: 30px; padding: 15px; background: #f9f9f9; border-radius: 4px;">
                             <h3>📊 Daten für primäre Domain: <?php echo esc_html($primaryDomain); ?></h3>
@@ -272,7 +313,6 @@ if (isset($_GET['code'])) {
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
-
 
                 <?php else: ?>
                     <div class="notice notice-error">

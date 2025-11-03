@@ -140,4 +140,48 @@
 
     // Dateien laden, wenn WordPress initialisiert wird
     add_action('init', 'load_app_data');
+
+
+    /**
+     * 🕒 Verbesserte automatische Token-Wartung
+     */
+    add_action('plugins_loaded', function() {
+        if (!class_exists('\Utils\Tracker\Google\GoogleSearchConsole')) {
+            return;
+        }
+
+        // 🔁 WP-Cron-Event stündlich ausführen für bessere Wartung
+        if (!wp_next_scheduled('wha_gsc_token_maintenance')) {
+            wp_schedule_event(time(), 'hourly', 'wha_gsc_token_maintenance');
+        }
+
+        add_action('wha_gsc_token_maintenance', function() {
+            try {
+                $gsc = \Utils\Tracker\Google\GoogleSearchConsole::getInstance();
+                
+                if (!$gsc->isAuthenticated()) {
+                    return; // Nicht authentifiziert, nichts zu tun
+                }
+                
+                $tokenStatus = $gsc->getTokenStatus();
+                
+                if (!$tokenStatus['valid'] && $tokenStatus['has_refresh_token']) {
+                    error_log('[Halteverbot GSC] Token-Wartung: Token erneuern notwendig');
+                    $result = $gsc->getValidToken(); // Erzwingt Refresh
+                    
+                    if ($result['success']) {
+                        error_log('[Halteverbot GSC] Token-Wartung: Erfolgreich erneuert');
+                    } else {
+                        error_log('[Halteverbot GSC] Token-Wartung: Fehler - ' . $result['error']);
+                    }
+                } else {
+                    error_log('[Halteverbot GSC] Token-Wartung: Token noch gültig für ' . $tokenStatus['time_to_expiry']);
+                }
+                
+            } catch (Exception $e) {
+                error_log('[Halteverbot GSC] Token-Wartung Fehler: ' . $e->getMessage());
+            }
+        });
+    });
+
 ?>

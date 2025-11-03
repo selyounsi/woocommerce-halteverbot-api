@@ -73,17 +73,6 @@ class GoogleSearchConsole {
     }
 
     /**
-     * Speichert Token in Datenbank
-     */
-    private function saveToken($tokenData) {
-        $options = $this->getOptions();
-        $tokenData['expires_at'] = time() + ($tokenData['expires_in'] ?? 3600);
-        $options['token_data'] = $tokenData;
-        update_option($this->optionName, $options);
-        return true;
-    }
-
-    /**
      * Lädt Token aus Datenbank
      */
     private function loadToken() {
@@ -131,89 +120,6 @@ class GoogleSearchConsole {
     }
 
     /**
-     * Detaillierte Debug-Methode
-     */
-    public function authenticate($authCode) {
-        if (empty($this->clientId) || empty($this->clientSecret)) {
-            return [
-                'success' => false, 
-                'error' => 'Client ID oder Secret nicht konfiguriert'
-            ];
-        }
-
-        $redirectUrl = $this->getCurrentUrl();
-
-        // Detailliertes Debugging
-        $debugInfo = [
-            'client_id' => $this->clientId,
-            'client_secret_length' => strlen($this->clientSecret),
-            'code_length' => strlen($authCode),
-            'redirect_uri' => $redirectUrl,
-            'timestamp' => date('Y-m-d H:i:s')
-        ];
-
-        error_log('=== GOOGLE OAUTH DEBUG START ===');
-        error_log('Client ID: ' . $debugInfo['client_id']);
-        error_log('Client Secret Length: ' . $debugInfo['client_secret_length']);
-        error_log('Code Length: ' . $debugInfo['code_length']);
-        error_log('Redirect URI: ' . $debugInfo['redirect_uri']);
-
-        try {
-            $response = $this->httpClient->post('https://oauth2.googleapis.com/token', [
-                'form_params' => [
-                    'client_id' => $this->clientId,
-                    'client_secret' => $this->clientSecret,
-                    'code' => $authCode,
-                    'grant_type' => 'authorization_code',
-                    'redirect_uri' => $redirectUrl
-                ],
-                'http_errors' => false,
-                'timeout' => 30
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-            $statusCode = $response->getStatusCode();
-
-            // Debug der kompletten Response
-            error_log('Response Status: ' . $statusCode);
-            error_log('Full Response: ' . json_encode($data, JSON_PRETTY_PRINT));
-            error_log('=== GOOGLE OAUTH DEBUG END ===');
-
-            if ($statusCode !== 200) {
-                $errorMsg = $data['error_description'] ?? $data['error'] ?? 'Unbekannter Fehler';
-                
-                return [
-                    'success' => false, 
-                    'error' => 'Google Fehler: ' . $errorMsg,
-                    'debug' => [
-                        'status_code' => $statusCode,
-                        'response' => $data,
-                        'request_info' => $debugInfo
-                    ]
-                ];
-            }
-
-            // Erfolg - Token speichern
-            $this->saveToken($data);
-
-            return [
-                'success' => true,
-                'message' => 'Erfolgreich mit Google Search Console verbunden!'
-            ];
-
-        } catch (\Exception $e) {
-            error_log('Google OAuth Exception: ' . $e->getMessage());
-            error_log('=== GOOGLE OAUTH DEBUG END ===');
-            
-            return [
-                'success' => false,
-                'error' => 'Verbindungsfehler: ' . $e->getMessage(),
-                'debug' => $debugInfo
-            ];
-        }
-    }
-
-    /**
      * Holt alle Websites
      */
     public function getSites() {
@@ -249,60 +155,6 @@ class GoogleSearchConsole {
                 'success' => false,
                 'error' => $e->getMessage()
             ];
-        }
-    }
-
-    /**
-     * Gibt gültigen Token zurück
-     */
-    private function getValidToken() {
-        $tokenData = $this->loadToken();
-        
-        if (!$tokenData || !isset($tokenData['access_token'])) {
-            return ['success' => false, 'error' => 'Nicht authentifiziert'];
-        }
-
-        // Prüfe ob Token abgelaufen
-        if (($tokenData['expires_at'] ?? 0) <= time() + 300) {
-            return $this->refreshToken($tokenData);
-        }
-
-        return ['success' => true, 'access_token' => $tokenData['access_token']];
-    }
-
-    /**
-     * Refresh Token
-     */
-    private function refreshToken($tokenData) {
-        if (empty($tokenData['refresh_token'])) {
-            return ['success' => false, 'error' => 'Token abgelaufen - neue Authentifizierung nötig'];
-        }
-
-        try {
-            $response = $this->httpClient->post('https://oauth2.googleapis.com/token', [
-                'form_params' => [
-                    'client_id' => $this->clientId,
-                    'client_secret' => $this->clientSecret,
-                    'refresh_token' => $tokenData['refresh_token'],
-                    'grant_type' => 'refresh_token'
-                ],
-                'http_errors' => false
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-
-            if ($response->getStatusCode() !== 200) {
-                return ['success' => false, 'error' => $data['error_description'] ?? 'Refresh fehlgeschlagen'];
-            }
-
-            // Token aktualisieren
-            $tokenData['access_token'] = $data['access_token'];
-            $this->saveToken($tokenData);
-
-            return ['success' => true, 'access_token' => $data['access_token']];
-
-        } catch (\Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
@@ -456,5 +308,239 @@ class GoogleSearchConsole {
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Verbesserte Authentifizierungs-Methode mit automatischer Erneuerung
+     */
+    public function authenticate($code) {
+        $clientId = $this->getClientId();
+        $clientSecret = $this->getClientSecret();
+        $redirectUri = $this->getCurrentUrl();
+
+        $response = wp_remote_post('https://oauth2.googleapis.com/token', [
+            'timeout' => 30,
+            'body' => [
+                'code' => $code,
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
+                'redirect_uri' => $redirectUri,
+                'grant_type' => 'authorization_code'
+            ]
+        ]);
+
+        if (is_wp_error($response)) {
+            error_log('[Halteverbot GSC] Auth Fehler: ' . $response->get_error_message());
+            return ['success' => false, 'error' => $response->get_error_message()];
+        }
+
+        $statusCode = wp_remote_retrieve_response_code($response);
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+
+        if ($statusCode !== 200 || isset($data['error'])) {
+            $error = $data['error_description'] ?? $data['error'] ?? 'Unbekannter Fehler';
+            error_log('[Halteverbot GSC] Auth API Fehler: ' . $error);
+            return ['success' => false, 'error' => $error];
+        }
+
+        // ✅ Token mit zusätzlichen Metadaten speichern
+        $tokenData = [
+            'access_token' => $data['access_token'],
+            'expires_in' => $data['expires_in'] ?? 3600,
+            'scope' => $data['scope'] ?? '',
+            'token_type' => $data['token_type'] ?? 'Bearer',
+            'created' => time(),
+            'last_used' => time(),
+            'refresh_count' => 0
+        ];
+
+        // Refresh Token nur speichern wenn vorhanden
+        if (!empty($data['refresh_token'])) {
+            $tokenData['refresh_token'] = $data['refresh_token'];
+        } else {
+            // Falls kein Refresh Token zurückkommt, vorhandenen behalten
+            $existing = $this->loadToken();
+            if (!empty($existing['refresh_token'])) {
+                $tokenData['refresh_token'] = $existing['refresh_token'];
+            }
+        }
+
+        $this->saveToken($tokenData);
+
+        error_log('[Halteverbot GSC] Auth erfolgreich - Token gespeichert');
+        return ['success' => true, 'message' => 'Erfolgreich mit Google verbunden!'];
+    }
+
+    /**
+     * Verbesserte Token-Refresh Methode
+     */
+    private function refreshToken($tokenData) {
+        if (empty($tokenData['refresh_token'])) {
+            error_log('[Halteverbot GSC] Kein Refresh Token verfügbar');
+            return [
+                'success' => false,
+                'error' => 'Kein Refresh Token gespeichert – bitte Verbindung neu herstellen.'
+            ];
+        }
+
+        // Prüfe ob zu oft versucht wurde zu refreshen
+        if (($tokenData['refresh_count'] ?? 0) > 3) {
+            error_log('[Halteverbot GSC] Zu viele Refresh-Versuche');
+            return [
+                'success' => false,
+                'error' => 'Zu viele fehlgeschlagene Refresh-Versuche – bitte neu authentifizieren.'
+            ];
+        }
+
+        try {
+            $response = $this->httpClient->post('https://oauth2.googleapis.com/token', [
+                'form_params' => [
+                    'client_id' => $this->clientId,
+                    'client_secret' => $this->clientSecret,
+                    'refresh_token' => $tokenData['refresh_token'],
+                    'grant_type' => 'refresh_token'
+                ],
+                'http_errors' => false,
+                'timeout' => 20
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+            $statusCode = $response->getStatusCode();
+
+            if ($statusCode !== 200 || !isset($data['access_token'])) {
+                $error = $data['error_description'] ?? $data['error'] ?? 'Unbekannter Fehler';
+                error_log("[Halteverbot GSC] Refresh fehlgeschlagen ($statusCode): " . $error);
+                
+                // Erhöhe Refresh-Counter
+                $tokenData['refresh_count'] = ($tokenData['refresh_count'] ?? 0) + 1;
+                $this->saveToken($tokenData);
+                
+                return ['success' => false, 'error' => $error];
+            }
+
+            // ✅ Token erfolgreich aktualisiert
+            $tokenData['access_token'] = $data['access_token'];
+            $tokenData['expires_in'] = $data['expires_in'] ?? 3600;
+            $tokenData['expires_at'] = time() + $tokenData['expires_in'];
+            $tokenData['last_refresh'] = time();
+            $tokenData['refresh_count'] = 0; // Reset counter bei Erfolg
+            $tokenData['last_used'] = time();
+
+            $this->saveToken($tokenData);
+            error_log('[Halteverbot GSC] Token erfolgreich aktualisiert');
+
+            return [
+                'success' => true,
+                'access_token' => $tokenData['access_token']
+            ];
+
+        } catch (\Exception $e) {
+            error_log('[Halteverbot GSC] Exception beim Refresh: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Verbindungsfehler: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Verbesserte Token-Validierung mit Proactive Refresh
+     */
+    private function getValidToken() {
+        $tokenData = $this->loadToken();
+            
+        if (!$tokenData || !isset($tokenData['access_token'])) {
+            return ['success' => false, 'error' => 'Nicht authentifiziert'];
+        }
+
+        // Prüfe ob Token bald abläuft (10 Minuten Puffer)
+        $expiresAt = $tokenData['expires_at'] ?? ($tokenData['created'] + ($tokenData['expires_in'] ?? 3600));
+        
+        if ($expiresAt <= time() + 600) {
+            error_log('[Halteverbot GSC] Token läuft bald ab, versuche Refresh');
+            return $this->refreshToken($tokenData);
+        }
+
+        // Aktualisiere last_used Zeitstempel
+        $tokenData['last_used'] = time();
+        $this->saveToken($tokenData);
+
+        return ['success' => true, 'access_token' => $tokenData['access_token']];
+    }
+
+    /**
+     * Verbesserte Token-Speicherung
+     */
+    private function saveToken($tokenData) {
+        $options = $this->getOptions();
+        
+        // Berechne expires_at falls nicht vorhanden
+        if (!isset($tokenData['expires_at']) && isset($tokenData['created']) && isset($tokenData['expires_in'])) {
+            $tokenData['expires_at'] = $tokenData['created'] + $tokenData['expires_in'];
+        }
+        
+        $options['token_data'] = $tokenData;
+        $options['last_updated'] = time();
+        
+        update_option($this->optionName, $options);
+        return true;
+    }
+
+    /**
+     * Prüft Token-Status detailliert
+     */
+    public function getTokenStatus() {
+        $tokenData = $this->loadToken();
+        
+        if (!$tokenData) {
+            return ['valid' => false, 'reason' => 'Kein Token gespeichert'];
+        }
+        
+        $expiresAt = $tokenData['expires_at'] ?? ($tokenData['created'] + ($tokenData['expires_in'] ?? 3600));
+        $timeToExpiry = $expiresAt - time();
+        
+        return [
+            'valid' => $timeToExpiry > 600, // 10 Minuten Puffer
+            'expires_at' => date('Y-m-d H:i:s', $expiresAt),
+            'time_to_expiry' => $this->formatSeconds($timeToExpiry),
+            'has_refresh_token' => !empty($tokenData['refresh_token']),
+            'refresh_count' => $tokenData['refresh_count'] ?? 0,
+            'last_used' => isset($tokenData['last_used']) ? date('Y-m-d H:i:s', $tokenData['last_used']) : 'Nie'
+        ];
+    }
+    
+    private function formatSeconds($seconds) {
+        if ($seconds < 60) return "$seconds Sekunden";
+        if ($seconds < 3600) return round($seconds/60) . " Minuten";
+        return round($seconds/3600, 1) . " Stunden";
     }
 }

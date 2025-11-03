@@ -385,7 +385,7 @@ $report = $analyticsInstance->get_report($start_date, $end_date, $device_type);
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Tab Navigation with persistence
+    // Tab Navigation with persistence (without URL modification)
     const navTabs = document.querySelectorAll('.nav-tab');
     const tabContents = document.querySelectorAll('.tab-content');
     
@@ -403,23 +403,9 @@ document.addEventListener('DOMContentLoaded', function() {
             targetTab.classList.add('active');
             targetContent.classList.add('active');
             
-            // Save to localStorage and URL
+            // Save ONLY to localStorage (no URL modification)
             localStorage.setItem('analytics-active-tab', tabName);
-            updateUrlParameter('tab', tabName);
         }
-    }
-    
-    // Function to update URL parameter without page reload
-    function updateUrlParameter(key, value) {
-        const url = new URL(window.location);
-        url.searchParams.set(key, value);
-        window.history.replaceState({}, '', url);
-    }
-    
-    // Function to get URL parameter
-    function getUrlParameter(name) {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(name);
     }
     
     // Tab click event
@@ -439,16 +425,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Determine which tab to show on page load
     function initializeActiveTab() {
-        // Priority 1: URL parameter
-        const urlTab = getUrlParameter('tab');
-        
-        // Priority 2: localStorage
+        // Priority 1: localStorage (letzter geöffneter Tab)
         const savedTab = localStorage.getItem('analytics-active-tab');
         
-        // Priority 3: Default tab
+        // Priority 2: Default tab
         const defaultTab = 'overview';
         
-        const tabToActivate = urlTab || savedTab || defaultTab;
+        const tabToActivate = savedTab || defaultTab;
         activateTab(tabToActivate);
     }
     
