@@ -203,7 +203,8 @@ class VisitorAnalytics extends VisitorTracker
                     'average_order_value' => $this->get_average_order_value($start_date, $end_date),
                     'total_orders' => $this->get_total_orders($start_date, $end_date),
                     'unique_customers' => $this->get_unique_customers($start_date, $end_date),
-                    'contact_conversions' => $this->get_contact_conversions($start_date, $end_date) // NEU
+                    'contact_conversions' => $this->get_contact_conversions($start_date, $end_date),
+                    'daily_data' => $this->get_daily_wc_events_for_date_range($start_date, $end_date)
                 ],
                 
                 // Letzte 7 Tage
@@ -213,7 +214,7 @@ class VisitorAnalytics extends VisitorTracker
                     'confirmed_revenue' => $this->wc_confirmed_revenue_by_period(date('Y-m-d', strtotime('-7 days')), $end_date),
                     'average_order_value' => $this->get_average_order_value(date('Y-m-d', strtotime('-7 days')), $end_date),
                     'total_orders' => $this->get_total_orders(date('Y-m-d', strtotime('-7 days')), $end_date),
-                    'contact_conversions' => $this->get_contact_conversions(date('Y-m-d', strtotime('-7 days')), $end_date), // NEU
+                    'contact_conversions' => $this->get_contact_conversions(date('Y-m-d', strtotime('-7 days')), $end_date),
                     'daily_data' => $this->get_daily_wc_events_for_days(7)
                 ],
                 
@@ -224,7 +225,7 @@ class VisitorAnalytics extends VisitorTracker
                     'confirmed_revenue' => $this->wc_confirmed_revenue_by_period(date('Y-m-d', strtotime('-30 days')), $end_date),
                     'average_order_value' => $this->get_average_order_value(date('Y-m-d', strtotime('-30 days')), $end_date),
                     'total_orders' => $this->get_total_orders(date('Y-m-d', strtotime('-30 days')), $end_date),
-                    'contact_conversions' => $this->get_contact_conversions(date('Y-m-d', strtotime('-30 days')), $end_date), // NEU
+                    'contact_conversions' => $this->get_contact_conversions(date('Y-m-d', strtotime('-30 days')), $end_date),
                     'daily_data' => $this->get_daily_wc_events_for_days(30)
                 ],
                 

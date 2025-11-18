@@ -350,9 +350,9 @@
         <div style="display: flex; gap: 1rem; margin-bottom: 20px; flex-wrap: wrap;">
             <!-- 7-Tage Diagramm -->
             <div style="flex: 1; min-width: 400px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-                <h3 style="margin: 0 0 15px 0;">Conversion Rate Verlauf (letzte 7 Tage)</h3>
+                <h3 style="margin: 0 0 15px 0;">Conversion Rate Verlauf</h3>
                 <div style="height: 200px; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-                    <canvas id="conversionChart7d"></canvas>
+                    <canvas id="currentPeriod"></canvas>
                 </div>
             </div>
 
@@ -391,13 +391,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Daten aus PHP
     const dailyData7d = <?php echo json_encode($report['wc_metrics']['last_7_days']['daily_data'] ?? []); ?>;
     const dailyData30d = <?php echo json_encode($report['wc_metrics']['last_30_days']['daily_data'] ?? []); ?>;
+    const currentPeriod = <?php echo json_encode($report['wc_metrics']['current_period']['daily_data'] ?? []); ?>;
+
+    console.log(<?php echo json_encode($report['wc_metrics']['current_period']['daily_data'] ?? []); ?>)
 
     // Event Types und Farben
     const eventTypes = ['product_view', 'add_to_cart', 'order_complete', 'phone_click', 'email_click'];
     
     const eventLabels = {
         'product_view': 'Product Views',
-        'add_to_cart': 'Add to Cart', 
+        'add_to_cart': 'Add to Cart',  
         'checkout_start': 'Checkout Start',
         'order_complete': 'Orders Complete',
         'phone_click': 'Phone Clicks',
@@ -414,34 +417,82 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 1. Conversion Rate Diagramm (7 Tage)
-    if (Object.keys(dailyData7d).length > 0) {
-        const dates7d = Object.keys(dailyData7d);
-        const conversionRates7d = dates7d.map(date => dailyData7d[date].conversion_rate);
+
+    if (Object.keys(currentPeriod).length > 0) {
+        const dates7d = Object.keys(currentPeriod);
+        const conversionRates7d = dates7d.map(date => currentPeriod[date].conversion_rate);
+        const productViews7d = dates7d.map(date => currentPeriod[date].product_view);
+        const orders7d = dates7d.map(date => currentPeriod[date].order_complete);
         
-        new Chart(document.getElementById('conversionChart7d'), {
+        // Gesamtwerte berechnen
+        const totalProductViews = dates7d.reduce((sum, date) => sum + currentPeriod[date].product_view, 0);
+        const totalOrders = dates7d.reduce((sum, date) => sum + currentPeriod[date].order_complete, 0);
+        const totalConversion = totalProductViews > 0 ? ((totalOrders / totalProductViews) * 100).toFixed(1) : 0;
+        
+        new Chart(document.getElementById('currentPeriod'), {
             type: 'line',
             data: {
                 labels: dates7d,
-                datasets: [{
-                    label: 'Conversion Rate (%)',
-                    data: conversionRates7d,
-                    borderColor: '#2271b1',
-                    backgroundColor: 'rgba(34, 113, 177, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
+                datasets: [
+                    {
+                        label: 'Conversion Rate',
+                        data: conversionRates7d,
+                        borderColor: '#2271b1',
+                        backgroundColor: 'rgba(34, 113, 177, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Produktaufrufe',
+                        data: productViews7d,
+                        borderColor: '#d63638',
+                        backgroundColor: 'rgba(214, 54, 56, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: 'Bestellungen',
+                        data: orders7d,
+                        borderColor: '#00a32a',
+                        backgroundColor: 'rgba(0, 163, 42, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
                     y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
                         beginAtZero: true,
                         title: { 
                             display: true, 
                             text: 'Conversion Rate (%)' 
-                        }
+                        },
+                        max: 100
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        title: { 
+                            display: true, 
+                            text: 'Anzahl' 
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
                     },
                     x: {
                         title: { 
@@ -454,7 +505,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return `Conversion Rate: ${context.parsed.y}%`;
+                                let label = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                
+                                if (label.includes('Conversion Rate')) {
+                                    return `${label}: ${value}%`;
+                                }
+                                return `${label}: ${value}`;
+                            }
+                        }
+                    },
+                    legend: {
+                        labels: {
+                            generateLabels: function(chart) {
+                                const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                const labels = original.call(this, chart);
+                                
+                                // Füge Gesamtstatistik zur Legende hinzu
+                                labels[0].text += ` (Ø ${totalConversion}%)`;
+                                labels[1].text += ` (${totalProductViews} gesamt)`;
+                                labels[2].text += ` (${totalOrders} gesamt)`;
+                                
+                                return labels;
                             }
                         }
                     }
@@ -462,7 +534,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
     // 2. Conversion Rate Diagramm (30 Tage)
     if (Object.keys(dailyData30d).length > 0) {
         const dates30d = Object.keys(dailyData30d);

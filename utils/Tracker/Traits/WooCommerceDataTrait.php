@@ -156,19 +156,28 @@ trait WooCommerceDataTrait
         $end_date = date('Y-m-d');
         $start_date = date('Y-m-d', strtotime('-'.($days-1).' days'));
         
-        // Erstelle alle Tage
+        return $this->get_daily_wc_events_for_date_range($start_date, $end_date);
+    }
+
+    /**
+     * Tägliche WC Events für Date Range
+     */
+    private function get_daily_wc_events_for_date_range($start_date, $end_date) {
+        // Erstelle alle Tage im Range
         $daily_data = [];
-        for ($i = $days-1; $i >= 0; $i--) {
-            $day = date('Y-m-d', strtotime("-$i days"));
-            $daily_data[$day] = [
+        $current_date = $start_date;
+        
+        while ($current_date <= $end_date) {
+            $daily_data[$current_date] = [
                 'conversion_rate' => 0,
-                'product_view' => 0,        // Korrigiert: product_view statt product_views
+                'product_view' => 0,
                 'add_to_cart' => 0,
                 'checkout_start' => 0,
                 'order_complete' => 0,
                 'phone_click' => 0,
                 'email_click' => 0
             ];
+            $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
         }
 
         // Hole echte Daten aus der Datenbank
@@ -191,7 +200,7 @@ trait WooCommerceDataTrait
 
         // Berechne Conversion Rate für jeden Tag
         foreach ($daily_data as $day => &$data) {
-            $product_views = $data['product_view'];  // Korrigiert: product_view statt product_views
+            $product_views = $data['product_view'];
             $orders = $data['order_complete'];
             $data['conversion_rate'] = $product_views > 0 ? round(($orders / $product_views) * 100, 2) : 0;
         }
