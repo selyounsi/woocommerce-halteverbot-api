@@ -3,7 +3,8 @@
 namespace Utils\Districts;
 
 /**
- * Utility class for Berlin districts and their postal codes.
+ * Utility class for Berlin districts and their postal codes
+ * including CC email lookup for WooCommerce email templates.
  */
 class BerlinDistricts
 {
@@ -70,6 +71,53 @@ class BerlinDistricts
     ];
 
     /**
+     * Option key used to store district → email mappings.
+     */
+    private const OPTION_KEY = 'wha_district_email_map';
+
+    /**
+     * Option key used to store district → email-type → email mappings (future-proof).
+     */
+    private const OPTION_KEY_TYPES = 'wha_district_email_map_types';
+
+    /**
+     * Get the stored CC email for a district.
+     *
+     * @param string $district
+     * @return string|null
+     */
+    public static function getDistrictEmail(string $district): ?string
+    {
+        $map = get_option(self::OPTION_KEY, []);
+        return $map[$district] ?? null;
+    }
+
+    /**
+     * Get CC email based on district and WooCommerce email type.
+     *
+     * Fallback order:
+     * 1. specific email-type (if stored)
+     * 2. general district email (default CC)
+     *
+     * @param string $district
+     * @param string|null $emailType
+     * @return string|null
+     */
+    public static function getDistrictEmailByType(string $district, ?string $emailType = null): ?string
+    {
+        if ($emailType) {
+            // Hole Option direkt für diesen email_type
+            $map = get_option("wha_district_email_map_{$emailType}", []);
+            if (isset($map[$district])) {
+                return $map[$district];
+            }
+        }
+
+        // fallback: default per-district CC
+        return self::getDistrictEmail($district);
+    }
+
+    /**
      * Get the district name for a given postal code.
      *
      * @param int|string $zipCode
@@ -77,13 +125,31 @@ class BerlinDistricts
      */
     public static function getDistrictByZip(int|string $zipCode): ?string
     {
-        $zipCode = (int)$zipCode;
+        $zipCode = (int) $zipCode;
+
         foreach (self::$districts as $district => $zips) {
             if (in_array($zipCode, $zips, true)) {
                 return $district;
             }
         }
         return null;
+    }
+
+    /**
+     * Get CC email by ZIP code.
+     *
+     * @param int|string $zip
+     * @param string|null $emailType
+     * @return string|null
+     */
+    public static function getCcEmailByZip(int|string $zip, ?string $emailType = null): ?string
+    {
+        $district = self::getDistrictByZip($zip);
+        if (!$district) {
+            return null;
+        }
+
+        return self::getDistrictEmailByType($district, $emailType);
     }
 
     /**
@@ -99,45 +165,21 @@ class BerlinDistricts
         return in_array($zipCode, self::$districts[$districtName] ?? [], true);
     }
 
-    /**
-     * Filter a list of postal codes and return only those in the specified district.
-     *
-     * @param array<int|string> $zipCodes
-     * @param string $districtName
-     * @return array<int>
-     */
     public static function filterByDistrict(array $zipCodes, string $districtName): array
     {
         return array_filter($zipCodes, fn($zip) => self::isInDistrict($zip, $districtName));
     }
 
-    /**
-     * Get all postal codes for a specific district.
-     *
-     * @param string $districtName
-     * @return array<int>
-     */
     public static function getZipsByDistrict(string $districtName): array
     {
         return self::$districts[$districtName] ?? [];
     }
 
-    /**
-     * Get all district names.
-     *
-     * @return array<string>
-     */
     public static function getAllDistricts(): array
     {
         return array_keys(self::$districts);
     }
 
-    /**
-     * Check if a postal code is known.
-     *
-     * @param int|string $zipCode
-     * @return bool
-     */
     public static function isKnownZip(int|string $zipCode): bool
     {
         return self::getDistrictByZip($zipCode) !== null;
