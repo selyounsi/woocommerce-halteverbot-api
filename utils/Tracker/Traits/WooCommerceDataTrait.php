@@ -175,12 +175,13 @@ trait WooCommerceDataTrait
                 'checkout_start' => 0,
                 'order_complete' => 0,
                 'phone_click' => 0,
-                'email_click' => 0
+                'email_click' => 0,
+                'visitors' => 0
             ];
             $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
         }
 
-        // Hole echte Daten aus der Datenbank
+        // Hole echte Daten aus der Datenbank für WC Events
         $results = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT 
                 DATE(event_time) as day, 
@@ -207,11 +208,31 @@ trait WooCommerceDataTrait
             $start_date, $end_date, $start_date, $end_date
         ), ARRAY_A);
 
-        // Fülle die täglichen Daten
+        // Hole Besucherdaten aus der Log-Tabelle
+        $visitor_results = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT 
+                DATE(visit_time) as day,
+                COUNT(DISTINCT session_id) as visitor_count
+            FROM {$this->table_logs}
+            WHERE DATE(visit_time) BETWEEN %s AND %s
+            GROUP BY day
+            ORDER BY day",
+            $start_date, $end_date
+        ), ARRAY_A);
+
+        // Fülle die täglichen Daten mit WC Events
         foreach ($results as $row) {
             $day = $row['day'];
             if (isset($daily_data[$day])) {
                 $daily_data[$day][$row['event_type']] = (int)$row['count'];
+            }
+        }
+
+        // Fülle die täglichen Daten mit Besucherzahlen
+        foreach ($visitor_results as $row) {
+            $day = $row['day'];
+            if (isset($daily_data[$day])) {
+                $daily_data[$day]['visitors'] = (int)$row['visitor_count'];
             }
         }
 
@@ -224,7 +245,7 @@ trait WooCommerceDataTrait
 
         return $daily_data;
     }
-
+    
     /**
      * Funnel Conversion Rate - KORRIGIERT für doppelte Events
      */
