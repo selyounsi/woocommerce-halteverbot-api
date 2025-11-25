@@ -198,14 +198,13 @@ trait WooCommerceDataTrait
                     SELECT MIN(id) 
                     FROM {$this->table_wc_events} 
                     WHERE event_type = 'order_complete' 
-                        AND DATE(event_time) BETWEEN %s AND %s
                         AND order_id IS NOT NULL 
                         AND order_id != 0
                     GROUP BY order_id
                 ))
             GROUP BY day, event_type 
             ORDER BY day",
-            $start_date, $end_date, $start_date, $end_date
+            $start_date, $end_date
         ), ARRAY_A);
 
         // Hole Besucherdaten aus der Log-Tabelle
