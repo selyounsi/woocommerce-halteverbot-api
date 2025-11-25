@@ -182,12 +182,29 @@ trait WooCommerceDataTrait
 
         // Hole echte Daten aus der Datenbank
         $results = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT DATE(event_time) as day, event_type, COUNT(*) as count
+            "SELECT 
+                DATE(event_time) as day, 
+                event_type,
+                COUNT(DISTINCT 
+                    CASE 
+                        WHEN event_type = 'order_complete' THEN order_id
+                        ELSE session_id
+                    END
+                ) as count
             FROM {$this->table_wc_events} 
             WHERE DATE(event_time) BETWEEN %s AND %s 
+                AND (event_type != 'order_complete' OR id IN (
+                    SELECT MIN(id) 
+                    FROM {$this->table_wc_events} 
+                    WHERE event_type = 'order_complete' 
+                        AND DATE(event_time) BETWEEN %s AND %s
+                        AND order_id IS NOT NULL 
+                        AND order_id != 0
+                    GROUP BY order_id
+                ))
             GROUP BY day, event_type 
             ORDER BY day",
-            $start_date, $end_date
+            $start_date, $end_date, $start_date, $end_date
         ), ARRAY_A);
 
         // Fülle die täglichen Daten

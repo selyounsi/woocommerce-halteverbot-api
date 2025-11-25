@@ -775,6 +775,21 @@ class VisitorTracker {
     }
 
     private function insert_wc_event($event_type, $product_id = null, $order_id = null, $quantity = null, $extra_value = null) {
+        
+        // DUPLIKAT-PRÜFUNG für order_complete Events
+        if ($event_type === 'order_complete' && $order_id) {
+            $existing_event = $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT id FROM {$this->table_wc_events} 
+                WHERE event_type = 'order_complete' AND order_id = %d 
+                LIMIT 1",
+                $order_id
+            ));
+            
+            if ($existing_event) {
+                return;
+            }
+        }
+        
         $product_price = $product_id ? $this->get_product_price($product_id) : null;
         $product_category = $product_id ? $this->get_product_category($product_id) : null;
         
