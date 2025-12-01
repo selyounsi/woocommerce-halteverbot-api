@@ -14,64 +14,47 @@ function add_sticker_info_to_order_response($response, $object, $request)
     $week_day_start = get_post_meta($order_id, '_sticker_week_day_start', true);
     $week_day_end = get_post_meta($order_id, '_sticker_week_day_end', true);
     
-    // Add sticker fields to meta_data array
-    // Check if meta_data exists and convert WC_Meta_Data objects to arrays
-    $meta_data_array = [];
+    // Use WPCAFields to get date/time from first line item
+    $start_date = '';
+    $start_time = '';
+    $end_date = '';
+    $end_time = '';
     
-    if (isset($response->data['meta_data']) && is_array($response->data['meta_data'])) {
-        foreach ($response->data['meta_data'] as $meta) {
-            // Handle both WC_Meta_Data objects and arrays
-            if (is_object($meta) && method_exists($meta, 'get_data')) {
-                $meta_data = $meta->get_data();
-                $meta_data_array[] = [
-                    'key' => $meta_data['key'] ?? '',
-                    'value' => $meta_data['value'] ?? ''
-                ];
-            } elseif (is_array($meta)) {
-                $meta_data_array[] = $meta;
-            }
+    try {
+        $wcpa_fields = new Utils\WPCAFields($object);
+        $fieldsets = $wcpa_fields->getMetaFieldsets();
+        
+        if (!empty($fieldsets)) {
+            $first_fieldset = reset($fieldsets);
+            $start_date = $first_fieldset['startdate'] ?? '';
+            $start_time = $first_fieldset['starttime'] ?? '';
+            $end_date = $first_fieldset['enddate'] ?? '';
+            $end_time = $first_fieldset['endtime'] ?? '';
+        }
+    } catch (Exception $e) {
+        // Fallback
+        $items = $object->get_items();
+        if (!empty($items)) {
+            $first_item = reset($items);
+            $start_date = $first_item->get_meta('Startdatum', true);
+            $start_time = $first_item->get_meta('Anfangszeit', true);
+            $end_date = $first_item->get_meta('Enddatum', true);
+            $end_time = $first_item->get_meta('Endzeit', true);
         }
     }
     
-    // Check if these meta keys already exist
-    $existing_keys = [];
-    foreach ($meta_data_array as $meta) {
-        if (isset($meta['key'])) {
-            $existing_keys[$meta['key']] = true;
-        }
-    }
-    
-    // Add only if not already present
-    if (!isset($existing_keys['_sticker_continuous'])) {
-        $meta_data_array[] = [
-            'key' => '_sticker_continuous',
-            'value' => !empty($continuous) ? $continuous : 'no'
-        ];
-    }
-    
-    if (!isset($existing_keys['_sticker_period_type'])) {
-        $meta_data_array[] = [
-            'key' => '_sticker_period_type',
-            'value' => !empty($period_type) ? $period_type : 'until'
-        ];
-    }
-    
-    if (!isset($existing_keys['_sticker_week_day_start'])) {
-        $meta_data_array[] = [
-            'key' => '_sticker_week_day_start',
-            'value' => !empty($week_day_start) ? $week_day_start : 'Mo'
-        ];
-    }
-    
-    if (!isset($existing_keys['_sticker_week_day_end'])) {
-        $meta_data_array[] = [
-            'key' => '_sticker_week_day_end',
-            'value' => !empty($week_day_end) ? $week_day_end : 'Fr'
-        ];
-    }
-    
-    // Update the response meta_data
-    $response->data['meta_data'] = $meta_data_array;
+    // Set defaults if values don't exist
+    $response->data['sticker_info'] = [
+        'continuous' => !empty($continuous) ? $continuous : 'no',
+        'period_type' => !empty($period_type) ? $period_type : 'until',
+        'week_day_start' => !empty($week_day_start) ? $week_day_start : 'Mo',
+        'week_day_end' => !empty($week_day_end) ? $week_day_end : 'Fr',
+        // Read-only date/time fields
+        'start_date' => $start_date,
+        'start_time' => $start_time,
+        'end_date' => $end_date,
+        'end_time' => $end_time
+    ];
     
     return $response;
 }

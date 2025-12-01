@@ -191,6 +191,25 @@ function save_order_items($data)
         $order->set_customer_note($customer_note);
     }
 
+    // Sticker-Daten speichern, falls vorhanden
+    if (isset($post_data["order"]["sticker_info"])) {
+        $sticker_info = $post_data["order"]["sticker_info"];
+        $order_id = $order->get_id();
+        
+        if (isset($sticker_info['continuous'])) {
+            update_post_meta($order_id, '_sticker_continuous', sanitize_text_field($sticker_info['continuous']));
+        }
+        if (isset($sticker_info['period_type'])) {
+            update_post_meta($order_id, '_sticker_period_type', sanitize_text_field($sticker_info['period_type']));
+        }
+        if (isset($sticker_info['week_day_start'])) {
+            update_post_meta($order_id, '_sticker_week_day_start', sanitize_text_field($sticker_info['week_day_start']));
+        }
+        if (isset($sticker_info['week_day_end'])) {
+            update_post_meta($order_id, '_sticker_week_day_end', sanitize_text_field($sticker_info['week_day_end']));
+        }
+    }
+
     $order->save();
 
     return new WP_REST_Response($res, 200);
@@ -229,6 +248,24 @@ function save_order_data($data)
         $customer_note = $post_data["order"]["customer_note"];
         $order->set_customer_note($customer_note);
         $order->save();
+    }
+
+    // Sticker-Daten speichern, falls vorhanden
+    if (isset($post_data["order"]["sticker_info"])) {
+        $sticker_info = $post_data["order"]["sticker_info"];
+        
+        if (isset($sticker_info['continuous'])) {
+            update_post_meta($order_id, '_sticker_continuous', sanitize_text_field($sticker_info['continuous']));
+        }
+        if (isset($sticker_info['period_type'])) {
+            update_post_meta($order_id, '_sticker_period_type', sanitize_text_field($sticker_info['period_type']));
+        }
+        if (isset($sticker_info['week_day_start'])) {
+            update_post_meta($order_id, '_sticker_week_day_start', sanitize_text_field($sticker_info['week_day_start']));
+        }
+        if (isset($sticker_info['week_day_end'])) {
+            update_post_meta($order_id, '_sticker_week_day_end', sanitize_text_field($sticker_info['week_day_end']));
+        }
     }
 
     // Alle Line Items der Bestellung abrufen
@@ -281,10 +318,58 @@ function save_order_data($data)
         $item->save();
     }
 
-    return new WP_REST_Response(['success' => true, 'message' => 'Meta data processed successfully.'], 200);
+    // Order neu laden, um aktualisierte Daten zu erhalten
+    $order = wc_get_order($order_id);
+    
+    // API-ready Order-Objekt vorbereiten (inklusive sticker_info)
+    $order_data = $order->get_data();
+    
+    // Sticker-Daten zum Order-Objekt hinzufügen
+    $continuous = get_post_meta($order_id, '_sticker_continuous', true);
+    $period_type = get_post_meta($order_id, '_sticker_period_type', true);
+    $week_day_start = get_post_meta($order_id, '_sticker_week_day_start', true);
+    $week_day_end = get_post_meta($order_id, '_sticker_week_day_end', true);
+    
+    $order_data['sticker_info'] = [
+        'continuous' => !empty($continuous) ? $continuous : 'no',
+        'period_type' => !empty($period_type) ? $period_type : 'until',
+        'week_day_start' => !empty($week_day_start) ? $week_day_start : 'Mo',
+        'week_day_end' => !empty($week_day_end) ? $week_day_end : 'Fr'
+    ];
+    
+    // Meta-Daten hinzufügen
+    $order_data['meta_data'] = array();
+    foreach ($order->get_meta_data() as $meta) {
+        $order_data['meta_data'][] = [
+            'id' => $meta->id,
+            'key' => $meta->key,
+            'value' => $meta->value
+        ];
+    }
+    
+    // Line Items mit Meta-Daten hinzufügen
+    $order_data['line_items'] = array();
+    foreach ($order->get_items() as $item_id => $item) {
+        $item_data = $item->get_data();
+        $item_data['meta_data'] = array();
+        
+        foreach ($item->get_meta_data() as $meta) {
+            $item_data['meta_data'][] = [
+                'id' => $meta->id,
+                'key' => $meta->key,
+                'value' => $meta->value
+            ];
+        }
+        
+        $order_data['line_items'][] = $item_data;
+    }
+
+    return new WP_REST_Response([
+        'success' => true, 
+        'message' => 'Meta data processed successfully.',
+        'order' => $order_data
+    ], 200);
 }
-
-
 
 /**
  * Delete a specific line item from an order.

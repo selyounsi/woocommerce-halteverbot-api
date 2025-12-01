@@ -56,13 +56,17 @@ class WPCAFields
                 "postalcode"    => $field['Postleitzahl'] ?? "",
                 "place"         => $field['Ort'] ?? "",
                 "client_fname"  => trim($this->order->get_billing_first_name()),
-                "client_lname"  => trim($this->order->get_billing_last_name())
+                "client_lname"  => trim($this->order->get_billing_last_name()),
+                // Sticker fields
+                "sticker_continuous"      => $this->getStickerValue('_sticker_continuous', 'no'),
+                "sticker_period_type"     => $this->getStickerValue('_sticker_period_type', 'until'),
+                "sticker_week_day_start"  => $this->getStickerValue('_sticker_week_day_start', 'Mo'),
+                "sticker_week_day_end"    => $this->getStickerValue('_sticker_week_day_end', 'Fr')
             ];
         }
 
         return $meta_fields;
     }
-
 
     /**
      * Extracts and returns formatted custom fields from the order.
@@ -91,11 +95,25 @@ class WPCAFields
                 "postalcode"    => $item->get_meta('Postleitzahl') ?? "",
                 "place"         => $item->get_meta('Ort') ?? "",
                 "client_fname"  => trim($this->order->get_billing_first_name()),
-                "client_lname"  => trim($this->order->get_billing_last_name())
+                "client_lname"  => trim($this->order->get_billing_last_name()),
+                // Sticker fields
+                "sticker_continuous"      => $this->getStickerValue('_sticker_continuous', 'no'),
+                "sticker_period_type"     => $this->getStickerValue('_sticker_period_type', 'until'),
+                "sticker_week_day_start"  => $this->getStickerValue('_sticker_week_day_start', 'Mo'),
+                "sticker_week_day_end"    => $this->getStickerValue('_sticker_week_day_end', 'Fr')
             ];
         }
 
         return $meta_fields;
+    }
+
+    /**
+     * Get sticker value from post meta with default
+     */
+    private function getStickerValue($meta_key, $default)
+    {
+        $value = get_post_meta($this->order->get_id(), $meta_key, true);
+        return !empty($value) ? $value : $default;
     }
 
     public function countFieldsets()
