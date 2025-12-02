@@ -196,17 +196,24 @@ function save_order_items($data)
         $sticker_info = $post_data["order"]["sticker_info"];
         $order_id = $order->get_id();
         
-        if (isset($sticker_info['continuous'])) {
+        // Verwende array_key_exists statt isset, um null-Werte zu erkennen
+        if (array_key_exists('continuous', $sticker_info)) {
             update_post_meta($order_id, '_sticker_continuous', sanitize_text_field($sticker_info['continuous']));
         }
-        if (isset($sticker_info['period_type'])) {
+        if (array_key_exists('period_type', $sticker_info)) {
             update_post_meta($order_id, '_sticker_period_type', sanitize_text_field($sticker_info['period_type']));
         }
-        if (isset($sticker_info['week_day_start'])) {
-            update_post_meta($order_id, '_sticker_week_day_start', sanitize_text_field($sticker_info['week_day_start']));
+        if (array_key_exists('week_day_start', $sticker_info)) {
+            $value = $sticker_info['week_day_start'];
+            // Speichere leere Strings für null/leere Werte
+            $sanitized_value = $value !== null ? sanitize_text_field($value) : '';
+            update_post_meta($order_id, '_sticker_week_day_start', $sanitized_value);
         }
-        if (isset($sticker_info['week_day_end'])) {
-            update_post_meta($order_id, '_sticker_week_day_end', sanitize_text_field($sticker_info['week_day_end']));
+        if (array_key_exists('week_day_end', $sticker_info)) {
+            $value = $sticker_info['week_day_end'];
+            // Speichere leere Strings für null/leere Werte
+            $sanitized_value = $value !== null ? sanitize_text_field($value) : '';
+            update_post_meta($order_id, '_sticker_week_day_end', $sanitized_value);
         }
     }
 
@@ -254,17 +261,24 @@ function save_order_data($data)
     if (isset($post_data["order"]["sticker_info"])) {
         $sticker_info = $post_data["order"]["sticker_info"];
         
-        if (isset($sticker_info['continuous'])) {
+        // Verwende array_key_exists statt isset
+        if (array_key_exists('continuous', $sticker_info)) {
             update_post_meta($order_id, '_sticker_continuous', sanitize_text_field($sticker_info['continuous']));
         }
-        if (isset($sticker_info['period_type'])) {
+        if (array_key_exists('period_type', $sticker_info)) {
             update_post_meta($order_id, '_sticker_period_type', sanitize_text_field($sticker_info['period_type']));
         }
-        if (isset($sticker_info['week_day_start'])) {
-            update_post_meta($order_id, '_sticker_week_day_start', sanitize_text_field($sticker_info['week_day_start']));
+        if (array_key_exists('week_day_start', $sticker_info)) {
+            $value = $sticker_info['week_day_start'];
+            // Speichere leere Strings für null/leere Werte
+            $sanitized_value = $value !== null ? sanitize_text_field($value) : '';
+            update_post_meta($order_id, '_sticker_week_day_start', $sanitized_value);
         }
-        if (isset($sticker_info['week_day_end'])) {
-            update_post_meta($order_id, '_sticker_week_day_end', sanitize_text_field($sticker_info['week_day_end']));
+        if (array_key_exists('week_day_end', $sticker_info)) {
+            $value = $sticker_info['week_day_end'];
+            // Speichere leere Strings für null/leere Werte
+            $sanitized_value = $value !== null ? sanitize_text_field($value) : '';
+            update_post_meta($order_id, '_sticker_week_day_end', $sanitized_value);
         }
     }
 
@@ -330,11 +344,12 @@ function save_order_data($data)
     $week_day_start = get_post_meta($order_id, '_sticker_week_day_start', true);
     $week_day_end = get_post_meta($order_id, '_sticker_week_day_end', true);
     
+    // WICHTIG: Leere Werte anstatt Default-Werte zurückgeben
     $order_data['sticker_info'] = [
-        'continuous' => !empty($continuous) ? $continuous : 'no',
-        'period_type' => !empty($period_type) ? $period_type : 'until',
-        'week_day_start' => !empty($week_day_start) ? $week_day_start : 'Mo',
-        'week_day_end' => !empty($week_day_end) ? $week_day_end : 'Fr'
+        'continuous' => ($continuous !== false && $continuous !== '') ? $continuous : 'no',
+        'period_type' => ($period_type !== false && $period_type !== '') ? $period_type : 'until',
+        'week_day_start' => ($week_day_start !== false && $week_day_start !== '') ? $week_day_start : '',
+        'week_day_end' => ($week_day_end !== false && $week_day_end !== '') ? $week_day_end : ''
     ];
     
     // Meta-Daten hinzufügen
