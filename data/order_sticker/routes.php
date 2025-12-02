@@ -35,7 +35,7 @@ function save_sticker_data($request)
     }
 
     // Validate required fields exist
-    $required_fields = ['continuous', 'period_type', 'week_day_start', 'week_day_end'];
+    $required_fields = ['continuous', 'period_type'];
     foreach ($required_fields as $field) {
         if (!isset($sticker_data[$field])) {
             return new WP_Error('missing_field', 
@@ -48,13 +48,20 @@ function save_sticker_data($request)
     // Sanitize and validate values
     $continuous = sanitize_text_field($sticker_data['continuous']);
     $period_type = sanitize_text_field($sticker_data['period_type']);
-    $week_day_start = sanitize_text_field($sticker_data['week_day_start']);
-    $week_day_end = sanitize_text_field($sticker_data['week_day_end']);
+    
+    // Week days are optional - check if they exist, otherwise use empty string
+    $week_day_start = isset($sticker_data['week_day_start']) 
+        ? sanitize_text_field($sticker_data['week_day_start']) 
+        : '';
+    
+    $week_day_end = isset($sticker_data['week_day_end']) 
+        ? sanitize_text_field($sticker_data['week_day_end']) 
+        : '';
 
     // Validate allowed values
     $allowed_continuous = ['yes', 'no'];
     $allowed_period_type = ['until', 'and'];
-    $allowed_week_days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    $allowed_week_days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So', '']; // Added empty string as allowed value
 
     if (!in_array($continuous, $allowed_continuous)) {
         return new WP_Error('invalid_value', 
@@ -70,21 +77,22 @@ function save_sticker_data($request)
         );
     }
 
-    if (!in_array($week_day_start, $allowed_week_days)) {
+    // Validate week days only if they are not empty
+    if ($week_day_start !== '' && !in_array($week_day_start, $allowed_week_days)) {
         return new WP_Error('invalid_value', 
-            sprintf(__('Ungültiger Wert für week_day_start. Erlaubt: %s', 'woocommerce'), implode(', ', $allowed_week_days)), 
+            sprintf(__('Ungültiger Wert für week_day_start. Erlaubt: %s oder leer', 'woocommerce'), implode(', ', array_filter($allowed_week_days))), 
             array('status' => 400)
         );
     }
 
-    if (!in_array($week_day_end, $allowed_week_days)) {
+    if ($week_day_end !== '' && !in_array($week_day_end, $allowed_week_days)) {
         return new WP_Error('invalid_value', 
-            sprintf(__('Ungültiger Wert für week_day_end. Erlaubt: %s', 'woocommerce'), implode(', ', $allowed_week_days)), 
+            sprintf(__('Ungültiger Wert für week_day_end. Erlaubt: %s oder leer', 'woocommerce'), implode(', ', array_filter($allowed_week_days))), 
             array('status' => 400)
         );
     }
 
-    // Save to post meta
+    // Save to post meta - use empty string for empty values
     update_post_meta($order_id, '_sticker_continuous', $continuous);
     update_post_meta($order_id, '_sticker_period_type', $period_type);
     update_post_meta($order_id, '_sticker_week_day_start', $week_day_start);

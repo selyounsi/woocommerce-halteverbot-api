@@ -47,9 +47,8 @@ function add_sticker_info_to_order_response($response, $object, $request)
     $response->data['sticker_info'] = [
         'continuous' => !empty($continuous) ? $continuous : 'no',
         'period_type' => !empty($period_type) ? $period_type : 'until',
-        'week_day_start' => !empty($week_day_start) ? $week_day_start : 'Mo',
-        'week_day_end' => !empty($week_day_end) ? $week_day_end : 'Fr',
-        // Read-only date/time fields
+        'week_day_start' => !empty($week_day_start) ? $week_day_start : '',
+        'week_day_end' => !empty($week_day_end) ? $week_day_end : '',
         'start_date' => $start_date,
         'start_time' => $start_time,
         'end_date' => $end_date,
