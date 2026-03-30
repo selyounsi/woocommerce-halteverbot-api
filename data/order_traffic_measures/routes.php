@@ -88,17 +88,21 @@ function save_traffic_measures($request)
 
     foreach ($measures as $measure) {
         $main = sanitize_text_field($measure['main']);
-        $count = isset($measure['count']) ? intval($measure['count']) : 0; // Zähler für Hauptmaßnahme
+        $count = isset($measure['count']) ? intval($measure['count']) : 0;
+        $stolen = isset($measure['stolen']) ? (bool) $measure['stolen'] : false;
+
         $sub_measures = isset($measure['sub_measures']) ? array_map(function($sub_measure) {
             return [
                 'measure' => sanitize_text_field($sub_measure['measure']),
-                'count' => isset($sub_measure['count']) ? intval($sub_measure['count']) : 0, // Zähler für Zusatzmaßnahme
+                'count' => isset($sub_measure['count']) ? intval($sub_measure['count']) : 0,
+                'stolen' => isset($sub_measure['stolen']) ? (bool) $sub_measure['stolen'] : false,
             ];
         }, $measure['sub_measures']) : [];
 
         $sanitized_measures[] = [
             'main' => $main,
             'count' => $count,
+            'stolen' => $stolen,
             'sub_measures' => $sub_measures,
         ];
     }
