@@ -7,8 +7,8 @@ class OrderNonSetupManager
     private int $order_id;
 
     // Meta-Keys
-    private const META_FILES  = '_order_non_setup_files';
-    private const META_REASON = '_order_non_setup_reason';
+    private const META_FILES = '_order_non_setup_files';
+    private const META_INFO  = '_order_non_setup_info';
 
     public function __construct(int $order_id)
     {
@@ -26,14 +26,14 @@ class OrderNonSetupManager
      */
     public function getNonSetupData(): array
     {
-        $files  = get_post_meta($this->order_id, self::META_FILES, true);
-        $reason = get_post_meta($this->order_id, self::META_REASON, true);
+        $files = get_post_meta($this->order_id, self::META_FILES, true);
+        $info  = get_post_meta($this->order_id, self::META_INFO, true);
 
         $files = is_array($files) ? array_values(array_filter($files)) : [];
 
         return [
-            'files'  => $files,
-            'reason' => is_string($reason) ? $reason : '',
+            'files' => $files,
+            'info'  => is_string($info) ? $info : '',
         ];
     }
 
@@ -42,29 +42,26 @@ class OrderNonSetupManager
     // -------------------------------------------------------------------------
 
     /**
-     * Speichert / aktualisiert den Grund der Nicht-Aufstellung.
-     *
-     * @param string $reason
-     * @return true|\WP_Error
+     * Speichert / aktualisiert die Info zur Nicht-Aufstellung.
      */
-    public function updateReason(string $reason): void
+    public function updateInfo(string $info): void
     {
-        $reason = sanitize_textarea_field($reason);
+        $info = sanitize_textarea_field($info);
 
-        if (empty($reason)) {
-            delete_post_meta($this->order_id, self::META_REASON);
+        if (empty($info)) {
+            delete_post_meta($this->order_id, self::META_INFO);
             return;
         }
 
-        update_post_meta($this->order_id, self::META_REASON, $reason);
+        update_post_meta($this->order_id, self::META_INFO, $info);
     }
 
     /**
-     * Löscht den gespeicherten Grund.
+     * Löscht die gespeicherte Info.
      */
-    public function deleteReason(): void
+    public function deleteInfo(): void
     {
-        delete_post_meta($this->order_id, self::META_REASON);
+        delete_post_meta($this->order_id, self::META_INFO);
     }
 
     // -------------------------------------------------------------------------

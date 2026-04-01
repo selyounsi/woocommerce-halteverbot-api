@@ -12,19 +12,19 @@ add_action('rest_api_init', function () {
         }
     ]);
 
-    // POST – Grund hinterlegen / aktualisieren
-    register_rest_route('wc/v3', '/order-non-setup/(?P<order_id>\d+)/reason', [
+    // POST – Info hinterlegen / aktualisieren
+    register_rest_route('wc/v3', '/order-non-setup/(?P<order_id>\d+)/info', [
         'methods'             => 'POST',
-        'callback'            => 'update_order_non_setup_reason',
+        'callback'            => 'update_order_non_setup_info',
         'permission_callback' => function () {
             return current_user_can('manage_woocommerce');
         }
     ]);
 
-    // DELETE – Grund löschen
-    register_rest_route('wc/v3', '/order-non-setup/(?P<order_id>\d+)/reason', [
+    // DELETE – Info löschen
+    register_rest_route('wc/v3', '/order-non-setup/(?P<order_id>\d+)/info', [
         'methods'             => 'DELETE',
-        'callback'            => 'delete_order_non_setup_reason',
+        'callback'            => 'delete_order_non_setup_info',
         'permission_callback' => function () {
             return current_user_can('manage_woocommerce');
         }
@@ -51,7 +51,7 @@ add_action('rest_api_init', function () {
 
 /**
  * GET /wc/v3/order-non-setup/{order_id}
- * Gibt Dateien und Grund zurück.
+ * Gibt Dateien und Info zurück.
  */
 function get_order_non_setup(WP_REST_Request $request)
 {
@@ -61,37 +61,33 @@ function get_order_non_setup(WP_REST_Request $request)
 }
 
 /**
- * POST /wc/v3/order-non-setup/{order_id}/reason
- * Body: { "reason": "Parkplatz blockiert" }
+ * POST /wc/v3/order-non-setup/{order_id}/info
+ * Body: { "info": "Parkplatz blockiert" }
  */
-function update_order_non_setup_reason(WP_REST_Request $request)
+function update_order_non_setup_info(WP_REST_Request $request)
 {
     $params = $request->get_json_params();
-    $reason = $params['reason'] ?? '';
+    $info   = $params['info'] ?? '';
 
     $manager = new \Utils\OrderNonSetupManager((int) $request['order_id']);
-    $result  = $manager->updateReason($reason);
-
-    if (is_wp_error($result)) {
-        return new WP_Error($result->get_error_code(), $result->get_error_message(), ['status' => $result->get_error_data('status') ?: 400]);
-    }
+    $manager->updateInfo($info);
 
     return rest_ensure_response([
-        'message' => __('Grund erfolgreich gespeichert.', WHA_TRANSLATION_KEY),
-        'reason'  => $reason,
+        'message' => __('Info erfolgreich gespeichert.', WHA_TRANSLATION_KEY),
+        'info'    => $info,
     ]);
 }
 
 /**
- * DELETE /wc/v3/order-non-setup/{order_id}/reason
- * Löscht den gespeicherten Grund.
+ * DELETE /wc/v3/order-non-setup/{order_id}/info
+ * Löscht die gespeicherte Info.
  */
-function delete_order_non_setup_reason(WP_REST_Request $request)
+function delete_order_non_setup_info(WP_REST_Request $request)
 {
     $manager = new \Utils\OrderNonSetupManager((int) $request['order_id']);
-    $manager->deleteReason();
+    $manager->deleteInfo();
 
-    return rest_ensure_response(['message' => __('Grund erfolgreich gelöscht.', WHA_TRANSLATION_KEY)]);
+    return rest_ensure_response(['message' => __('Info erfolgreich gelöscht.', WHA_TRANSLATION_KEY)]);
 }
 
 /**

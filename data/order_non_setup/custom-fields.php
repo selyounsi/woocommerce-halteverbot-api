@@ -28,7 +28,7 @@ function add_custom_non_setup_fields($order)
     $data     = $manager->getNonSetupData();
 
     $file_urls = $data['files'];
-    $reason    = $data['reason'];
+    $info      = $data['info'];
 
     if (!is_array($file_urls)) {
         $file_urls = [];
@@ -64,15 +64,15 @@ function add_custom_non_setup_fields($order)
     </div>
 
     <div class="form-field form-field-wide">
-        <h4>Grund der Nicht-Aufstellung</h4>
-        <label for="order_non_setup_reason">Grund</label>
+        <h4>Hinweis / Info</h4>
+        <label for="order_non_setup_info">Info</label>
         <textarea
-            name="order_non_setup_reason"
-            id="order_non_setup_reason"
+            name="order_non_setup_info"
+            id="order_non_setup_info"
             rows="5"
             style="width:100%;margin-top:6px;"
-            placeholder="Bitte den Grund der Nicht-Aufstellung eintragen …"
-        ><?php echo esc_textarea($reason); ?></textarea>
+            placeholder="Optionaler Hinweis zur Nicht-Aufstellung …"
+        ><?php echo esc_textarea($info); ?></textarea>
     </div>
 
     <script>
@@ -162,14 +162,14 @@ function save_custom_non_setup_fields($order_id)
         }
     }
 
-    // Grund speichern
-    if (isset($_POST['order_non_setup_reason'])) {
-        $reason = sanitize_textarea_field($_POST['order_non_setup_reason']);
+    // Info speichern
+    if (isset($_POST['order_non_setup_info'])) {
+        $info = sanitize_textarea_field($_POST['order_non_setup_info']);
 
-        if (!empty($reason)) {
-            update_post_meta($order_id, '_order_non_setup_reason', $reason);
+        if (!empty($info)) {
+            update_post_meta($order_id, '_order_non_setup_info', $info);
         } else {
-            delete_post_meta($order_id, '_order_non_setup_reason');
+            delete_post_meta($order_id, '_order_non_setup_info');
         }
     }
 }
