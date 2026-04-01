@@ -33,6 +33,18 @@ function halteverbot_app_add_menu() {
         }
     );
 
+    // Submenü: E-Mail Vorlagen (nur benutzerdefinierte Status)
+    add_submenu_page(
+        'halteverbot-app',
+        'E-Mail Vorlagen',
+        'E-Mail Vorlagen',
+        'manage_options',
+        'halteverbot-app-email-templates',
+        function () {
+            include('pages/email-templates.php');
+        }
+    );
+
     // Submenü 1: Halteverbotszonen verwalten
     add_submenu_page(
         'halteverbot-app',
