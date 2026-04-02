@@ -126,6 +126,10 @@ class OrderNonSetupManager
             if ($name_to_delete === $stored_name) {
                 unset($files[$key]);
                 $found = true;
+
+                // Physische Datei löschen
+                FileHanlder::delete($stored_url);
+
                 break;
             }
         }
@@ -136,6 +140,34 @@ class OrderNonSetupManager
 
         update_post_meta($this->order_id, self::META_FILES, array_values($files));
 
+        $this->cleanupOrphanedFiles();
         return true;
+    }
+
+    /**
+     * Löscht verwaiste Dateien im non-setup Ordner die nicht mehr in der DB sind.
+     */
+    public function cleanupOrphanedFiles(): void
+    {
+        $upload_dir    = wp_upload_dir();
+        $non_setup_dir = trailingslashit($upload_dir['basedir']) . 'WHA/' . $this->order_id . '/non-setup/';
+
+        if (!is_dir($non_setup_dir)) {
+            return;
+        }
+
+        $files_in_db = get_post_meta($this->order_id, self::META_FILES, true);
+        $files_in_db = is_array($files_in_db) ? array_filter($files_in_db) : [];
+
+        $db_filenames = array_map(fn($url) => basename(parse_url($url, PHP_URL_PATH)), $files_in_db);
+
+        foreach (glob($non_setup_dir . '*') as $file_path) {
+            if (!is_file($file_path)) {
+                continue;
+            }
+            if (!in_array(basename($file_path), $db_filenames, true)) {
+                unlink($file_path);
+            }
+        }
     }
 }

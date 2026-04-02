@@ -135,47 +135,82 @@ class OrderProtocolsManager
     }
 
     // Delete a file
-    public function deleteFile($file_url) 
+    public function deleteFile(string $file_url)
     {
         if (empty($file_url)) {
-            return new \WP_Error('invalid_file', __('File URL is required.', WHA_TRANSLATION_KEY), ['status' => 400]);
+            return new \WP_Error('invalid_file', __('Datei-URL ist erforderlich.', WHA_TRANSLATION_KEY), ['status' => 400]);
         }
 
         $files = get_post_meta($this->order_id, '_order_file_protocols', true);
 
-        // Überprüfe, ob keine Dateien vorhanden sind
-        if (empty($files)) {
-            return new WP_Error('no_files', __('No files found for this order.', WHA_TRANSLATION_KEY), ['status' => 404]);
+        if (empty($files) || !is_array($files)) {
+            return new \WP_Error('no_files', __('No files found for this order.', WHA_TRANSLATION_KEY), ['status' => 404]);
         }
 
-        // Bereinige und extrahiere den Dateinamen aus der URL, die gelöscht werden soll
         $cleaned_file_url_to_delete = esc_url(trim($file_url));
-        $file_name_to_delete = basename(parse_url($cleaned_file_url_to_delete, PHP_URL_PATH));
+        $file_name_to_delete        = basename(parse_url($cleaned_file_url_to_delete, PHP_URL_PATH));
 
         $found = false;
 
-        // Durchlaufe die Liste der Dateien und entferne die Datei, wenn der Name übereinstimmt
         foreach ($files as $key => $file) {
-            // Bereinige und extrahiere den Dateinamen aus der Datei im Array
             $cleaned_file = esc_url(trim($file));
-            $file_name = basename(parse_url($cleaned_file, PHP_URL_PATH));
+            $file_name    = basename(parse_url($cleaned_file, PHP_URL_PATH));
 
-            // Vergleiche nur die Dateinamen
-            if ($file_name_to_delete == $file_name) {
-                unset($files[$key]); // Entferne das Element aus dem Array
+            if ($file_name_to_delete === $file_name) {
+                unset($files[$key]);
                 $found = true;
-                break; // Beende die Schleife, sobald die Datei entfernt wurde
+
+                // Physische Datei löschen über FileHandler
+                FileHanlder::delete($cleaned_file);
+
+                break;
             }
         }
 
-        // Falls die Datei nicht gefunden wurde, gib einen Fehler zurück
         if (!$found) {
-            return new WP_Error('file_not_found', __('File not found.', WHA_TRANSLATION_KEY), ['status' => 404]);
+            return new \WP_Error('file_not_found', __('File not found.', WHA_TRANSLATION_KEY), ['status' => 404]);
         }
 
-        // Update die Post-Metadaten, nachdem das Array aktualisiert wurde
         update_post_meta($this->order_id, '_order_file_protocols', array_values($files));
-
+        
+        $this->cleanupOrphanedFiles();
         return true;
+    }
+
+    /**
+     * Löscht verwaiste Dateien im Protokoll-Ordner die nicht mehr in der DB sind.
+     */
+    public function cleanupOrphanedFiles(): void
+    {
+        $upload_dir   = wp_upload_dir();
+        $protocols_dir = trailingslashit($upload_dir['basedir']) . 'WHA/' . $this->order_id . '/protocols/';
+
+        // Ordner existiert nicht → nichts zu tun
+        if (!is_dir($protocols_dir)) {
+            return;
+        }
+
+        // Alle Dateien die in der DB gespeichert sind
+        $files_in_db = get_post_meta($this->order_id, '_order_file_protocols', true);
+        $files_in_db = is_array($files_in_db) ? array_filter($files_in_db) : [];
+
+        // Dateinamen aus den URLs extrahieren
+        $db_filenames = array_map(fn($url) => basename(parse_url($url, PHP_URL_PATH)), $files_in_db);
+
+        // Alle Dateien im Ordner durchgehen
+        $files_on_disk = glob($protocols_dir . '*');
+
+        foreach ($files_on_disk as $file_path) {
+            if (!is_file($file_path)) {
+                continue;
+            }
+
+            $filename = basename($file_path);
+
+            // Datei nicht in DB → löschen
+            if (!in_array($filename, $db_filenames, true)) {
+                unlink($file_path);
+            }
+        }
     }
 }

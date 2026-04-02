@@ -102,4 +102,30 @@ class FileHanlder {
 
         return $normalized;
     }
+
+    /**
+     * Löscht eine Datei anhand ihrer URL vom Server.
+     *
+     * @param string $file_url  Die URL der Datei.
+     * @return bool|\WP_Error   True bei Erfolg, WP_Error bei Fehler.
+     */
+    public static function delete(string $file_url)
+    {
+        if (empty($file_url)) {
+            return new \WP_Error('invalid_file', 'Datei-URL ist erforderlich.');
+        }
+
+        $upload_dir = wp_upload_dir();
+        $file_path  = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $file_url);
+
+        if (!file_exists($file_path)) {
+            return new \WP_Error('file_not_found', 'Datei nicht gefunden: ' . $file_path);
+        }
+
+        if (!unlink($file_path)) {
+            return new \WP_Error('delete_error', 'Datei konnte nicht gelöscht werden.');
+        }
+
+        return true;
+    }
 }
