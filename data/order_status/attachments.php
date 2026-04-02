@@ -205,7 +205,7 @@ function attach_negativelist_file_to_email($attachments, $email_id, $order)
             foreach($wpcaFields as $fields) 
             {
                 $fileName = FilenameSanitizer::sanitize($fields["startdate"], $fields["enddate"], $fields["address"]);
-                $merged_pdf_path = ABSPATH . $fileName . '.pdf';
+                $merged_pdf_path = trailingslashit(sys_get_temp_dir()) . $fileName . '.pdf';
                 PdfHelper::mergePdfs($pdf_files, $merged_pdf_path);
                 $attachments[] = $merged_pdf_path;
             }
