@@ -30,6 +30,7 @@
 <table class="order-details">
     <thead>
         <tr>
+            <th class="position" style="width: 30px; text-align: center;"><?php esc_html_e('Pos.', WHA_TRANSLATION_KEY); ?></th>
             <th class="product"><?php esc_html_e('Produkt', WHA_TRANSLATION_KEY); ?></th>
             <th class="quantity"><?php esc_html_e('Anzahl', WHA_TRANSLATION_KEY); ?></th>
             <th class="days"><?php esc_html_e('Tage', WHA_TRANSLATION_KEY); ?></th>
@@ -38,24 +39,25 @@
     </thead>
     <tbody>
         <?php if(is_array($positions)): ?>
-            <?php foreach($positions as $position): ?>
+            <?php foreach($positions as $index => $position): ?>
                 <tr>
+                    <td class="position" style="text-align: center; white-space: nowrap;"><?= $index + 1; ?></td>
                     <td class="product">
                         <?= !empty($position['description']) ? $position['description'] : $position['name']; ?>
                     </td>
                     <td class="quantity"><?= $position["quantity"]; ?></td>
-                    <td class="dyas"><?= $position["days"]; ?></td>
-                    <td class="price align-right"><?= CurrencyFormatter::formatEuro($position["netto"] ?? $position["total"]); ?></td>
+                    <td class="days"><?= $position["days"]; ?></td>
+                    <td class="price align-right" style="white-space: nowrap;"><?= CurrencyFormatter::formatEuro($position["netto"] ?? $position["total"]); ?></td>
                 </tr>
             <?php endforeach; ?>
         <?php endif; ?>
         <tr class="spacer-row">
-            <td colspan="4" style="height: 20px; border: none;"></td>
+            <td colspan="5" style="height: 20px; border: none;"></td>
         </tr>
     </tbody>
     <tfoot>
         <tr class="no-borders">
-            <td class="no-borders">
+            <td class="no-borders" colspan="2">
                 <?php if($order->getDocumentNote()): ?>
                     <div class="document-notes">
                         <h3><?php _e( 'Anmerkungen', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
@@ -76,7 +78,7 @@
                         <tr class="invoice">
                             <th class="description">Gesamtnetto</th>
                             <td class="price align-right">
-                                <span class="totals-price">
+                                <span class="totals-price" style="white-space: nowrap;">
                                     <?= CurrencyFormatter::formatEuro($order->getInvoiceData("net_total")); ?>
                                 </span>
                             </td>
@@ -85,24 +87,24 @@
                         <?php if($order->getInvoiceData("discount_amount")): ?>
                         <tr class="invoice">
                             <th class="description">Rabatt (<?= $order->getInvoiceData("discount_percentage"); ?>%)</th>
-                            <td class="price align-right"><span class="totals-price">-<?= CurrencyFormatter::formatEuro($order->getInvoiceData("discount_amount")); ?></span></td>
+                            <td class="price align-right"><span class="totals-price" style="white-space: nowrap;">-<?= CurrencyFormatter::formatEuro($order->getInvoiceData("discount_amount")); ?></span></td>
                         </tr>
                         <?php endif; ?>
 
                         <?php if($order->getInvoiceData("discount_amount")): ?>
                         <tr class="invoice">
                             <th class="description">Netto nach Rabatt</th>
-                            <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($order->getInvoiceData("net_after_discount")); ?></span></td>
+                            <td class="price align-right"><span class="totals-price" style="white-space: nowrap;"><?= CurrencyFormatter::formatEuro($order->getInvoiceData("net_after_discount")); ?></span></td>
                         </tr>
                         <?php endif; ?>
 
                         <tr class="invoice">
                             <th class="description">MwSt (<?= $order->getInvoiceData("vat_percentage"); ?>%)</th>
-                            <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($order->getInvoiceData("vat_amount")); ?></span></td>
+                            <td class="price align-right"><span class="totals-price" style="white-space: nowrap;"><?= CurrencyFormatter::formatEuro($order->getInvoiceData("vat_amount")); ?></span></td>
                         </tr>
                         <tr class="invoice">
                             <th class="description">Gesamtbrutto</th>
-                            <td class="price align-right"><span class="totals-price"><?= CurrencyFormatter::formatEuro($order->getInvoiceData("total_amount")); ?></span></td>
+                            <td class="price align-right"><span class="totals-price" style="white-space: nowrap;"><?= CurrencyFormatter::formatEuro($order->getInvoiceData("total_amount")); ?></span></td>
                         </tr>
                     </tfoot>
                 </table>
