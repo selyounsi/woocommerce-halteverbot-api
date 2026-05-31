@@ -56,6 +56,14 @@
 	--------------------------------->
 	<?php include __DIR__ . "/includes/order-details.php"; ?>
 
+	<?php 
+		$paymentTerm = $order->getMetaValue("payment_term");
+	?>
+
+	<?php if (!empty($paymentTerm)): ?>
+		<?= $paymentTerm; ?>
+	<?php endif; ?>
+
 	<!-- FOOTER
 	--------------------------------->
 	<?php include __DIR__ . "/includes/footer.php"; ?>
