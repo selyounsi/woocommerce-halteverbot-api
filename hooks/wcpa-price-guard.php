@@ -82,6 +82,65 @@ function wha_wcpa_sanitize_meta(array &$node)
 }
 
 /**
+ * Bereinigt EINGEHENDE WCPA-Felder VOR dem Speichern (POST aus der App).
+ *
+ * Hintergrund:
+ *   WCPAs order_meta_plain() ruft fuer Multi-Option-Felder (value = Array, z.B.
+ *   select / checkbox-group / radio-group / color-group / productGroup)
+ *       array_map($cb, $value, $field['price'])
+ *   auf und erwartet $field['price'] dort als ARRAY (parallel zu value) – oder
+ *   einen falsy Wert. Ein truthy SKALAR (z. B. 5) fuehrt zu
+ *   "array_map(): Argument #3 must be of type array, int given" -> Fatal Error.
+ *
+ *   Wir verpacken einen solchen Skalar wieder in ein Array (Betrag auf die erste
+ *   Option), sodass der Preis erhalten bleibt und nichts crasht. Bereits korrekte
+ *   Array- oder falsy-Preise bleiben unveraendert; Felder mit skalarem value
+ *   (date, content, einzelne checkbox ...) werden bewusst nicht angefasst.
+ *
+ * @param mixed $fields  Struktur aus $request['fields']
+ * @return mixed
+ */
+function wha_wcpa_sanitize_fields_for_save($fields)
+{
+    if (!is_array($fields)) {
+        return $fields;
+    }
+
+    foreach ($fields as &$section) {
+        if (empty($section['fields']) || !is_array($section['fields'])) {
+            continue;
+        }
+        foreach ($section['fields'] as &$row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            foreach ($row as &$field) {
+                if (!is_array($field) || !array_key_exists('price', $field)) {
+                    continue;
+                }
+
+                $value = $field['value'] ?? null;
+                $price = $field['price'];
+
+                // Nur Multi-Option-Felder (value = Array) mit truthy skalarem Preis.
+                if (is_array($value) && !is_array($price) && !empty($price)) {
+                    $amount   = is_numeric($price) ? $price + 0 : 0;
+                    $count    = max(1, count($value));
+                    $priceArr = array_fill(0, $count, 0);
+                    $priceArr[0] = $amount; // Betrag auf die erste Option, Rest 0
+                    $field['price'] = $priceArr;
+                }
+            }
+            unset($field);
+        }
+        unset($row);
+    }
+    unset($section);
+
+    return $fields;
+}
+
+/**
  * Bereinigt die WCPA-Metadaten einer Bestellposition im Speicher,
  * BEVOR WCPA (Prio 10) sie zum Rechnen liest.
  */

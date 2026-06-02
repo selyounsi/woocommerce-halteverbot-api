@@ -179,6 +179,12 @@ function save_order_items($data)
     $item_id = $data['item_id'];
     $post_data = $data->get_params();
 
+    // Schutz gegen WCPA-Fatal "array_map(): Argument #3 must be array, int given":
+    // truthy skalare Preise bei Multi-Option-Feldern wieder als Array ablegen.
+    if (isset($post_data['fields']) && function_exists('wha_wcpa_sanitize_fields_for_save')) {
+        $post_data['fields'] = wha_wcpa_sanitize_fields_for_save($post_data['fields']);
+    }
+
     $order = new Acowebs\WCPA\Order();
     $res = $order->saveOrderMeta($item_id, $post_data['fields']);
 
