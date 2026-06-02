@@ -61,7 +61,7 @@
 	?>
 
 	<?php if (!empty($paymentTerm)): ?>
-		<?= $paymentTerm; ?>
+		Zahlungsziel: <?= $paymentTerm; ?>
 	<?php endif; ?>
 
 	<!-- FOOTER
