@@ -70,6 +70,9 @@ function halteverbot_app_add_menu() {
     );
 
     // Submenü: E-Mail Versand (Newsletter / Sammelmails)
+    // Hinweis: Die Seite bleibt registriert und per URL erreichbar
+    // (admin.php?page=halteverbot-app-mailer) – sie wird weiter unten nur aus
+    // dem Menü ausgeblendet, solange das Feature noch nicht freigegeben ist.
     add_submenu_page(
         'halteverbot-app',
         'E-Mail Versand',
@@ -80,6 +83,10 @@ function halteverbot_app_add_menu() {
             include('pages/mailer.php');
         }
     );
+
+    // 🔒 E-Mail Versand vorübergehend aus dem Menü ausblenden
+    // (noch nicht für Kunden sichtbar). Zum Anzeigen diese Zeile entfernen:
+    remove_submenu_page('halteverbot-app', 'halteverbot-app-mailer');
 
     // Submenü 1: Halteverbotszonen verwalten
     add_submenu_page(
