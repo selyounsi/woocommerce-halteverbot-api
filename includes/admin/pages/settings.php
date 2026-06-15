@@ -17,7 +17,10 @@ if (
 
     // Nur validierte Eingabewerte vorbereiten
     $input = [
-        'modify_checkout' => isset($_POST['modify_checkout']) ? true : false,
+        'modify_checkout'         => isset($_POST['modify_checkout']) ? true : false,
+        'checkout_notice_enabled' => isset($_POST['checkout_notice_enabled']) ? true : false,
+        'checkout_notice_title'   => sanitize_text_field(wp_unslash($_POST['checkout_notice_title'] ?? '')),
+        'checkout_notice_text'    => wp_kses_post(wp_unslash($_POST['checkout_notice_text'] ?? '')),
     ];
 
     // Speicherung über die Klasse (führt intern das Merging mit Defaults durch)
@@ -54,6 +57,31 @@ $settings = HalteverbotSettings::getSettings();
                     <h2 class="hndle"><span>Checkout</span></h2>
                     <p>
                         <label><input type="checkbox" name="modify_checkout" <?php checked($settings['modify_checkout']); ?>> Kassensystem modifizieren, <a href="<?php echo esc_url( wc_get_checkout_url() . '?nowprocket=1&preview=1' ); ?>" target="_blank">hier</a> siehst du die Vorschau</label>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Card Checkout-Hinweis -->
+            <div class="postbox">
+                <div class="inside">
+                    <h2 class="hndle"><span>Checkout-Hinweis</span></h2>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="checkout_notice_enabled" <?php checked($settings['checkout_notice_enabled']); ?>>
+                            Hinweistext im Checkout &amp; auf der Bestellbestätigung anzeigen
+                        </label>
+                    </p>
+                    <p>
+                        <label for="checkout_notice_title"><strong>Überschrift</strong> (optional)</label><br>
+                        <input type="text" id="checkout_notice_title" name="checkout_notice_title" class="regular-text"
+                               value="<?php echo esc_attr($settings['checkout_notice_title']); ?>"
+                               placeholder="z. B. Wichtiger Hinweis zur Zahlung">
+                    </p>
+                    <p>
+                        <label for="checkout_notice_text"><strong>Hinweistext</strong></label><br>
+                        <textarea id="checkout_notice_text" name="checkout_notice_text" rows="5" class="large-text"
+                                  placeholder="z. B. Aktuell kommt es bei Banküberweisungen zu Verzögerungen. Bitte senden Sie uns den Überweisungsbeleg per E-Mail an info@…, damit die Bearbeitung nicht verzögert wird."><?php echo esc_textarea($settings['checkout_notice_text']); ?></textarea>
+                        <span class="description">Einfache Formatierung (Links, Fett etc.) ist erlaubt. Zeilenumbrüche werden übernommen.</span>
                     </p>
                 </div>
             </div>

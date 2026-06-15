@@ -7,7 +7,10 @@ class HalteverbotSettings
     private static string $option_name = 'halteverbot_settings';
 
     private static array $defaults = [
-        'modify_checkout' => false,
+        'modify_checkout'         => false,
+        'checkout_notice_enabled' => false,
+        'checkout_notice_title'   => '',
+        'checkout_notice_text'    => '',
     ];
 
     public static function getSettings(): array

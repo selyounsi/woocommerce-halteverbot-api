@@ -53,7 +53,7 @@ function wha_extract_notification_count($label): array
 /**
  * Schritt 1 (Priority 9999): "Sonstiges" registrieren.
  */
-add_action('admin_menu', 'wha_cleanup_admin_menu', 9999);
+// add_action('admin_menu', 'wha_cleanup_admin_menu', 9999);
 function wha_cleanup_admin_menu(): void
 {
     if (!current_user_can('manage_options')) {
@@ -76,7 +76,7 @@ function wha_cleanup_admin_menu(): void
 /**
  * Schritt 2 (Priority 99999): Einsammeln, Submenüs übernehmen, entfernen.
  */
-add_action('admin_menu', 'wha_collect_and_remove_sonstiges', 99999);
+// add_action('admin_menu', 'wha_collect_and_remove_sonstiges', 99999);
 function wha_collect_and_remove_sonstiges(): void
 {
     if (!current_user_can('manage_options')) {
@@ -202,7 +202,7 @@ function wha_sonstiges_page(): void
 /**
  * Styling + Flyout-JS
  */
-add_action('admin_head', 'wha_admin_menu_styles');
+// add_action('admin_head', 'wha_admin_menu_styles');
 function wha_admin_menu_styles(): void
 {
     if (!current_user_can('manage_options')) {

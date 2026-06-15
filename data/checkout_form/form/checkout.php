@@ -5,6 +5,13 @@ $checkout = WC()->checkout();
 
 <form name="checkout" method="post" class="checkout woocommerce-checkout" action="<?php echo esc_url( wc_get_checkout_url() ); ?>" enctype="multipart/form-data">
 
+    <?php
+        // Auffälliger Hinweistext (steuerbar über Halteverbot App → Einstellungen)
+        if ( function_exists( 'wha_render_checkout_notice' ) ) {
+            wha_render_checkout_notice();
+        }
+    ?>
+
     <div class="checkout-grid">
 
         <!-- LINKE SPALTE -->
