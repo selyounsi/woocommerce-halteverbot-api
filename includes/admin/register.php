@@ -69,6 +69,18 @@ function halteverbot_app_add_menu() {
         }
     );
 
+    // Submenü: E-Mail Versand (Newsletter / Sammelmails)
+    add_submenu_page(
+        'halteverbot-app',
+        'E-Mail Versand',
+        'E-Mail Versand',
+        'manage_woocommerce',
+        'halteverbot-app-mailer',
+        function () {
+            include('pages/mailer.php');
+        }
+    );
+
     // Submenü 1: Halteverbotszonen verwalten
     add_submenu_page(
         'halteverbot-app',
