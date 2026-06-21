@@ -18,9 +18,9 @@ function get_report(WP_REST_Request $request)
     $analyticsInstance = VisitorAnalytics::getAnalyticsInstance();
 
     // POST DATA
-    $start_date = $request->get_param('start_date') ?? date('Y-m-d'); 
-    $end_date = $request->get_param('end_date') ?? date('Y-m-d', strtotime('-29 days'));     
-    $device_type = $request->get_param('device_type') ?? null;
+    $end_date = $request->get_param('end_date') ?: date('Y-m-d');
+    $start_date = $request->get_param('start_date') ?: date('Y-m-d', strtotime('-29 days'));
+    $device_type = $request->get_param('device_type') ?: null;
 
     // RETURN DATA
     return new WP_REST_Response($analyticsInstance->get_report($start_date, $end_date, $device_type), 200);

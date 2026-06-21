@@ -70,6 +70,9 @@ class VisitorAnalytics extends VisitorTracker
     }
 
     public function get_report($start_date, $end_date, $device = null): array {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(180);
+        }
         return [
             'visitor_metrics' => [
                 'today' => $this->visitors_today($device),

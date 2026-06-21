@@ -115,10 +115,10 @@ trait WooCommerceDataTrait
      */
     private function get_unique_customers($start_date, $end_date) {
         return $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(DISTINCT customer_id) 
-            FROM {$this->table_wc_events} 
-            WHERE event_type = 'order_complete' 
-            AND customer_id IS NOT NULL
+            "SELECT COUNT(DISTINCT session_id)
+            FROM {$this->table_wc_events}
+            WHERE event_type = 'order_complete'
+            AND session_id IS NOT NULL
             AND DATE(event_time) BETWEEN %s AND %s",
             $start_date, $end_date
         ));

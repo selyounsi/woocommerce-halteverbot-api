@@ -11,6 +11,29 @@ trait OrderAnalyticsTrait
         return wc_get_order_statuses(); // Gibt Array zurück: ['wc-pending' => 'Pending', 'wc-processing' => 'Processing', ...]
     }
 
+    // Stream orders in batches instead of loading all (limit => -1) at once. WooCommerce caches every
+    // loaded order in the object cache, so the runtime cache is flushed after each batch to actually
+    // free the memory; otherwise it keeps growing across batches and exhausts the memory limit.
+    private function iterate_orders(array $args) {
+        unset($args['paged'], $args['offset']);
+        $args['limit'] = 200;
+        $page = 1;
+        do {
+            $args['paged'] = $page;
+            $batch = wc_get_orders($args);
+            $found = is_array($batch) ? count($batch) : 0;
+            foreach ($batch as $order) {
+                yield $order;
+            }
+            unset($batch);
+            if (function_exists('wp_cache_flush_runtime')) {
+                wp_cache_flush_runtime();
+            }
+            gc_collect_cycles();
+            $page++;
+        } while ($found === 200);
+    }
+
     /**
      * Bestell-Statistiken für Zeitraum
      */
@@ -25,13 +48,12 @@ trait OrderAnalyticsTrait
             $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $orders = wc_get_orders($args);
         
         $total_orders = 0;
         $total_revenue = 0;
         $customer_ids = [];
         
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             // Refunds ausschließen
             if ($order instanceof \WC_Order_Refund) {
                 continue;
@@ -92,12 +114,11 @@ trait OrderAnalyticsTrait
             $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $orders = wc_get_orders($args);
-        
         $status_distribution = [];
-        $total_orders = count($orders);
-        
-        foreach ($orders as $order) {
+        $total_orders = 0;
+
+        foreach ($this->iterate_orders($args) as $order) {
+            $total_orders++;
             $status = $order->get_status();
             $status_key = 'wc-' . $status;
             
@@ -154,9 +175,8 @@ trait OrderAnalyticsTrait
             'return' => 'objects',
         ];
         
-        $orders = wc_get_orders($args);
         
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             $order_date = $order->get_date_created()->format('Y-m-d');
             $status = $order->get_status();
             $total = $order->get_total();
@@ -205,9 +225,8 @@ trait OrderAnalyticsTrait
             'return' => 'objects',
         ];
         
-        $orders = wc_get_orders($args);
         
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             $order_date = $order->get_date_created()->format('Y-m-d');
             $status = $order->get_status();
             $total = $order->get_total();
@@ -245,11 +264,10 @@ trait OrderAnalyticsTrait
             'return' => 'objects',
         ];
         
-        $orders = wc_get_orders($args);
         
         $monthly_data = [];
         
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             $month = $order->get_date_created()->format('Y-m');
             $status = $order->get_status();
             $total = $order->get_total();
@@ -306,11 +324,10 @@ trait OrderAnalyticsTrait
             $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $orders = wc_get_orders($args);
         
         $products_data = [];
         
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             foreach ($order->get_items() as $item) {
                 $product = $item->get_product();
                 $product_id = $item->get_product_id();
@@ -371,12 +388,11 @@ trait OrderAnalyticsTrait
             $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $orders = wc_get_orders($args);
         
         $payment_methods = [];
         $total_orders = 0;
         
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             // Refunds ausschließen
             if ($order instanceof \WC_Order_Refund) {
                 continue;
@@ -435,11 +451,10 @@ trait OrderAnalyticsTrait
             $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $orders = wc_get_orders($args);
         
         $customers = [];
         
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             // Refunds ausschließen
             if ($order instanceof \WC_Order_Refund) {
                 continue;
@@ -487,11 +502,10 @@ trait OrderAnalyticsTrait
             $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $orders = wc_get_orders($args);
         
         $status_data = [];
         
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             $status = $order->get_status();
             $total = $order->get_total();
             
@@ -543,11 +557,10 @@ trait OrderAnalyticsTrait
             $args['date_created'] = $start_date . '...' . $end_date;
         }
         
-        $orders = wc_get_orders($args);
         
         $heatmap_data = [];
         
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             $hour = (int)$order->get_date_created()->format('H');
             $day = $order->get_date_created()->format('l'); // Monday, Tuesday, etc.
             $total = $order->get_total();
@@ -692,7 +705,6 @@ trait OrderAnalyticsTrait
             ];
         }
 
-        $orders = wc_get_orders($args);
 
         $stats = [
             'total_orders' => 0,           // Gesamtanzahl aller Bestellungen im Zeitraum (unabhängig vom Status)
@@ -709,7 +721,7 @@ trait OrderAnalyticsTrait
             'order_time_heatmap' => $this->get_order_time_heatmap($start_date, $end_date),
         ];
 
-        foreach ($orders as $order) {
+        foreach ($this->iterate_orders($args) as $order) {
             if ($order instanceof \WC_Order_Refund) continue;
 
             $stats['total_orders']++;
