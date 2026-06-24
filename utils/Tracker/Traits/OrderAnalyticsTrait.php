@@ -147,8 +147,55 @@ trait OrderAnalyticsTrait
         usort($results, function($a, $b) {
             return $b['count'] - $a['count'];
         });
-        
+
         return $results;
+    }
+
+    /**
+     * All-time status distribution counted per status through the SAME REST
+     * endpoint the order list uses (wc/v3/orders -> X-WP-Total header), so every
+     * count is guaranteed to match the list exactly. Runs in-process via
+     * rest_do_request (no extra HTTP) and only fetches one order per status.
+     */
+    public function get_order_status_distribution_all_time() {
+        $statuses = $this->get_wc_order_statuses();
+
+        $rows = [];
+        $total_orders = 0;
+
+        foreach ($statuses as $status_key => $status_name) {
+            $request = new \WP_REST_Request('GET', '/wc/v3/orders');
+            $request->set_query_params([
+                'status'   => preg_replace('/^wc-/', '', $status_key),
+                'per_page' => 1,
+            ]);
+
+            $response = rest_do_request($request);
+            $headers = is_object($response) ? $response->get_headers() : [];
+            $count = isset($headers['X-WP-Total']) ? (int) $headers['X-WP-Total'] : 0;
+            if ($count <= 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'status'      => $status_key,
+                'count'       => $count,
+                'revenue'     => 0,
+                'status_name' => $status_name,
+            ];
+            $total_orders += $count;
+        }
+
+        foreach ($rows as &$row) {
+            $row['percentage'] = $total_orders > 0 ? round(($row['count'] / $total_orders) * 100, 1) : 0;
+        }
+        unset($row);
+
+        usort($rows, function ($a, $b) {
+            return $b['count'] - $a['count'];
+        });
+
+        return $rows;
     }
 
     /**
