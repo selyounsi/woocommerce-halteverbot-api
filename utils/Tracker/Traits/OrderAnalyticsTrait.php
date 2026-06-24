@@ -199,6 +199,120 @@ trait OrderAnalyticsTrait
     }
 
     /**
+     * All-time order revenue summed per status in a single query (HPOS-aware),
+     * so the overview KPIs can show real totals without iterating every order.
+     * Returns total revenue (all statuses) and completed revenue.
+     */
+    public function get_order_revenue_all_time() {
+        try {
+            $statuses = array_keys($this->get_wc_order_statuses());
+            if (empty($statuses)) {
+                return ['total' => 0, 'completed' => 0];
+            }
+            $in = implode(',', array_fill(0, count($statuses), '%s'));
+            $prefix = $this->wpdb->prefix;
+            $hpos = class_exists('\Automattic\WooCommerce\Utilities\OrderUtil')
+                && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+
+            if ($hpos) {
+                $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                    "SELECT status, SUM(total_amount) AS rev
+                     FROM {$prefix}wc_orders
+                     WHERE type = 'shop_order' AND status IN ($in)
+                     GROUP BY status",
+                    $statuses
+                ));
+            } else {
+                $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                    "SELECT p.post_status AS status, SUM(CAST(pm.meta_value AS DECIMAL(18,2))) AS rev
+                     FROM {$prefix}posts p
+                     LEFT JOIN {$prefix}postmeta pm ON pm.post_id = p.ID AND pm.meta_key = '_order_total'
+                     WHERE p.post_type = 'shop_order' AND p.post_status IN ($in)
+                     GROUP BY p.post_status",
+                    $statuses
+                ));
+            }
+
+            $total = 0.0;
+            $completed = 0.0;
+            foreach ((array) $rows as $row) {
+                $rev = (float) $row->rev;
+                $total += $rev;
+                if ($row->status === 'wc-completed') {
+                    $completed = $rev;
+                }
+            }
+
+            return ['total' => round($total, 2), 'completed' => round($completed, 2)];
+        } catch (\Throwable $e) {
+            return ['total' => 0, 'completed' => 0];
+        }
+    }
+
+    /**
+     * All-time order count and revenue grouped by payment method, in a single
+     * HPOS-aware query, matching the shape of get_order_sources().
+     */
+    public function get_order_sources_all_time() {
+        try {
+            $statuses = array_keys($this->get_wc_order_statuses());
+            if (empty($statuses)) {
+                return [];
+            }
+            $in = implode(',', array_fill(0, count($statuses), '%s'));
+            $prefix = $this->wpdb->prefix;
+            $hpos = class_exists('\Automattic\WooCommerce\Utilities\OrderUtil')
+                && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+
+            if ($hpos) {
+                $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                    "SELECT payment_method AS payment_method, COUNT(*) AS cnt, SUM(total_amount) AS rev
+                     FROM {$prefix}wc_orders
+                     WHERE type = 'shop_order' AND status IN ($in)
+                     GROUP BY payment_method",
+                    $statuses
+                ));
+            } else {
+                $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                    "SELECT pm.meta_value AS payment_method, COUNT(*) AS cnt, SUM(CAST(pt.meta_value AS DECIMAL(18,2))) AS rev
+                     FROM {$prefix}posts p
+                     LEFT JOIN {$prefix}postmeta pm ON pm.post_id = p.ID AND pm.meta_key = '_payment_method'
+                     LEFT JOIN {$prefix}postmeta pt ON pt.post_id = p.ID AND pt.meta_key = '_order_total'
+                     WHERE p.post_type = 'shop_order' AND p.post_status IN ($in)
+                     GROUP BY pm.meta_value",
+                    $statuses
+                ));
+            }
+
+            $total_orders = 0;
+            foreach ((array) $rows as $row) {
+                $total_orders += (int) $row->cnt;
+            }
+
+            $results = [];
+            foreach ((array) $rows as $row) {
+                $count = (int) $row->cnt;
+                $revenue = round((float) $row->rev, 2);
+                $results[] = [
+                    'payment_method'  => $row->payment_method ?: 'unknown',
+                    'count'           => $count,
+                    'revenue'         => $revenue,
+                    'percentage'      => $total_orders > 0 ? round(($count / $total_orders) * 100, 1) : 0,
+                    'avg_order_value' => $count > 0 ? round($revenue / $count, 2) : 0,
+                ];
+            }
+
+            usort($results, function ($a, $b) {
+                return $b['count'] - $a['count'];
+            });
+
+            return $results;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
      * Tägliche Bestellungen für Chart (30 Tage)
      */
     public function get_daily_orders_30d() {
