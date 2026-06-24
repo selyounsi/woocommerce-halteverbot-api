@@ -313,6 +313,196 @@ trait OrderAnalyticsTrait
     }
 
     /**
+     * Empty insights skeleton so the endpoint always returns a consistent shape.
+     */
+    private function empty_insights() {
+        return [
+            'kpis' => [
+                'total_orders' => 0, 'completed_orders' => 0, 'completed_revenue' => 0,
+                'total_revenue' => 0, 'avg_order_value' => 0, 'completed_percentage' => 0,
+                'pending_orders' => 0, 'cancelled_orders' => 0, 'refunded_orders' => 0,
+            ],
+            'status_breakdown' => [],
+            'payment_methods'  => [],
+            'value_buckets'    => [],
+            'weekday_hour'     => [],
+            'by_hour'          => [],
+            'by_weekday'       => [],
+            'monthly'          => [],
+            'daily'            => [],
+        ];
+    }
+
+    /**
+     * One efficient, date-flexible insights payload for the orders dashboard.
+     * Everything is computed with grouped SQL (HPOS-aware), restricted to the
+     * registered order statuses (so trash/draft are excluded and totals match the
+     * status distribution). Pass start/end (Y-m-d) for a period, or null for all
+     * time. Each block is isolated in try/catch so one failure never 500s.
+     */
+    public function get_orders_insights($start_date = null, $end_date = null) {
+        $statuses = array_keys($this->get_wc_order_statuses());
+        if (empty($statuses)) {
+            return $this->empty_insights();
+        }
+
+        $prefix = $this->wpdb->prefix;
+        $hpos = class_exists('\Automattic\WooCommerce\Utilities\OrderUtil')
+            && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+
+        $offset_min = (int) round(((float) get_option('gmt_offset', 0)) * 60);
+
+        if ($hpos) {
+            $from        = "{$prefix}wc_orders o";
+            $status_col  = 'o.status';
+            $local       = "DATE_ADD(o.date_created_gmt, INTERVAL {$offset_min} MINUTE)";
+            $total       = 'o.total_amount';
+            $payment     = "COALESCE(NULLIF(o.payment_method, ''), 'unknown')";
+            $base        = "o.type = 'shop_order'";
+            $range_col   = 'o.date_created_gmt';
+        } else {
+            $from        = "{$prefix}posts o
+                            LEFT JOIN {$prefix}postmeta mt ON mt.post_id = o.ID AND mt.meta_key = '_order_total'
+                            LEFT JOIN {$prefix}postmeta mp ON mp.post_id = o.ID AND mp.meta_key = '_payment_method'";
+            $status_col  = 'o.post_status';
+            $local       = 'o.post_date';
+            $total       = 'CAST(mt.meta_value AS DECIMAL(18,2))';
+            $payment     = "COALESCE(NULLIF(mp.meta_value, ''), 'unknown')";
+            $base        = "o.post_type = 'shop_order'";
+            $range_col   = 'o.post_date_gmt';
+        }
+
+        $in = implode(',', array_fill(0, count($statuses), '%s'));
+
+        $range_sql = '';
+        $date_params = [];
+        if ($start_date && $end_date) {
+            $range_sql = " AND {$range_col} BETWEEN %s AND %s";
+            $date_params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+        }
+
+        $where  = "WHERE {$base} AND {$status_col} IN ({$in}){$range_sql}";
+        $params = array_merge($statuses, $date_params);
+
+        $insights = $this->empty_insights();
+
+        // 1) Per status: count + revenue -> KPIs + status breakdown
+        try {
+            $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$status_col} AS k, COUNT(*) AS cnt, SUM({$total}) AS rev FROM {$from} {$where} GROUP BY {$status_col}",
+                $params
+            ));
+            $breakdown = []; $by = []; $total_orders = 0; $total_rev = 0.0; $c_cnt = 0; $c_rev = 0.0;
+            foreach ((array) $rows as $r) {
+                $cnt = (int) $r->cnt; $rev = (float) $r->rev;
+                $breakdown[] = ['status' => $r->k, 'count' => $cnt, 'revenue' => round($rev, 2)];
+                $by[$r->k] = $cnt;
+                $total_orders += $cnt; $total_rev += $rev;
+                if ($r->k === 'wc-completed') { $c_cnt = $cnt; $c_rev = $rev; }
+            }
+            usort($breakdown, function ($a, $b) { return $b['count'] - $a['count']; });
+            $insights['status_breakdown'] = $breakdown;
+            $insights['kpis'] = [
+                'total_orders'         => $total_orders,
+                'completed_orders'     => $c_cnt,
+                'completed_revenue'    => round($c_rev, 2),
+                'total_revenue'        => round($total_rev, 2),
+                'avg_order_value'      => $total_orders > 0 ? round($total_rev / $total_orders, 2) : 0,
+                'completed_percentage' => $total_orders > 0 ? round($c_cnt / $total_orders * 100, 1) : 0,
+                'pending_orders'       => isset($by['wc-pending']) ? $by['wc-pending'] : 0,
+                'cancelled_orders'     => isset($by['wc-cancelled']) ? $by['wc-cancelled'] : 0,
+                'refunded_orders'      => isset($by['wc-refunded']) ? $by['wc-refunded'] : 0,
+            ];
+        } catch (\Throwable $e) {}
+
+        // 2) Payment methods
+        try {
+            $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$payment} AS k, COUNT(*) AS cnt, SUM({$total}) AS rev FROM {$from} {$where} GROUP BY {$payment}",
+                $params
+            ));
+            $pm = []; $tot = 0;
+            foreach ((array) $rows as $r) { $tot += (int) $r->cnt; }
+            foreach ((array) $rows as $r) {
+                $cnt = (int) $r->cnt; $rev = round((float) $r->rev, 2);
+                $pm[] = [
+                    'payment_method'  => $r->k,
+                    'count'           => $cnt,
+                    'revenue'         => $rev,
+                    'percentage'      => $tot > 0 ? round($cnt / $tot * 100, 1) : 0,
+                    'avg_order_value' => $cnt > 0 ? round($rev / $cnt, 2) : 0,
+                ];
+            }
+            usort($pm, function ($a, $b) { return $b['count'] - $a['count']; });
+            $insights['payment_methods'] = $pm;
+        } catch (\Throwable $e) {}
+
+        // 3) Order value buckets
+        try {
+            $bucket = "CASE WHEN {$total} < 50 THEN 0 WHEN {$total} < 100 THEN 1 WHEN {$total} < 200 THEN 2 WHEN {$total} < 500 THEN 3 ELSE 4 END";
+            $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$bucket} AS b, COUNT(*) AS cnt, SUM({$total}) AS rev FROM {$from} {$where} GROUP BY b",
+                $params
+            ));
+            $labels = ['0–49 €', '50–99 €', '100–199 €', '200–499 €', '500 €+'];
+            $buckets = [];
+            foreach ($labels as $i => $label) { $buckets[$i] = ['label' => $label, 'count' => 0, 'revenue' => 0]; }
+            foreach ((array) $rows as $r) {
+                $i = (int) $r->b;
+                if (isset($buckets[$i])) { $buckets[$i]['count'] = (int) $r->cnt; $buckets[$i]['revenue'] = round((float) $r->rev, 2); }
+            }
+            $insights['value_buckets'] = array_values($buckets);
+        } catch (\Throwable $e) {}
+
+        // 4) Weekday x hour heatmap (+ derived by-hour / by-weekday)
+        try {
+            $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT DAYOFWEEK({$local}) AS wd, HOUR({$local}) AS hr, COUNT(*) AS cnt FROM {$from} {$where} GROUP BY wd, hr",
+                $params
+            ));
+            $wh = []; $by_hour = array_fill(0, 24, 0); $by_wd = array_fill(1, 7, 0);
+            foreach ((array) $rows as $r) {
+                $wd = (int) $r->wd; $hr = (int) $r->hr; $cnt = (int) $r->cnt;
+                $wh[] = ['weekday' => $wd, 'hour' => $hr, 'count' => $cnt];
+                if ($hr >= 0 && $hr < 24) { $by_hour[$hr] += $cnt; }
+                if ($wd >= 1 && $wd <= 7) { $by_wd[$wd] += $cnt; }
+            }
+            $insights['weekday_hour'] = $wh;
+            $insights['by_hour'] = array_map(function ($h) use ($by_hour) { return ['hour' => $h, 'count' => $by_hour[$h]]; }, array_keys($by_hour));
+            $insights['by_weekday'] = array_map(function ($d) use ($by_wd) { return ['weekday' => $d, 'count' => $by_wd[$d]]; }, array_keys($by_wd));
+        } catch (\Throwable $e) {}
+
+        // 5) Monthly trend (all months in range)
+        try {
+            $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT DATE_FORMAT({$local}, '%%Y-%%m') AS ym, COUNT(*) AS cnt, SUM({$total}) AS rev FROM {$from} {$where} GROUP BY ym ORDER BY ym",
+                $params
+            ));
+            $monthly = [];
+            foreach ((array) $rows as $r) { $monthly[] = ['month' => $r->ym, 'count' => (int) $r->cnt, 'revenue' => round((float) $r->rev, 2)]; }
+            $insights['monthly'] = $monthly;
+        } catch (\Throwable $e) {}
+
+        // 6) Daily trend (capped to last 90 days for all-time to stay readable)
+        try {
+            $daily_where = $where; $daily_params = $params;
+            if (!$start_date || !$end_date) {
+                $daily_where .= " AND {$range_col} >= %s";
+                $daily_params = array_merge($params, [date('Y-m-d', strtotime('-89 days')) . ' 00:00:00']);
+            }
+            $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT DATE({$local}) AS d, COUNT(*) AS cnt, SUM({$total}) AS rev FROM {$from} {$daily_where} GROUP BY d ORDER BY d",
+                $daily_params
+            ));
+            $daily = [];
+            foreach ((array) $rows as $r) { $daily[] = ['date' => $r->d, 'count' => (int) $r->cnt, 'revenue' => round((float) $r->rev, 2)]; }
+            $insights['daily'] = $daily;
+        } catch (\Throwable $e) {}
+
+        return $insights;
+    }
+
+    /**
      * Tägliche Bestellungen für Chart (30 Tage)
      */
     public function get_daily_orders_30d() {

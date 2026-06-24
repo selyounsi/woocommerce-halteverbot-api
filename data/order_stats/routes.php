@@ -11,7 +11,25 @@ add_action('rest_api_init', function () {
             return current_user_can('manage_woocommerce');
         }
     ]);
+
+    register_rest_route('wc/v3', '/stats/orders-insights', [
+        'methods'  => 'POST',
+        'callback' => 'get_orders_insights_endpoint',
+        'permission_callback' => function () {
+            return current_user_can('manage_woocommerce');
+        }
+    ]);
 });
+
+function get_orders_insights_endpoint(WP_REST_Request $request)
+{
+    $analyticsInstance = VisitorAnalytics::getAnalyticsInstance();
+
+    $start = $request->get_param('start_date') ?: null;
+    $end = $request->get_param('end_date') ?: null;
+
+    return new WP_REST_Response($analyticsInstance->get_orders_insights($start, $end), 200);
+}
 
 function get_report(WP_REST_Request $request)
 {
