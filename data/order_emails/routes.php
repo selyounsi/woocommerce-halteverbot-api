@@ -26,6 +26,14 @@ add_action('rest_api_init', function () {
         }
     ]);
 
+    register_rest_route('wc/v3', '/reminders/(?P<type>offer|invoice)', [
+        'methods' => 'POST',
+        'callback' => 'send_reminder',
+        'permission_callback' => function () {
+            return current_user_can('manage_woocommerce');
+        }
+    ]);
+
     register_rest_route('wc/v3', '/orders/(?P<order_id>\d+)/email-notification', [
         'methods' => 'POST',
         'callback' => 'update_email_notification_status',
@@ -273,5 +281,49 @@ function send_document(WP_REST_Request $request)
     } else {
         // Fehler beim Senden der E-Mail
         return new WP_Error('send_failed', 'Failed to send email.', ['status' => 500]);
+    }
+}
+
+/**
+ * Send a reminder per e-mail (offer reminder / invoice payment reminder).
+ *
+ * Mirrors send_document() but uses the reminder email classes. The matching PDF
+ * (offer or invoice) is generated and attached exactly like the regular send.
+ *
+ * @param WP_REST_Request $request
+ * @return WP_REST_Response|WP_Error
+ */
+function send_reminder(WP_REST_Request $request)
+{
+    $data = $request->get_json_params();
+    $type = $request->get_param('type');
+
+    $doc = new Generator($data);
+
+    if ($type === 'offer') {
+        $wc_email = new WC_Email_Offer_Reminder();
+        $doc->generatePDF("offer");
+    } elseif ($type === 'invoice') {
+        $wc_email = new WC_Email_Invoice_Reminder();
+        $doc->generatePDF("invoice");
+    }
+
+    $recipient = $data["billing"]['email'];
+
+    $file_name = $doc->getFileName();
+    $pdfFilePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $file_name;
+    file_put_contents($pdfFilePath, $doc->getBlob());
+
+    $wc_email->number = $doc->order->getMetaValue('_wcpdf_invoice_number');
+    $wc_email->recipient = $recipient;
+
+    $attachments = [$pdfFilePath];
+
+    $send_email = $wc_email->send_email($recipient, $attachments);
+
+    if ($send_email) {
+        return rest_ensure_response(['success' => true, 'message' => 'Reminder sent successfully!']);
+    } else {
+        return new WP_Error('send_failed', 'Failed to send reminder.', ['status' => 500]);
     }
 }
