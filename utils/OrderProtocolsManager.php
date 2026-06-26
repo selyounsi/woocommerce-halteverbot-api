@@ -31,18 +31,27 @@ class OrderProtocolsManager
             return new \WP_Error('invalid_data', __('Invalid data format.', WHA_TRANSLATION_KEY), ['status' => 400]);
         }
 
+        // Normalize every row instead of requiring all keys to be set: a missing
+        // or null field (e.g. an unselected vehicle type) must not drop the row.
         $sanitized_licenses = array_map(function ($license) {
-            if (isset($license['license_plate'], $license['vehicle_type'], $license['color'])) {
-                return [
-                    'license_plate' => sanitize_text_field($license['license_plate']),
-                    'vehicle_type' => sanitize_text_field($license['vehicle_type']),
-                    'color' => sanitize_text_field($license['color']),
-                ];
+            if (!is_array($license)) {
+                return null;
             }
-            return null;
+            return [
+                'license_plate' => sanitize_text_field($license['license_plate'] ?? ''),
+                'vehicle_type'  => sanitize_text_field($license['vehicle_type'] ?? ''),
+                'color'         => sanitize_text_field($license['color'] ?? ''),
+            ];
         }, $licenses);
 
-        $sanitized_licenses = array_filter($sanitized_licenses);
+        // Keep any row that carries at least one value and reindex the array so
+        // the stored meta stays gap-free (gaps render as blank rows in the PDF).
+        $sanitized_licenses = array_values(array_filter(
+            $sanitized_licenses,
+            fn($license) => $license !== null
+                && ($license['license_plate'] !== '' || $license['vehicle_type'] !== '' || $license['color'] !== '')
+        ));
+
         update_post_meta($this->order_id, '_order_license_protocols', $sanitized_licenses);
 
         return true;
